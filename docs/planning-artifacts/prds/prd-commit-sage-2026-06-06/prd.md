@@ -2,7 +2,7 @@
 title: commit-sage
 status: final
 created: 2026-06-06
-updated: 2026-06-06
+updated: 2026-06-07
 ---
 
 # PRD: commit-sage
@@ -29,7 +29,7 @@ It is positioned as **developer-owned insight** — the developer learns how to 
 - **Keep history healthy at scale** — run repeatedly / in CI to watch hygiene trend over time across many repos.
 - **See team-level repository health (manager)** — where knowledge concentrates (bus-factor risk), where practices are slipping, where they're strong — to help, not to rank individuals.
 
-### 2.2 Non-Users (v1)
+### 2.2 Non-Target Users (v1)
 
 - Teams wanting a hosted web dashboard / SaaS analytics portal — commit-sage is terminal-native and emits files; there is no central portal.
 - Managers seeking a per-developer productivity/ranking scoreboard — out by design, permanently.
@@ -39,15 +39,15 @@ It is positioned as **developer-owned insight** — the developer learns how to 
 
 - **UJ-1. Dana inherits a five-year-old repo and needs the story by lunch.**
   - **Persona + context:** Dana, a senior dev who just joined the team and was handed a long-lived service repo nobody fully remembers.
-  - **Entry state:** terminal open, commit-sage installed, a GitHub repo URL and a personal access token to hand.
-  - **Path:** runs `commit-sage analyze <repo-url>`; the tool clones/reads history, computes metrics, calls her configured LLM; a progress indicator shows phases (retrieve → analyze → explain).
+  - **Entry state:** terminal open, commit-sage installed, a GitHub repo URL to hand, and a personal access token set in her environment (or config file) so it stays out of shell history.
+  - **Path:** runs `commit-sage analyze <repo-url>`; the tool reads all branches by default (she could scope to one branch if she wanted), computes metrics, calls her configured LLM; a progress indicator shows phases (retrieve → analyze → explain).
   - **Climax:** an HTML report opens — a TL;DR of the repo's story up top, plain-language explanation of the patterns (ownership, cadence, risky hotspots), graphs she can actually read, and a coaching section.
   - **Resolution:** Dana can recount the repo's history and names two concrete improvements. She bookmarks the report and shares the file with her team.
 
 - **UJ-2. Marco automates a monthly health check in CI.**
   - **Persona + context:** Marco, a team lead with the unlimited/automation license, wants hygiene tracked without anyone remembering to run it.
-  - **Entry state:** a CI pipeline, the commit-sage binary, a token and an LLM key in CI secrets.
-  - **Path:** a scheduled job runs commit-sage headless against each repo; the tool emits JSON and a Markdown report as build artifacts; non-zero exit only on operational failure, not on "unhealthy" findings.
+  - **Entry state:** a CI pipeline, the commit-sage binary, and a token plus an LLM key stored in CI secrets.
+  - **Path:** a scheduled job runs commit-sage headless against each repo; secrets (token, LLM key) are injected as environment variables from the CI secret store, while non-secret config (repo URL, output formats) is passed as flags; the tool emits JSON and a Markdown report as build artifacts; non-zero exit only on operational failure, not on "unhealthy" findings.
   - **Climax:** the Markdown health report lands in the pipeline artifacts every month; the JSON is diffed against last month to show whether hygiene is trending up.
   - **Resolution:** the team sees improvement over time without manual effort; Marco never opens a dashboard.
 
@@ -64,12 +64,13 @@ It is positioned as **developer-owned insight** — the developer learns how to 
 - **Analysis** — the complete set of computed Metrics for a repo, independent of AI.
 - **Metric** — a single computed measurement about the history, belonging to a Metric Group, with a title and a description of what it represents (catalog in §4.2).
 - **Metric Group** — a named cluster of related Metrics (e.g., *Contribution & Ownership*).
-- **Report JSON** — the canonical machine-readable artifact: all Metrics plus the AI Narrative, from which all rendered outputs are generated. Single source of truth.
+- **Metric Explanation** — an LLM-generated, repo-specific assessment attached to an individual Metric (§4.2), grounded in that Metric's data, covering four things: (1) an **explanation** of what the Metric's value means for this repo, (2) the **good behaviours** it reveals, (3) what **needs improvement**, and (4) **suggestions** on how to improve. Distinct from the repo-level AI Narrative.
+- **Report JSON** — the canonical machine-readable artifact: all Metrics (each with its Metric Explanation) plus the AI Narrative, from which all rendered outputs are generated. Single source of truth.
 - **Rendered output** — a human-facing report generated from Report JSON via a template: **HTML**, **Markdown**, or **Terminal**.
 - **AI Narrative** — the LLM-generated text, in three parts: **Summary**, **Explanation**, **Coaching** (defined below).
 - **Summary** — a short TL;DR of the repo's story and headline findings, for skimming.
 - **Explanation** — plain-language interpretation of what the Metrics show and why.
-- **Coaching** — step-by-step, prescriptive guidance to improve future git practice, grounded in this repo's Metrics.
+- **Coaching** — a structured improvement **report** (introduction → themed chapters → closing summary), prescriptive and prioritized, grounded in this repo's Metrics; it consolidates and ranks the per-metric improvement suggestions (§4.2 Metric Explanations) into a coherent plan to improve future git practice.
 - **LLM provider** — the user-configured AI backend: Ollama (local), OpenAI, Gemini, Anthropic, or any OpenAI-compatible endpoint. **BYOK** (bring-your-own-key).
 - **Grounding** — the requirement that every factual AI claim trace to a specific computed Metric; the AI may not assert history facts the Metrics don't support.
 - **Confidence self-assessment** — the AI's own rating of how well the available model/data supported a trustworthy Narrative, with escalation advice when low.
@@ -90,18 +91,18 @@ A user can point commit-sage at a Repository by remote URL and retrieve its Comm
 
 **Consequences (testable):**
 - Accepts repository URLs for GitHub, GitLab, and Bitbucket (HTTPS form at minimum).
-- Retrieves the full commit history available on the default branch and all branches reachable without extra credentials. `[ASSUMPTION: all-branches by default, configurable to a single branch.]`
+- Retrieves the full commit history across all branches reachable without extra credentials by default; the user can scope retrieval to a single named branch.
 - Reads, at minimum, per commit: hash, author identity, committer identity, author timestamp, commit timestamp, message, parent hashes (to reconstruct branch/merge structure), and changed-file metadata (paths, insertions, deletions).
 - Operation is strictly read-only; commit-sage never writes to, pushes to, or mutates the remote.
 
-`[NOTE FOR PM]` The **retrieval mechanism** — full `git clone` vs. provider REST/GraphQL API paging — is capability-shaping, not merely an implementation detail: it gates rate-limit handling (FR-3), performance budgets (§7), and which Group E churn/diff metrics (§4.2) are affordable. Flagged for the architecture phase; leaning captured in `addendum.md`.
+`[NOTE FOR PM]` The **retrieval mechanism** — full `git clone` vs. provider REST/GraphQL API paging — is capability-shaping, not merely an implementation detail: it gates rate-limit exposure (FR-3's no-retry hard stop), performance budgets (§7), and which Group E churn/diff metrics (§4.2) are affordable. Current leaning is **`git clone`**, chosen partly to minimize rate-limit exposure given the no-retry posture; to be confirmed in the architecture phase, with the rationale and override conditions captured in `addendum.md`.
 
 #### FR-2: Authenticate to private repositories
 
 A user can supply a personal access token to analyze a private Repository. Realizes UJ-2.
 
 **Consequences (testable):**
-- A token can be provided via environment variable and/or config file (not required as a bare command-line argument that would leak into shell history). `[ASSUMPTION]`
+- A token is provided via environment variable and/or config file, never as a command-line argument. This single rule holds in both interactive and headless/CI mode: interactively it keeps the token out of shell history, and in CI it matches how providers inject secrets (e.g. GitHub Actions secrets, GitLab CI variables) — as environment variables, not flags.
 - A token with insufficient scope produces a clear, actionable error naming the missing permission, not a raw provider error.
 - Tokens are never written to Report JSON, logs, or any Rendered output.
 
@@ -111,18 +112,18 @@ commit-sage degrades gracefully on partial or failed retrieval.
 
 **Consequences (testable):**
 - Network failure, auth failure, and "repo not found" are distinguished in error messages.
-- On a transient/rate-limit error, the tool reports the condition and the retry/backoff behavior rather than failing silently. `[ASSUMPTION]`
+- On a transient or rate-limit error from a provider, the tool does not retry: it reports the condition clearly (including which provider and, where available, the provider's own guidance such as a rate-limit reset time) and exits without producing a partial Report. commit-sage does not absorb or work around faults in systems outside its responsibility; re-running is the user's choice.
 - A repository larger than the Free tier cap (§9) is retrieved only up to the capped number of most-recent commits, and the report states it was capped.
 
-**Out of Scope:**
-- Self-hosted / generic git servers beyond the three named providers. `[ASSUMPTION — deferred to v2 unless reprioritized.]`
-- SSH-key auth in v1 (token-based only). `[ASSUMPTION]`
+**Out of Scope (confirmed v1 decision):**
+- Self-hosted / generic git servers beyond the three named providers (GitHub, GitLab, Bitbucket). Deferred to v2 unless reprioritized.
+- SSH-key authentication. v1 is token-based only.
 
 ### 4.2 History Analysis — Metrics Catalog
 
-**Description:** commit-sage computes a thorough, deterministic Analysis from the retrieved Commit history, independent of any AI. Metrics are organized into Metric Groups; each Metric has a title and a description of what it represents. This catalog is the analytical heart of the product and the factual basis the AI Narrative is grounded against (§4.4). All Metrics are computed from data already retrieved in §4.1; none require writing to the repo. Realizes UJ-1, UJ-2, UJ-3.
+**Description:** commit-sage computes a thorough, deterministic Analysis from the retrieved Commit history, independent of any AI. Metrics are organized into Metric Groups; each Metric has a title and a description of what it represents. This catalog is the analytical heart of the product and the factual basis the AI Narrative is grounded against (§4.4). All Metrics are computed from data already retrieved in §4.1; none require writing to the repo. In addition to its deterministic title and one-line description, **every Metric also receives an LLM-generated Metric Explanation** (§4.4, FR-8) that, for this repo, explains what the Metric's value means, calls out the **good behaviours** it reveals, identifies **what needs improvement**, and gives **suggestions on how to improve**. Realizes UJ-1, UJ-2, UJ-3.
 
-> **Catalog note:** the groups and metrics below are the v1 target set. Individual metrics carry `[ASSUMPTION]` where definition or feasibility needs confirmation. The exact graph paired with each group is named in §4.3.
+> **Catalog note:** the groups and metrics below are the v1 target set. The one-line text under each Metric is its *static* description (what it represents); the per-run, repo-specific **Metric Explanation** (explanation + good behaviours + what needs improvement + how to improve) is generated by the LLM (FR-8) and is separate. Individual metrics carry `[ASSUMPTION]` where definition or feasibility needs confirmation. The exact graph paired with each group is named in §4.3.
 
 **Group A — Activity & Cadence** *(how the project moves over time)*
 - **Commit volume over time** — count of commits per day/week/month; shows the project's heartbeat and lulls.
@@ -203,40 +204,49 @@ The HTML output presents a graph for each Metric Group where a graph aids compre
 **Consequences (testable):**
 - At minimum: a time-series for Group A (activity over time), a distribution/concentration chart for Group B (contribution/bus-factor), a quality breakdown for Group C, a topology/summary visual for Group D, a hotspots chart for Group E, and a health roll-up for Group F. `[ASSUMPTION: exact chart type per group finalized in UX/architecture.]`
 - Graphs render from Report JSON without re-running the Analysis.
-- HTML is self-contained (viewable offline by opening the file). `[ASSUMPTION]`
+- HTML is **self-contained**: a single file that renders fully by opening it in a browser, with no external network dependency, CDN, or companion asset files — assets (CSS, scripts, fonts, images) are inlined. (Confirmed v1 decision; the inlining *technique* is an architecture detail. Upholds the offline-capable NFR in §7 and the no-central-portal positioning.)
 
 #### FR-7: Degrade visuals appropriately per output format
 
 Each Rendered output presents visuals suited to its medium.
 
 **Consequences (testable):**
-- Markdown output uses embedded images or tables/ASCII where a live chart is impossible, and remains readable in a plain Markdown viewer.
+- Markdown output uses **no embedded/binary images**. Visuals are expressed as text: tables, ASCII charts/sparklines, and **Mermaid diagrams** (rendered natively by GitHub, GitLab, and common Markdown viewers; shown as fenced code where unsupported). The file stays plain-text, diff-able, and reviewable in a pull request.
 - Terminal output presents compact textual summaries / sparklines rather than full graphs.
 - No Rendered output depends on a network connection or a central server to display.
 
 ### 4.4 AI Narrative — Explanation & Coaching
 
-**Description:** commit-sage sends the computed Metrics (not raw code) to the user-configured LLM provider and produces the AI Narrative in three parts — **Summary**, **Explanation**, **Coaching**. The Narrative is the product's core differentiator: it makes the Analysis *understandable* and turns it into improvement. Every factual claim must be grounded in the Metrics, and the AI rates its own confidence and escalates when low. Realizes UJ-1, UJ-3.
+**Description:** commit-sage sends the computed Metrics (not raw code) to the user-configured LLM provider and produces (a) the repo-level AI Narrative in three parts — **Summary**, **Explanation**, and a **Coaching** improvement report (introduction → themed chapters → summary) — and (b) a **Metric Explanation** for every Metric in the §4.2 catalog. The Narrative is the product's core differentiator: it makes the Analysis *understandable* and turns it into improvement. Every factual claim must be grounded in the Metrics, and the AI rates its own confidence and escalates when low. Realizes UJ-1, UJ-3.
 
 **Voice & tone (design principle):** the Narrative reads like a knowledgeable peer who has read the entire history and wants to help — plain language, no unexplained jargon, encouraging rather than judgmental. Coaching is prescriptive but supportive ("a good next step is…", not "you should have…"). This voice is load-bearing: it is the felt difference between commit-sage and a raw statistics dashboard, and it carries the brief's promise of a *narrated story*. `[ASSUMPTION: voice guidance detailed further in the UX phase.]`
 
 **Functional Requirements:**
 
-#### FR-8: Generate the three-part narrative
+#### FR-8: Generate the AI Narrative and a per-metric explanation
 
-commit-sage produces Summary, Explanation, and Coaching from the Metrics. Realizes UJ-1, UJ-3.
+commit-sage produces, from the computed Metrics, (a) the repo-level Narrative — Summary, Explanation, and Coaching — and (b) a Metric Explanation paragraph for every Metric in the §4.2 catalog. Realizes UJ-1, UJ-3.
 
 **Consequences (testable):**
-- The Narrative contains exactly three labeled parts in order: Summary (TL;DR of the repo's story and headline findings), Explanation (what the Metrics show and why), Coaching (step-by-step, prescriptive next actions).
+- The repo-level Narrative contains exactly three labeled parts in order: Summary (TL;DR of the repo's story and headline findings), Explanation (what the Metrics show and why), Coaching (the structured improvement report defined below).
+- **The Coaching part is a structured report**, not a flat list: it contains an **introduction** (framing the repo's current state and what the plan addresses), one or more **themed chapters** (each grouping related improvements — e.g., commit-message hygiene, branching discipline, churn/hotspots — with prescriptive, prioritized steps), and a **closing summary** (the top priorities and recommended order of action).
+- Coaching **consolidates and prioritizes the per-metric improvement suggestions** (the facet-4 "how to improve" content of the §4.2 Metric Explanations): per-metric suggestions are local to one Metric, while Coaching ranks across all of them into one plan, so the two never contradict.
+- **Every Metric in Groups A–F carries its own Metric Explanation** — a repo-specific, grounded assessment of *that* Metric (not a restatement of its static one-line description, FR-5) covering four things: (1) an **explanation** of what the Metric's value(s) mean for this repo, (2) the **good behaviours** the Metric reveals, (3) what **needs improvement**, and (4) concrete **suggestions on how to improve**.
+- Where a Metric reveals no notable strength, or nothing to improve, its Metric Explanation says so explicitly rather than inventing one — the four facets are always addressed, even if the answer is "no issues found" / "already healthy" (grounded per FR-9).
+- A Metric marked `not_available` (FR-4) still receives a Metric Explanation stating it could not be computed and why — so the explanation set covers the full catalog with no silent gaps.
+- Each Metric Explanation is **anchored** in its own Metric's value(s) but **may reference other Metrics in the Analysis** where a connection is genuinely informative (e.g., the bus-factor explanation noting that the same authors dominate the commit-message-quality Metric). Every fact it cites — its own or a cross-referenced Metric — must trace to a computed Metric in Report JSON (FR-9); it invents no numbers, dates, contributors, or events absent from the Analysis. The cross-metric *prioritized plan* remains Coaching's job (below), so an explanation may note a link but does not try to be the global roll-up.
 - Coaching guidance references the repo's own Metrics (e.g., "62% of your commit messages are under 10 characters — adopt Conventional Commits, starting with…") rather than generic advice.
-- The Narrative is written in plain language for a developer audience and avoids unexplained jargon.
+- All AI prose (repo-level Narrative and every Metric Explanation) is written in plain language for a developer audience and avoids unexplained jargon.
+- Both the repo-level Narrative and all Metric Explanations are carried in Report JSON (FR-12) and rendered in every output format (FR-13).
+
+`[NOTE FOR PM]` Per-metric explanations multiply LLM output (~30 Metrics). To bound cost and latency on the user's BYOK budget, generation may be **batched into a single request** rather than one call per Metric — an architecture decision, not a capability change. No per-use cost accrues to commit-sage (FR-11).
 
 #### FR-9: Ground every factual claim in the metrics
 
 The AI Narrative may not assert history facts the Metrics don't support (Grounding).
 
 **Consequences (testable):**
-- Factual statements in the Narrative trace to specific Metric(s) present in Report JSON.
+- Factual statements in the Narrative and in every Metric Explanation (FR-8) trace to specific Metric(s) present in Report JSON.
 - The system prompt / generation contract forbids inventing numbers, contributors, dates, or events not present in the Metrics. `[ASSUMPTION: enforced via prompt design + post-generation check.]`
 - Where the Metrics are insufficient to support a claim, the Narrative says so instead of fabricating.
 
@@ -271,12 +281,14 @@ A user configures their own LLM provider and key. Realizes UJ-3.
 
 #### FR-12: Emit canonical Report JSON
 
-Every analysis produces a Report JSON containing all Metrics and the AI Narrative.
+Every analysis produces a Report JSON containing all Metrics (each with its Metric Explanation) and the AI Narrative.
 
 **Consequences (testable):**
 - Report JSON is well-formed, documented, and stable enough to diff across runs (powers trend deltas, FR-4/Group F).
 - Report JSON contains everything needed to render any output format with no re-analysis and no AI re-call.
 - Report JSON is itself a first-class artifact a user can keep, script against, or archive.
+
+`[NOTE FOR PM]` **v1 commitment.** The structured AI outputs ship in v1 as structured JSON, not flat strings: **Coaching** as a nested object (`introduction`, `chapters[]`, `summary`) and each **Metric Explanation** as an object with its four facets (`explanation`, `goodBehaviours`, `needsImprovement`, `suggestions`), so templates (FR-13) can render chapters and facets distinctly and downstream tooling can address them. The *exact field names/types* are an architecture decision, but because Report JSON is a stability contract (diff-stable across runs, FR-4/Group F), this schema must be **settled before v1 ships** — not retrofitted after release (see Open Q9).
 
 #### FR-13: Render HTML, Markdown, and Terminal from templates
 
@@ -308,7 +320,7 @@ A developer runs commit-sage from a terminal and gets a report. Realizes UJ-1, U
 commit-sage runs non-interactively in CI/CD. Realizes UJ-2.
 
 **Consequences (testable):**
-- A headless mode runs with no interactive prompts, reading all config (repo, token, provider, key, formats) from environment/flags.
+- A headless mode runs with no interactive prompts, reading all config from environment variables, config file, and/or CLI flags. Secrets (token, LLM key) come only from environment variables or config file (per FR-2/FR-11), never from CLI flags; non-secret config (repo URL, provider, model, output formats) may come from flags.
 - Exit codes are machine-readable: success vs. operational failure (auth, network, config). An "unhealthy" repo finding is NOT a failure exit. `[ASSUMPTION]`
 - Report JSON and selected Rendered outputs are written to predictable paths suitable for CI artifacts.
 
@@ -344,7 +356,7 @@ commit-sage enforces Free, Single-device, and Unlimited/Automation tiers (define
 
 ### 6.2 Out of Scope for MVP
 
-- Self-hosted / generic git servers beyond the three named providers — *deferred; named providers cover the majority of the market.* `[NOTE FOR PM: revisit if enterprise demand appears.]`
+- Self-hosted / generic git servers beyond the three named providers — *deferred; named providers cover the majority of the market. Revisit in v2 if enterprise demand appears.*
 - SSH-key authentication — *token-based covers v1.*
 - Trend deltas across runs require a prior Report JSON to exist; first run has no trend — *acceptable; trend value accrues over time.*
 - A fourth mid "team" pricing tier — *parked from the brief; revisit after traction.*
@@ -408,18 +420,15 @@ The comprehension gap is unaddressed: OSS tools graph but don't explain; enginee
 3. **Overall hygiene score formula:** exact composite definition for Group F, kept transparent. (Affects §4.2.)
 4. **Feasibility of `[ASSUMPTION]`-tagged metrics** (rebase tendency, long-lived branches, file survival, ownership-by-area): confirm computability from retrieved data within performance budget. (Affects §4.2.)
 5. **Grounding enforcement:** prompt-only, or prompt + post-generation verification pass against Metrics? (Affects FR-9.)
-6. **Performance budgets:** concrete time/memory targets for large repos (e.g., 50k commits). (Affects §7.)
+6. **Performance budgets:** concrete time/memory targets for large repos (e.g., 50k commits) for the deterministic Analysis, **and** the AI-generation cost/latency budget — four-facet Metric Explanations across ~30 Metrics plus a multi-chapter Coaching report, every run (FR-8). This is in scope here: generating all of it affordably on a modest/local model (e.g., Ollama) is a first-class v1 constraint, and batched generation (FR-8 note) is the likely lever. (Affects §7, FR-8, FR-10.)
 7. **Pricing validation** and possible mid-tier. (Affects §9.)
-8. **Exact chart type per Metric Group** and HTML self-containment approach. (Affects FR-6, FR-7 — likely UX phase.)
+8. **Exact chart type per Metric Group.** (Affects FR-6, FR-7 — likely UX phase.) HTML self-containment is a **confirmed v1 requirement** (FR-6); only the asset-inlining *technique* remains an architecture detail.
+9. **Report JSON schema for structured AI outputs:** exact field names/types for Coaching (`introduction`, `chapters[]`, `summary`) and Metric Explanations (`explanation`, `goodBehaviours`, `needsImprovement`, `suggestions`). All v1 scope; because Report JSON is a stability contract, this must be **settled before v1 ships**, not retrofitted. (Affects FR-8, FR-12, FR-13.)
 
 ## 13. Assumptions Index
 
-- §4.1 FR-1 — all-branches retrieval by default, configurable to single branch.
-- §4.1 FR-2 — token via env/config, not bare CLI arg.
-- §4.1 FR-3 — transient/rate-limit retry & backoff behavior.
-- §4.1 Out of Scope — self-hosted git and SSH auth deferred to v2.
 - §4.2 — multiple individual metrics tagged (time-of-day timezone, bus-factor threshold, ownership-by-area, co-authorship, imperative-mood heuristic, issue-reference rate, merge/rebase tendency, direct-to-default rate, long-lived branch signal, file survival, composite hygiene score).
-- §4.3 FR-6/FR-7 — exact chart type per group; HTML self-contained/offline.
+- §4.3 FR-6/FR-7 — exact chart type per group.
 - §4.4 — Narrative voice & tone guidance to be detailed in the UX phase.
 - §4.4 FR-9/FR-10 — Grounding enforced via prompt design + (possible) post-generation check; confidence self-assessment method.
 - §4.4 FR-11 NFR — only Metrics/summaries sent to LLM; no raw diffs.
