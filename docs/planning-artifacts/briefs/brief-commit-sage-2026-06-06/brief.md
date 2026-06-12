@@ -2,22 +2,22 @@
 title: "Product Brief: commit-sage"
 status: final
 created: 2026-06-06
-updated: 2026-06-06
+updated: 2026-06-13
 ---
 
 # Product Brief: commit-sage
 
 > **Tagline:** *"I know what you did last commit."*
 >
-> `[ASSUMPTION]` tags mark inferences to confirm. `[OPEN]` tags mark deliberate, unresolved decisions parked for the PRD.
+> *Reconciled 2026-06-13 with the finalized PRD, architecture, UX, and epics — this brief now reflects the product as planned and built.*
 
 ## Executive Summary
 
-**commit-sage** is a terminal-native tool that turns impenetrable git history into a clear, narrated report. Existing tools already produce git statistics and graphs — but developers still can't *understand* them. commit-sage closes that comprehension gap: it retrieves the commit history from any git remote, analyzes it, renders modern visualizations, and then uses AI to **explain the history in plain language** and **coach the reader toward better git practices** going forward.
+**commit-sage** is a terminal-native tool that turns impenetrable git history into a clear, narrated report. Existing tools already produce git statistics and graphs — but developers still can't *understand* them. commit-sage closes that comprehension gap: it retrieves a repository's commit history — from **GitHub, GitLab, or Bitbucket, or a local clone** — computes a thorough analysis, renders modern visualizations, and then uses AI to **explain the history in plain language** and **coach the reader toward better git practices** going forward. The AI narration is intrinsic: every run produces the explanation, never just raw numbers.
 
 The need is one of scale. A single developer — and certainly a team, company, or engineering manager — can maintain many repositories on remote git servers, each carrying a history far too long for any human to read end to end. commit-sage reads what no human can, and hands back a story plus a path to improvement. Because it lives in the terminal, it runs wherever developers already work and slots directly into CI/CD for repeatable, automated analysis.
 
-commit-sage is sold as a perpetual, one-time purchase across three tiers: a **free** on-ramp, a **single-device** tier ($2.99) for the individual developer, and an **unlimited-devices/automation** tier ($100) for multi-machine, team, and CI/CD use. It is positioned as **developer-owned insight** — the developer learns how to improve; the engineering manager sees team and repository *health* to help teams shore up weaknesses and confirm strengths — never a surveillance scoreboard.
+commit-sage is sold as a perpetual, one-time purchase across three tiers: a **free** on-ramp, a **single-device** tier ($10) for the individual developer, and an **unlimited-devices/automation** tier ($100) for multi-machine, team, and CI/CD use. It is positioned as **developer-owned insight** — the developer learns how to improve; the engineering manager sees team and repository *health* to help teams shore up weaknesses and confirm strengths — never a surveillance scoreboard.
 
 ## The Problem
 
@@ -32,15 +32,17 @@ The status quo forces a bad trade: stare at charts you don't understand, or igno
 
 ## The Solution
 
-commit-sage is a command-line tool that produces a complete, readable report from a git remote in one run.
+commit-sage is a command-line tool that produces a complete, readable report from a git repository in one run.
 
-1. **Retrieve** — point it at a git remote repository (any server) and it pulls the commit history.
-2. **Analyze** — it computes a thorough analysis across the history (contributors, cadence, message quality, branching/merge patterns, hotspots, evolution over time). `[ASSUMPTION]` exact metric set to be defined in the PRD.
-3. **Visualize** — it renders modern, clean graphs of those patterns.
-4. **Explain (the differentiator)** — AI turns the analysis and graphs into a plain-language narrative: *what* the history shows, *why* it looks this way, and what it means.
+1. **Retrieve** — point it at a repository — a **local clone**, or a **remote on GitHub, GitLab, or Bitbucket** (private repos via a token read from the environment) — and it reads the commit history.
+2. **Analyze** — it computes a thorough, deterministic analysis across the history (contributors, cadence, message quality, branching/merge patterns, hotspots, evolution over time): roughly thirty metrics organized into six groups.
+3. **Visualize** — it renders modern, clean graphs of those patterns — an overview chart per group plus a right-sized visual on every individual metric.
+4. **Explain (the differentiator)** — AI turns the analysis into a plain-language narrative: *what* the history shows, *why* it looks this way, and what it means.
 5. **Coach** — it gives concrete, step-by-step guidance for working properly with git going forward: better commit messages, a sounder branching strategy, and general best practices, grounded in what this repository's own history reveals.
 
-The same run works on demand or automated in CI/CD — repeatable as history grows.
+**The AI step is not optional.** Every run narrates — there is no metrics-only mode; analysing the history and explaining it are a single act. The Free tier still costs nothing because a local **Ollama** model is a zero-cost AI provider, so "AI required" needs no spend and keeps all data on-machine.
+
+You run it two ways, both terminal-native. A bare `commit-sage` in an interactive terminal opens a guided **launchpad menu** — the product's single interactive entry point; passing **any argument** runs a strict, fully scriptable **single-shot** that never prompts and slots directly into CI/CD, repeatable as history grows. Secrets — the git token and the LLM key — are read **only from environment variables**, never prompted or stored. Each run emits **one canonical Report JSON** (the single source of truth) and renders it into **HTML, Markdown, terminal, or JSON**, several at once if you like; the rich HTML report carries the per-group and per-metric visuals.
 
 ## What Makes This Different
 
@@ -66,7 +68,7 @@ commit-sage is the only one that fuses **retrospective explanation** (today: onl
 
 - **Comprehension:** after reading the report, a user can accurately recount their repository's story and name a concrete next improvement. This is the core promise — if it lands, the product works.
 - **Repeat use:** users run it more than once per repo and/or wire it into CI/CD — proof it's a painkiller, not a one-time novelty.
-- **Conversion:** free-tier users with long histories / many repos upgrade to a paid tier. `[OPEN]` target conversion rate TBD.
+- **Conversion:** free-tier users with long histories / many repos upgrade to a paid tier — targeting at least 5%.
 - **Trust:** the AI narrative is accurate and useful — low rate of "that's wrong" feedback. A hallucinated history destroys trust, so accuracy is a first-class success metric.
 - **Advocacy:** users recommend it (critical, since perpetual licensing makes revenue new-customer-driven).
 
@@ -74,35 +76,35 @@ commit-sage is the only one that fuses **retrospective explanation** (today: onl
 
 **In for v1:**
 
-- CLI tool that connects to a git remote and retrieves commit history.
-- Thorough history analysis + modern graph rendering.
-- AI narrative explanation of the history.
+- CLI tool that reads commit history from a **local repository or a remote on GitHub, GitLab, or Bitbucket** (private remotes via an environment-variable token).
+- Thorough, deterministic history analysis (~30 metrics in six groups) + modern graph rendering (a per-group overview chart plus a per-metric visual).
+- AI narrative explanation of the history — **produced on every run** (there is no metrics-only mode).
 - AI step-by-step git-practice guidance (commit messages, branching, best practices).
-- The tool's own report as output — **no central web portal**. `[OPEN]` exact output format defined in the PRD.
-- CI/CD-friendly execution (terminal-native and automatable).
-- Free tier plus two paid tiers (single-device and unlimited-devices/automation) — see **Monetization** for tier details and pricing.
-- **Bring-your-own AI:** the user supplies their own API key / model endpoint. Supported providers: **Ollama** (local/offline — keeps commit data on-machine for privacy-sensitive orgs), **OpenAI**, **Gemini**, **Anthropic**, and any **OpenAI-compatible** endpoint.
+- **One canonical Report JSON** rendered to **HTML, Markdown, terminal, or JSON** (multi-select in a single run) — **no central web portal**.
+- Execution model: terminal-native, with a **guided launchpad** for interactive use and a **strict single-shot** for scripts and CI/CD automation; secrets are environment-variable-only.
+- Free tier plus two paid tiers (single-device and unlimited-devices/automation), enforced by **online license validation** (Lemon Squeezy) — see **Monetization** for tier details, pricing, and the licensing model.
+- **Bring-your-own AI:** the user supplies their own API key / model endpoint. Supported providers: **Ollama** (local — keeps commit data on-machine for privacy-sensitive orgs), **OpenAI**, **Gemini**, **Anthropic**, and any **OpenAI-compatible** endpoint.
 
 **Explicitly out (by design):**
 
 - Per-developer ranking / surveillance dashboards — out permanently.
 - A central web portal / hosted SaaS dashboard — out; the deliverable is the tool's own output.
+- A metrics-only / skip-AI mode — out by design; narration is intrinsic to every run.
+- Self-hosted or generic git servers beyond GitHub, GitLab, and Bitbucket — not planned for v1.
 
-**Key open design questions to resolve in the PRD:**
-
-- `[OPEN]` Exact output format(s) of the report.
-- `[OPEN]` Exact analysis metric set and which graphs are rendered.
+**Design questions resolved in planning:** the exact output formats, the full metric catalog, AI execution, the online-licensing model, and the interaction model are now locked in the PRD, architecture, and UX specs — this brief reflects those decisions rather than deferring them.
 
 ## Monetization
 
 - **Model:** perpetual, one-time purchase (no subscription). Three tiers.
-- **Free:** capped by the number of most-recent commit messages analyzed — enough to prove value, gated where long histories begin (the exact pain commit-sage solves). The funnel.
-- **Single-device ($2.99):** one device, with unlimited runs, repositories, and remote servers. An impulse-priced yes for the individual developer.
+- **Free:** capped at the 100 most-recent commits — enough to prove value, gated where long histories begin (the exact pain commit-sage solves). The funnel. Includes a voluntary Buy Me a Coffee support link.
+- **Single-device ($10):** one device, with unlimited runs, repositories, and remote servers. An impulse-priced yes for the individual developer.
 - **Unlimited-devices/automation ($100):** any number of devices plus CI/CD automation — for teams and the manager-of-many-teams buyer with many repositories and long histories. Where the real value, and the real revenue, concentrates.
 - **AI cost is the user's, not ours:** inference runs on the user's own API key (bring-your-own), so commit-sage carries no per-use cost and the perpetual price stays pure margin after the sale.
-- **Pricing strategy — adoption-first:** as a first mover with zero marginal cost per sale and word-of-mouth-driven growth, the $2.99 single-device tier is priced to spread and own the category; the $100 tier is the value-capture SKU. Land low and raise later — raising prices is easy, cutting is painful.
+- **Licensing is online (Lemon Squeezy):** the two paid tiers are sold and enforced through **Lemon Squeezy** — *activate / validate / deactivate*. Single-device is bound to one device server-side via a Lemon Squeezy *activation instance* (movable by deactivating, no repurchase); Unlimited permits many activations, including headless/CI runners (which *validate* against an existing instance rather than re-activate). It remains a **perpetual one-time purchase**, but paid-tier validation is an **online check at startup**, so the blanket "works fully offline" promise no longer holds. The check transmits only the license key and a device id — **never repository data** — so the **privacy** guarantee (local Ollama ⇒ nothing leaves the machine) and the **no-central-portal** positioning both still stand (Lemon Squeezy is a third-party checkout/licensing service, not a commit-sage portal).
+- **Pricing strategy — adoption-first:** as a first mover with zero marginal cost per sale and word-of-mouth-driven growth, the $10 single-device tier is priced to spread and own the category while still signalling a real tool (not a throwaway); the $100 tier is the value-capture SKU. The $10 point also pays its own way operationally: at roughly $9 net it comfortably funds the online activate/validate/deactivate licensing machinery that a $2.99 sale (~$2.30 net) could barely justify. Land low and raise later — raising prices is easy, cutting is painful.
 - **Tradeoff (acknowledged):** perpetual revenue is new-customer-driven, so funnel and word-of-mouth matter more than with subscriptions. A possible future lever — paid major-version upgrades — is parked, not committed.
-- `[OPEN]` Prices ($2.99 / $100) are a starting point, not yet validated — confirm against real willingness to pay. The gap between the two paid tiers is wide; a mid team tier may eventually be warranted.
+- **Cannibalization (accepted, bounded):** because Single-device grants unlimited repos and servers, a small team could buy several Single-device licenses instead of Unlimited — but the arbitrage breaks even around **ten devices** ($100 ÷ $10) and still forgoes multiple devices under one license and CI/CD automation, so the pressure is real but bounded. Prices are **final** at $10 / $100 — a **10×** gap — with no additional mid tier planned.
 
 ## Vision
 

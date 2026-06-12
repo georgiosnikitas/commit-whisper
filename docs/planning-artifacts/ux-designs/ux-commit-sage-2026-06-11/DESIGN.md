@@ -2,7 +2,7 @@
 title: commit-sage DESIGN
 status: draft
 created: 2026-06-11
-updated: 2026-06-11
+updated: 2026-06-13
 ---
 
 name: commit-sage
@@ -110,9 +110,9 @@ Terminal-first git-history analysis that explains and coaches from a repository'
 | Name | commit-sage |
 | Tagline | "I know what you did last commit." |
 | Primary surface | Terminal |
-| Canonical artifact | Report JSON |
+| Canonical artifact | Report JSON (also selectable as a fourth output format) |
 | Rendered outputs | HTML (self-contained), Markdown, Terminal — all derived from Report JSON |
-| HTML report | Opened in a browser when HTML output is selected |
+| HTML report | Auto-opens in a browser when HTML output is selected; `--no-open` suppresses it |
 | Design posture | Calm, analytical, evidence-first; team-level health, never per-developer ranking |
 
 Brand & Style
@@ -160,7 +160,7 @@ The terminal experience is one-column and line-oriented. It should prioritize cl
 
 The HTML report should be optimized for a single reading column with occasional data panels. On wide screens, it can expand charts and side metadata, but the main narrative should stay readable at a comfortable measure. HTML is a self-contained single file: it opens in a browser with no external network, CDN, or companion asset files.
 
-Each rendered output suits its medium: HTML carries full charts; Markdown uses text tables, sparklines, and Mermaid diagrams with no embedded binary images so it stays diff-able in a pull request; terminal uses compact textual summaries and sparklines.
+Each rendered output suits its medium: HTML carries full charts; Markdown uses text tables, sparklines, and Mermaid diagrams with no embedded binary images so it stays diff-able in a pull request; terminal uses compact textual summaries and sparklines. Report JSON, when selected, is written verbatim as the canonical artifact — it is data, not a styled surface, so it carries no design treatment of its own.
 
 Spacing follows a deliberate rhythm: 4 / 8 / 12 / 16 / 24 / 32 px. Use the larger steps to separate major sections like Summary, Explanation, and Coaching. Use the smaller steps inside metric rows and chart legends.
 
@@ -186,18 +186,24 @@ Components
 ----------
 
 - **Terminal shell** — The live run surface. Shows command invocation, phase progress, warnings, and the final summary. The terminal shell should support copyable paths and commands.
+- **Menu / launchpad** — The zero-arg discovery surface, shown only when `commit-sage` is run with no arguments in an interactive terminal. A calm, line-oriented list led by **Analyze this repository** (the cwd default), then **Analyze a remote repository**, **Settings**, **Status / doctor**, and **Help / show all flags**. License actions are state-dependent — **Activate** (the only in-app key entry), **Buy / Restore** (a browser hand-off), and the optional **Buy Me a Coffee** link appear when unlicensed, while **Deactivate** appears when licensed — and **Quit** (Esc) exits cleanly and prints a flags cheatsheet. It is self-teaching (each interactive run echoes the equivalent command) and reads as a quiet index of what the tool can do — never a flashy dashboard or a mandatory wizard. (Full screen-by-screen composition: MENUS.md.)
+- **Header readiness line** — A persistent, dim two-line header opening **every** interactive screen: the product line, then a readiness line mirroring the user's state — `<tier> · AI: <provider (model) | ⚠ not configured> · cwd: <path> (<branch>)` — so they always know who they are, whether they can run, and what "this repo" means without opening Status / doctor. The tagline shows in full on the bare launchpad and is dropped in argument-mode runs. (Composition: MENUS.md.)
+- **Settings** — A guided configuration surface reached from the menu. It sets **non-secret** AI plumbing (provider, model, base URL) and everyday defaults (default output format, timezone, max-commits), writing them to the config home (`~/.commit-sage`) so they are remembered. It is the writable counterpart to the read-only Status / doctor view, and it is the calm way out of the first-run “no AI provider” state — especially by picking the zero-cost local Ollama. It **never** collects a secret: a cloud provider’s key stays an environment variable, named but never entered here. Same line-oriented posture — no dashboard.
+- **Status / doctor view** — A read-only diagnostic reachable from the menu: current license tier; the configured LLM provider/model **and whether it is actually reachable** — the doctor *probes* (pings the Ollama endpoint, or runs a low-cost auth check for a cloud provider), so **configured** and **reachable** are reported as distinct states (Ollama can be set but not running); and which required environment variables are set vs missing (set/missing only — secret values are never shown). It is the calm answer to "where do I stand?" and the primary guide out of the first-run state where no AI provider is configured yet. Same line-oriented posture as the rest of the terminal — no gauges, no dashboard.
+- **No-AI interstitial** — Choosing an Analyze action with no provider configured never disables the row or throws a raw error; it routes to a calm teaching screen that names the env-only path (e.g. `OPENAI_API_KEY`), points to Settings, and leads with the zero-cost local Ollama option, then drops back to the menu. Discovery is preserved; the dead-end always has a door. (Composition: MENUS.md.)
 - **Phase log** — A short, structured sequence of retrieve / analyze / narrate / render messages. It is the user's proof that the run is alive.
 - **Run summary block** — A compact terminal block with repo name, branch scope, output path(s), confidence level, and the top-line outcome.
-- **Report surface** — The full rendered report (HTML, Markdown, or terminal). It contains the AI Narrative (Summary, Explanation, Coaching), per-metric explanations, and charts where the medium allows.
-- **Metric card** — A consistent panel for a Metric: title, value(s), and a grounded four-facet explanation (what it means, good behaviours, what needs improvement, suggestions). A `not_available` Metric still shows a card explaining why.
+- **Report surface** — The full rendered report (HTML, Markdown, or terminal). In its **showpiece** form it carries the AI Narrative (Summary, Explanation, Coaching), per-metric explanations, and charts where the medium allows — the narrated hero is the product. When the `narrative` subtree is absent (a fail-open degrade or an intentional `--no-ai` metrics-only run) the same surface renders as a plainer **substrate**: the health-band cards, the group and per-metric visuals, and the metric data all stay, but the narrative bands and the hero insight do not — so the substrate can never masquerade as the showpiece.
+- **Metric card** — A consistent panel for a Metric: title, value(s), a right-sized **per-metric visual** (see the visual-by-shape table below), and a grounded four-facet explanation (what it means, good behaviours, what needs improvement, suggestions). A `not_available` Metric still shows a card explaining why, with its visual omitted. A status band carries the health signal by **shape, not color** — `●` ok, `◐` watch, `▲` risk, and a greyed `○` for `n/a` — always paired with its text label. To keep the report calm at ~30 metrics, cards practice **progressive disclosure**: `risk` and `watch` cards are expanded by default while `ok` cards collapse to a one-line summary the reader can expand (with JS off, all cards render expanded) — see TEMPLATE-HTML.md.
 - **Chart panel** — A data-dense, labeled panel paired with its Metric Group's explanation; a chart never stands alone without text.
 - **Coaching chapter** — The structured improvement report: an introduction, themed chapters of prioritized steps, and a closing summary of top priorities.
-- **Confidence indicator** — Surfaces the run's self-assessed confidence (`high` / `medium` / `low`); when low, it names the concrete escalation (which provider/config to change).
-- **Support link** — The voluntary Buy Me a Coffee link in the free tier. It must be visible but never noisy.
+- **Confidence indicator** — Surfaces the run's self-assessed confidence as a **word** (`high` / `medium` / `low`), always shown and never carried by color or shape alone; when low, it names the concrete escalation (which provider/config to change). It deliberately does **not** use the status-band shapes — `●◐▲○` stays reserved for per-metric health, so the two scales never visually rhyme.
+- **Degrade banner** — The one deliberately loud element. It appears only when a run **fails open** (narration, grounding, or the provider failed *after* the metrics were computed): `⚠ Narrative unavailable — showing raw analysis`, set in the `warning` / `danger` register so it reads as a wound against the calm body, plus one actionable line (retry · check the provider · switch it in Settings). It sits at the very top of the rendered report, above the masthead, and is the first thing a reader meets. It is shown **only** in the degraded render — an intentional `--no-ai` metrics-only run is a clean success and carries no banner, only a quiet nudge — so the banner always means *something broke*, never *the narrative was skipped on purpose*.
+- **Support link** — The voluntary Buy Me a Coffee link, shown only when unlicensed and hidden once a license is active. It must be visible but never noisy, and it is distinct from **Buy / Restore license** (the browser hand-off to buy or recover a purchase) and from **Activate license** (the only in-app license-key entry).
 
-HTML chart mapping is fixed per Metric Group:
+HTML chart mapping is fixed per Metric Group — each group carries a **group overview chart** of the signature type below, *and* each Metric within it carries its own right-sized per-metric visual:
 
-| Group | Chart |
+| Group | Group overview chart |
 | --- | --- |
 | A — Activity & Cadence | Multi-series line chart (commits and churn over time) |
 | B — Contribution & Ownership | Pareto bar chart with a bus-factor marker |
@@ -206,6 +212,15 @@ HTML chart mapping is fixed per Metric Group:
 | E — Code Churn & Hotspots | Horizontal bar chart for hotspots plus a churn trend line |
 | F — Repository Health Signals | Radar chart for component scores plus an overall-score gauge |
 
+Per-metric visuals are sized to each Metric’s shape so the self-contained file stays lean (full canvases reserved for group overviews and genuinely distributional/time-series metrics; everything else is a lightweight inline SVG/CSS sparkline or a bold stat):
+
+| Metric shape | Per-metric visual | Markdown / Terminal degradation |
+| --- | --- | --- |
+| Time-series | Small line / area chart | ASCII sparkline (`▁▂▄█▆▃`) |
+| Distribution | Small bar / histogram | Small text-bar table (`████ 68%`) |
+| Scalar within a healthy range | Sparkline or mini-gauge + the number | Sparkline + number, or `7/10` |
+| Pure scalar | Bold stat, no chart | The bold number |
+
 Do's and Don'ts
 ---------------
 
@@ -213,10 +228,11 @@ Do's and Don'ts
 | --- | --- |
 | Treat the terminal as the control surface | Hide progress behind a spinner with no context |
 | Render HTML, Markdown, and terminal from one canonical Report JSON | Build a standalone web app, hosted dashboard, or central portal |
-| Open the HTML report in a browser only when HTML output is selected | Force a browser open when the user chose Markdown or terminal output |
+| Auto-open the HTML report when HTML output is selected, and honor `--no-open` | Force a browser open when the user chose Markdown or terminal output, or ignore `--no-open` |
 | Frame manager-facing output as team-level health | Rank, score, or surveil individual developers |
 | Keep charts and coaching evidence-backed and text-friendly | Use color or animation as the only signal, or assert facts the Metrics don't support |
 | Make support links optional and unobtrusive | Nag free users or gate core reading behind donation prompts |
+| Keep a fail-open degrade visibly wounded (banner) and the substrate plainer than the narrated hero | Let the substrate masquerade as the showpiece, or hide that the narrative is missing |
 | Favor calm, supportive, exact language | Use hype, blame, judgment, or gamification |
 
 This design spine is terminal-first: Report JSON is canonical, and HTML, Markdown, and terminal are equal rendered outputs derived from it.
