@@ -12,6 +12,7 @@ import { GROUP_A_METRICS } from "./groups/a-cadence.js";
 import { GROUP_B_METRICS } from "./groups/b-contribution.js";
 import { GROUP_C_METRICS } from "./groups/c-message-quality.js";
 import { GROUP_D_METRICS } from "./groups/d-branching.js";
+import { GROUP_E_METRICS } from "./groups/e-churn.js";
 
 export type { RegisteredMetric };
 
@@ -21,4 +22,5 @@ export const ALL_METRICS: RegisteredMetric[] = [
   ...GROUP_B_METRICS,
   ...GROUP_C_METRICS,
   ...GROUP_D_METRICS,
+  ...GROUP_E_METRICS,
 ];

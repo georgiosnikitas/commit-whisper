@@ -11,7 +11,7 @@ function ctx(): AnalysisContext {
 }
 
 describe("analyze (engine)", () => {
-  it("includes every catalog metric id in registry order (Group A then Group B then Group C then Group D)", () => {
+  it("includes every catalog metric id in registry order (Group A then Group B then Group C then Group D then Group E)", () => {
     const ids = analyze(SYNTHETIC_HISTORY, ctx()).metrics.map((m) => m.id);
     expect(ids).toEqual([
       "a-commit-volume",
@@ -37,6 +37,11 @@ describe("analyze (engine)", () => {
       "d-direct-to-default",
       "d-long-lived-branches",
       "d-average-changes-per-merge",
+      "e-most-changed",
+      "e-churn-over-time",
+      "e-add-delete-ratio",
+      "e-file-age",
+      "e-large-change-events",
     ]);
   });
 
