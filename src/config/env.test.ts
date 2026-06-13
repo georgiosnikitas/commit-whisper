@@ -1,6 +1,6 @@
 import { describe, it, expect } from "vitest";
 
-import { readEnvLayer } from "./env.js";
+import { readAiKey, readEnvLayer } from "./env.js";
 
 describe("readEnvLayer", () => {
   it("returns an empty layer for empty env", () => {
@@ -80,5 +80,37 @@ describe("readEnvLayer", () => {
       "html",
       "terminal",
     ]);
+  });
+});
+
+describe("readAiKey", () => {
+  it("reads the gemini native var and wraps it in a redacting Secret", () => {
+    const key = readAiKey({ GOOGLE_GENERATIVE_AI_API_KEY: "g-native" }, "gemini");
+    expect(key?.reveal()).toBe("g-native");
+    expect(String(key)).toBe("***"); // redaction holds
+  });
+
+  it("accepts GEMINI_API_KEY as the alias when the native var is unset", () => {
+    expect(readAiKey({ GEMINI_API_KEY: "g-alias" }, "gemini")?.reveal()).toBe("g-alias");
+  });
+
+  it("prefers the native var over the alias when both are set", () => {
+    expect(
+      readAiKey({ GOOGLE_GENERATIVE_AI_API_KEY: "native", GEMINI_API_KEY: "alias" }, "gemini")?.reveal(),
+    ).toBe("native");
+  });
+
+  it("returns undefined for gemini when no key is set", () => {
+    expect(readAiKey({}, "gemini")).toBeUndefined();
+  });
+
+  it("returns undefined for ollama / undefined / not-yet-supported providers", () => {
+    expect(readAiKey({ GOOGLE_GENERATIVE_AI_API_KEY: "x" }, "ollama")).toBeUndefined();
+    expect(readAiKey({ GOOGLE_GENERATIVE_AI_API_KEY: "x" }, undefined)).toBeUndefined();
+    expect(readAiKey({ OPENAI_API_KEY: "x" }, "openai")).toBeUndefined(); // Story 3.6 seam
+  });
+
+  it("treats a blank key as unset", () => {
+    expect(readAiKey({ GOOGLE_GENERATIVE_AI_API_KEY: "   " }, "gemini")).toBeUndefined();
   });
 });

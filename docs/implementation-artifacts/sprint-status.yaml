@@ -54,7 +54,7 @@ development_status:
   1-3-error-model-exit-codes-and-stream-discipline: done
   1-4-local-repository-retrieval: done
   1-5-metrics-engine-framework-determinism-harness-and-group-a: done
-  1-6-minimal-single-provider-ai-narration: backlog
+  1-6-minimal-single-provider-ai-narration: done
   1-7-canonical-report-json-assembly: backlog
   1-8-terminal-rendering-and-end-to-end-strict-single-shot-run: backlog
   epic-1-retrospective: optional

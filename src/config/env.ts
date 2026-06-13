@@ -1,18 +1,20 @@
 /**
- * The single reader of `process.env` (Story 1.2).
+ * The single reader of `process.env` (Story 1.2; AI key added Story 1.6).
  *
- * Parses the NON-SECRET `COMMIT_SAGE_*` variables into the `env` resolver layer.
- * `env` is injected (defaulting to `process.env`) so parsing stays pure and
- * table-testable. Per the hexagonal boundary, this is the only place
- * `process.env` is read.
+ * `readEnvLayer` parses the NON-SECRET `COMMIT_SAGE_*` variables into the `env`
+ * resolver layer. `readAiKey` reads the SECRET LLM key (env-only, wrapped in
+ * `Secret`, bypassing the merge). `env` is injected (defaulting to `process.env`)
+ * so parsing stays pure and table-testable. Per the hexagonal boundary, this is
+ * the only place `process.env` is read.
  *
- * SECRET env vars are deliberately NOT read here yet: the LLM key
- * (`OPENAI_API_KEY` / `GOOGLE_GENERATIVE_AI_API_KEY` / `GEMINI_API_KEY` / ...)
- * lands in Story 1.6, and the git PAT (`COMMIT_SAGE_GIT_TOKEN` / host fallbacks)
- * in Epic 5. They are env-only and bypass the merge.
+ * Remaining SECRET env vars are still deferred: the other providers' native LLM
+ * keys (`OPENAI_API_KEY` / `ANTHROPIC_API_KEY` / ...) land with the full BYOK
+ * breadth (Story 3.6), and the git PAT (`COMMIT_SAGE_GIT_TOKEN` / host fallbacks)
+ * in Epic 5.
  */
 
 import type { AiMode, Branch, OutputFormat, PartialRunConfig, Provider } from "./run-config.js";
+import { Secret } from "../shared/secret.js";
 
 const PROVIDERS = new Set<string>(["ollama", "openai", "gemini", "anthropic", "openai-compatible"]);
 const OUTPUT_FORMATS = new Set<string>(["html", "markdown", "terminal", "json"]);
@@ -108,4 +110,24 @@ export function readEnvLayer(env: NodeJS.ProcessEnv = process.env): PartialRunCo
     llmBaseUrl: str(env.COMMIT_SAGE_LLM_BASE_URL),
     llmModel: str(env.COMMIT_SAGE_LLM_MODEL),
   });
+}
+
+/**
+ * Read the LLM API key for the given provider from its native environment
+ * variable, wrapped in `Secret` (env-only; bypasses the resolver merge). For
+ * `gemini`, the SDK-native `GOOGLE_GENERATIVE_AI_API_KEY` wins, with
+ * `GEMINI_API_KEY` accepted as an explicitly-read friendly alias. `ollama` needs
+ * no key. Other providers' native keys land with the full BYOK breadth (Story
+ * 3.6) — they return `undefined` here for now.
+ */
+export function readAiKey(
+  env: NodeJS.ProcessEnv,
+  provider: Provider | undefined,
+): Secret<string> | undefined {
+  if (provider === "gemini") {
+    const key = str(env.GOOGLE_GENERATIVE_AI_API_KEY) ?? str(env.GEMINI_API_KEY);
+    return key === undefined ? undefined : new Secret(key);
+  }
+  // ollama: no key. openai / anthropic / openai-compatible: Story 3.6 extension point.
+  return undefined;
 }

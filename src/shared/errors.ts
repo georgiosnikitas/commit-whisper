@@ -86,10 +86,10 @@ export class MetricsError extends CommitSageError {
   }
 }
 
-/** Exit 6 — a narration / LLM failure (thrown only when `aiMode: required`). */
+/** Exit 6 — a narration / LLM failure (thrown only when `aiMode: required`). Wraps the underlying SDK error as `cause`. */
 export class NarrationError extends CommitSageError {
-  constructor(message: string) {
-    super(message, "NARRATION", 6);
+  constructor(message: string, options?: ErrorOptions) {
+    super(message, "NARRATION", 6, options);
   }
 }
 
