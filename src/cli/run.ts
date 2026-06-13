@@ -26,6 +26,7 @@
 import { analyze } from "../analyze/engine.js";
 import { emptyMailmap } from "../analyze/identity.js";
 import type { AnalysisContext } from "../analyze/model.js";
+import { projectSelection, selectCommits } from "../analyze/select.js";
 import { reportFromOutcome } from "../assemble/report.js";
 import type { RunConfig } from "../config/run-config.js";
 import { createNarrate } from "../narrate/narrate.js";
@@ -74,12 +75,15 @@ export async function runPipeline(config: RunConfig, deps: RunDeps = {}): Promis
 
   // — Pipeline —
   const history = await retrieve(config); // RetrieveError → exit 4
+  // Narrow the analyzed commit set per the selection inputs BEFORE analyze, so all
+  // 32 catalog metrics compute over exactly the selected slice (Story 2.6).
+  const selected = selectCommits(history, projectSelection(config));
   const ctx: AnalysisContext = {
     analysisTimestamp: config.analysisTimestamp,
     timezone: config.timezone,
     mailmap: emptyMailmap(), // real .mailmap ingestion is deferred
   };
-  const analysis = analyze(history, ctx); // MetricsError → exit 5
+  const analysis = analyze(selected, ctx); // MetricsError → exit 5
 
   const outcome = await narrateOutcome(config, narrateConfig, analysis, narrate, preflightReason);
   const report = reportFromOutcome(analysis, outcome);

@@ -150,3 +150,47 @@ describe("runPipeline — stage failures propagate", () => {
     expect(code).toBe(ExitCode.Success);
   });
 });
+
+describe("runPipeline — commit selection (Story 2.6)", () => {
+  const FIVE: RepoHistory = {
+    repoTarget: "/repo",
+    commits: ["2024-01-01", "2024-01-05", "2024-03-01", "2024-03-10", "2024-03-20"].map((day, i) => ({
+      sha: `c${i + 1}`,
+      author: { name: i % 2 === 0 ? "Alice" : "Bob", email: i % 2 === 0 ? "alice@x.com" : "bob@x.com" },
+      committer: { name: "Alice", email: "alice@x.com" },
+      authoredAt: `${day}T10:00:00.000Z`,
+      committedAt: `${day}T10:00:00.000Z`,
+      message: `commit ${i + 1}`,
+      parents: i === 2 ? ["c2", "x"] : ["p"], // c3 is a merge
+      files: [{ path: "a.ts", additions: 1, deletions: 0 }],
+    })),
+  };
+
+  /** Run the pipeline and capture the `analysis` the narrate stage receives. */
+  async function analysisFor(flags: PartialRunConfig) {
+    const r = recorder();
+    let commitCount: number | undefined;
+    await runPipeline(makeConfig({ aiMode: "auto", provider: "gemini", llmModel: "m", ...flags }), {
+      retrieve: async () => FIVE,
+      preflight: reachable,
+      narrate: async (analysis) => {
+        const dist = analysis.metrics.find((m) => m.id === "a-commit-size-distribution");
+        commitCount = (dist?.value as { commitCount?: number } | undefined)?.commitCount;
+        return { kind: "narrated", narrative: NARRATIVE };
+      },
+      ui: r.ui,
+      writeStdout: r.writeStdout,
+    });
+    return commitCount;
+  }
+
+  it("applies max-commits before analyze — the analysis reflects the narrowed slice", async () => {
+    expect(await analysisFor({})).toBe(5); // no selection → all five
+    expect(await analysisFor({ maxCommits: 2 })).toBe(2); // narrowed to the most-recent two
+  });
+
+  it("applies no-merges before analyze — the merge commit is excluded from the metrics", async () => {
+    expect(await analysisFor({ noMerges: true })).toBe(4); // c3 (merge) dropped → four
+  });
+});
+

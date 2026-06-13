@@ -66,6 +66,55 @@ describe("main — strict single-shot wiring", () => {
   });
 });
 
+describe("main — commit-selection flags (Story 2.6)", () => {
+  it("resolves --no-merges / --max-commits / --author / --since / --until into the config", async () => {
+    const cap = captureRun();
+    await main(
+      [".", "--no-ai", "--no-merges", "--max-commits", "100", "--author", "alice", "--since", "2024-01-01", "--until", "2024-12-31"],
+      { ...BASE, ui: recorder().ui, run: cap.run },
+    );
+    const config = cap.calls[0]!.config;
+    expect(config.noMerges).toBe(true);
+    expect(config.maxCommits).toBe(100);
+    expect(config.authorFilter).toBe("alice");
+    expect(config.startDate).toBe("2024-01-01");
+    expect(config.endDate).toBe("2024-12-31");
+  });
+
+  it("leaves noMerges at its default (false) when --no-merges is absent", async () => {
+    const cap = captureRun();
+    await main([".", "--no-ai"], { ...BASE, ui: recorder().ui, run: cap.run });
+    expect(cap.calls[0]!.config.noMerges).toBe(false);
+  });
+
+  it("rejects a non-positive-integer --max-commits with a usage error (exit 2)", async () => {
+    const r = recorder();
+    const code = await main([".", "--no-ai", "--max-commits", "0"], { ...BASE, ui: r.ui });
+    expect(code).toBe(ExitCode.Usage);
+    expect(r.errors.join(" ")).toContain("max-commits");
+  });
+
+  it("rejects a non-decimal --max-commits (hex / scientific) with a usage error", async () => {
+    const r = recorder();
+    expect(await main([".", "--no-ai", "--max-commits", "0x10"], { ...BASE, ui: r.ui })).toBe(ExitCode.Usage);
+    expect(await main([".", "--no-ai", "--max-commits", "1e3"], { ...BASE, ui: recorder().ui })).toBe(ExitCode.Usage);
+  });
+
+  it("rejects a malformed --since / --until date with a usage error", async () => {
+    const r = recorder();
+    const code = await main([".", "--no-ai", "--since", "2024-03"], { ...BASE, ui: r.ui }); // partial, not YYYY-MM-DD
+    expect(code).toBe(ExitCode.Usage);
+    expect(r.errors.join(" ")).toContain("--since");
+  });
+
+  it("accepts a well-formed --since date (and a full ISO timestamp)", async () => {
+    const cap = captureRun();
+    await main([".", "--no-ai", "--since", "2024-01-01", "--until", "2024-12-31T23:59:59Z"], { ...BASE, ui: recorder().ui, run: cap.run });
+    expect(cap.calls[0]!.config.startDate).toBe("2024-01-01");
+    expect(cap.calls[0]!.config.endDate).toBe("2024-12-31T23:59:59Z");
+  });
+});
+
 describe("main — AC4: hard-fail names the gap and redirects", () => {
   it("a missing required input exits 3, names the missing config, and points to bare commit-sage", async () => {
     const r = recorder();

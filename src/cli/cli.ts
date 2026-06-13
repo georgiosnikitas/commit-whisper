@@ -35,6 +35,12 @@ interface CliOptions {
   model?: string;
   baseUrl?: string;
   timezone?: string;
+  // — commit-selection inputs (Story 2.6) —
+  merges?: boolean; // commander `--no-merges` negation: false ⟺ --no-merges passed
+  maxCommits?: string; // parsed to a positive int in buildFlags
+  author?: string;
+  since?: string;
+  until?: string;
 }
 
 export interface CliDeps {
@@ -106,7 +112,12 @@ function buildProgram(): Command {
     .option("--provider <name>", "AI provider (e.g. gemini, ollama)")
     .option("--model <name>", "LLM model id")
     .option("--base-url <url>", "LLM base URL (ollama / openai-compatible)")
-    .option("--timezone <tz>", "IANA timezone for bucketing (default UTC)")
+    .option("--timezone <tz>", "IANA timezone for bucketing + date bounds (default UTC)")
+    .option("--no-merges", "exclude merge commits from the analysis")
+    .option("--max-commits <count>", "analyze only the most-recent N commits")
+    .option("--author <text>", "only commits whose author name or email contains this text")
+    .option("--since <date>", "only commits on or after this date (YYYY-MM-DD)")
+    .option("--until <date>", "only commits on or before this date (YYYY-MM-DD)")
     .allowExcessArguments(false)
     .exitOverride() // the shell owns process exit, not commander
     .configureOutput({
@@ -143,7 +154,35 @@ function buildFlags(repoTarget: string | undefined, opts: CliOptions): PartialRu
   if (opts.timezone !== undefined) {
     flags.timezone = opts.timezone;
   }
+  // — commit-selection inputs (Story 2.6) —
+  if (opts.merges === false) {
+    flags.noMerges = true; // `--no-merges` passed (default `true` means not negated)
+  }
+  if (opts.maxCommits !== undefined) {
+    // Decimal positive integer only (reject `abc`, `1.5`, `0x10`, `1e3`, `-3`, `0`).
+    if (!/^\d+$/.test(opts.maxCommits.trim()) || Number(opts.maxCommits) <= 0) {
+      throw new UsageError(`Invalid --max-commits "${opts.maxCommits}". Expected a positive integer.`);
+    }
+    flags.maxCommits = Number(opts.maxCommits.trim());
+  }
+  if (opts.author !== undefined) {
+    flags.authorFilter = opts.author;
+  }
+  if (opts.since !== undefined) {
+    flags.startDate = validateDateFlag("--since", opts.since);
+  }
+  if (opts.until !== undefined) {
+    flags.endDate = validateDateFlag("--until", opts.until);
+  }
   return flags;
+}
+
+/** Require a `YYYY-MM-DD`-shaped date flag (a full ISO timestamp is allowed); else a usage error. */
+function validateDateFlag(flag: string, value: string): string {
+  if (!/^\d{4}-\d{2}-\d{2}/.test(value.trim())) {
+    throw new UsageError(`Invalid ${flag} "${value}". Expected a date in YYYY-MM-DD format.`);
+  }
+  return value;
 }
 
 /** Help / version are clean exits; any other commander error is a usage error (exit 2). */
