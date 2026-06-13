@@ -72,6 +72,12 @@ Tracked items deferred from reviews and other workflows. Each entry names its so
 
 - **Single-letter JIRA project keys not matched** [src/analyze/groups/c-message-quality.ts] — the issue-reference heuristic's JIRA pattern `\b[A-Z][A-Z0-9]+-\d+\b` requires ≥2 leading uppercase characters, so a single-letter project key (`A-456`) is not recognized as an issue reference. Deferred: ≥2 caps is the common, false-positive-resistant default (a lone `X-1` is highly ambiguous with numeric ranges / hyphenated tokens); widen via a configurable issue-key pattern if a real single-letter-project need surfaces — issue-tracker configuration is well beyond Epic 2's deterministic-catalog scope.
 
+## Deferred from: code review of 2-3-group-d-branching-and-merge-structure (2026-06-13)
+
+- **Narrate-preflight tests use real timers (`AbortSignal.timeout`) → occasional slow/flaky full-suite run** [src/narrate/preflight.test.ts] — a full `npm test` run was once observed taking ~108s with 2 transient failures (three subsequent runs were clean at ~1.2s), traced to the 1.6 preflight reachability tests exercising the real `AbortSignal.timeout(5000)` path against an injected fetch that doesn't resolve promptly in every scheduling window. Deferred: inject a fake/clock-controlled timeout (or `vi.useFakeTimers()`) so the timeout branch is deterministic and instant. Low impact (the tests pass; only timing is non-deterministic), but worth hardening when the narrate test suite is next touched (Epic 3 rewrites that module). Consolidate with the 1.6 "preflight transient-status handling" defer.
+- **Clock-skew negative branch span silently accepted** [src/analyze/groups/d-branching.ts] — when a feature branch's earliest integrated commit timestamp is *after* its merge commit (committer clock skew / rebased timestamps), `branchSpanMs` is negative; the code handles it correctly (a negative span is never `> 30d`, so the branch is simply not flagged long-lived) but does not surface the anomaly. Deferred: a data-quality signal (e.g. a `skewedBranchCount`) could be added if clock-skew diagnostics ever become a product concern; today the metric degrades silently and correctly.
+
+
 
 
 

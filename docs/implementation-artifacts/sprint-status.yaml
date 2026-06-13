@@ -65,7 +65,7 @@ development_status:
   epic-2: in-progress
   2-1-group-b-contribution-and-ownership: done
   2-2-group-c-commit-message-quality: done
-  2-3-group-d-branching-and-merge-structure: backlog
+  2-3-group-d-branching-and-merge-structure: done
   2-4-group-e-code-churn-and-hotspots: backlog
   2-5-group-f-repository-health-signals: backlog
   2-6-commit-selection-inputs: backlog
