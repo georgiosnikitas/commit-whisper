@@ -37,6 +37,30 @@ export function median(values: readonly number[]): number | null {
   return percentile(values, 50);
 }
 
+/**
+ * Gini coefficient of inequality over non-negative values: `0` = perfectly even,
+ * approaching `1` = fully concentrated in one holder. `null` for an empty array;
+ * `0` when the total is zero (no inequality to measure). Deterministic — sorts a
+ * copy, so the caller's array is untouched and the result is order-independent.
+ */
+export function gini(values: readonly number[]): number | null {
+  if (values.length === 0) {
+    return null;
+  }
+  const sorted = [...values].sort((a, b) => a - b);
+  const n = sorted.length;
+  const total = sorted.reduce((sum, v) => sum + v, 0);
+  if (total === 0) {
+    return 0;
+  }
+  // weighted sum with 1-based rank: G = (2·Σ i·x_i)/(n·Σx_i) − (n+1)/n
+  let weighted = 0;
+  for (let i = 0; i < n; i++) {
+    weighted += (i + 1) * sorted[i];
+  }
+  return (2 * weighted) / (n * total) - (n + 1) / n;
+}
+
 /** Round to `digits` decimal places (stable serialization for non-integers). */
 export function round(value: number, digits = 2): number {
   const factor = 10 ** digits;

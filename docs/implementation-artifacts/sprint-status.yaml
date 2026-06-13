@@ -62,8 +62,8 @@ development_status:
   # ═══════════════════════════════════════════════════════════════
   # EPIC 2: Complete Metrics Catalog
   # ═══════════════════════════════════════════════════════════════
-  epic-2: backlog
-  2-1-group-b-contribution-and-ownership: backlog
+  epic-2: in-progress
+  2-1-group-b-contribution-and-ownership: done
   2-2-group-c-commit-message-quality: backlog
   2-3-group-d-branching-and-merge-structure: backlog
   2-4-group-e-code-churn-and-hotspots: backlog

@@ -59,6 +59,15 @@ describe("buildModel", () => {
     expect(c2?.changedFileCount).toBe(2); // but counted as a changed file
   });
 
+  it("retains the per-file change records (path + add/del, binary preserved as null)", () => {
+    const model = buildModel(SYNTHETIC_HISTORY, ctx());
+    const c2 = model.commits.find((c) => c.sha === "c2");
+    expect(c2?.files).toEqual([
+      { path: "src/feature.ts", additions: 40, deletions: 2 },
+      { path: "assets/logo.png", additions: null, deletions: null }, // binary null preserved
+    ]);
+  });
+
   it("returns empty arrays for empty history", () => {
     const model = buildModel({ repoTarget: "/x", commits: [] }, ctx());
     expect(model.commits).toEqual([]);

@@ -22,6 +22,13 @@ export interface AnalysisContext {
   mailmap: MailmapIndex;
 }
 
+/** A normalized per-file change record. `null` add/del marks a binary file (git `-`). */
+export interface FileChange {
+  path: string;
+  additions: number | null;
+  deletions: number | null;
+}
+
 export interface NormalizedCommit {
   sha: string;
   author: CanonicalIdentity;
@@ -33,6 +40,7 @@ export interface NormalizedCommit {
   additions: number; // text-file line additions (binary excluded)
   deletions: number; // text-file line deletions (binary excluded)
   changedFileCount: number; // all changed files, incl. binary
+  files: FileChange[]; // per-file records (raw git order); powers Group B ownership + Group E hotspots
 }
 
 export interface AuthorSummary {
@@ -124,6 +132,7 @@ export function buildModel(history: RepoHistory, ctx: AnalysisContext): RepoMode
       additions,
       deletions,
       changedFileCount: c.files.length,
+      files: c.files.map((f) => ({ path: f.path, additions: f.additions, deletions: f.deletions })),
     };
   });
 
