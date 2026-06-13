@@ -23,8 +23,9 @@ export type Source = "default" | "configFile" | "env" | "flag" | "interactive";
 
 /**
  * Branch selection sentinel -- never a magic empty string.
- * `head` is the default sentinel meaning "the repo's HEAD"; `retrieve/`
- * (Story 1.4) resolves it to the concrete branch.
+ * `head` is the default sentinel meaning "the repo's HEAD"; Story 1.4 reads HEAD
+ * history, so the sentinel needs no resolution there. Named/all branch selection
+ * is Epic 2 (Group D branch/merge metrics).
  */
 export type Branch =
   | { kind: "named"; name: string }

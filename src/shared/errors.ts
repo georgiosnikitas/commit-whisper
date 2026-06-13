@@ -18,13 +18,18 @@
 /** The user-facing message for an unexpected/internal failure (exit 1). */
 export const GENERIC_INTERNAL_MESSAGE = "An unexpected internal error occurred.";
 
+/** Optional constructor extras shared by the hierarchy (ES2022 error `cause`). */
+export interface ErrorOptions {
+  cause?: unknown;
+}
+
 /** Base class for every operational failure mapped to a machine-readable exit code. */
 export class CommitSageError extends Error {
   readonly code: string;
   readonly exitCode: number;
 
-  constructor(message: string, code: string, exitCode: number) {
-    super(message);
+  constructor(message: string, code: string, exitCode: number, options?: ErrorOptions) {
+    super(message, options);
     this.name = new.target.name;
     this.code = code;
     this.exitCode = exitCode;
@@ -67,10 +72,10 @@ export class UsageError extends CommitSageError {
   }
 }
 
-/** Exit 4 — a retrieve / git failure. */
+/** Exit 4 — a retrieve / git failure. Wraps the underlying git/spawn error as `cause`. */
 export class RetrieveError extends CommitSageError {
-  constructor(message: string) {
-    super(message, "RETRIEVE", 4);
+  constructor(message: string, options?: ErrorOptions) {
+    super(message, "RETRIEVE", 4, options);
   }
 }
 

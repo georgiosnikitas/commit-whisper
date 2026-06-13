@@ -82,3 +82,21 @@ describe("stage error hierarchy", () => {
     expect(new InternalError("boom").message).toBe("boom");
   });
 });
+
+describe("error cause chaining", () => {
+  it("RetrieveError carries an underlying cause when provided", () => {
+    const inner = new Error("fatal: not a git repository");
+    const err = new RetrieveError("Cannot read /x", { cause: inner });
+    expect(err.exitCode).toBe(4);
+    expect(err.code).toBe("RETRIEVE");
+    expect(err.cause).toBe(inner);
+  });
+
+  it("RetrieveError without options has an undefined cause", () => {
+    expect(new RetrieveError("Cannot read /x").cause).toBeUndefined();
+  });
+
+  it("a CommitSageError without options has an undefined cause", () => {
+    expect(new CommitSageError("m", "C", 1).cause).toBeUndefined();
+  });
+});
