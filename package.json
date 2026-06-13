@@ -1,0 +1,47 @@
+{
+  "name": "commit-sage",
+  "version": "1.0.0",
+  "description": "Deterministic git history analysis with a grounded, BYOK AI narrative — terminal-native CLI.",
+  "type": "module",
+  "private": true,
+  "main": "dist/index.js",
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "build": "tsup",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "typecheck": "tsc --noEmit",
+    "lint": "eslint ."
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/georgiosnikitas/commit-sage.git"
+  },
+  "keywords": [
+    "git",
+    "metrics",
+    "cli",
+    "code-analysis",
+    "repository-health"
+  ],
+  "author": "",
+  "license": "UNLICENSED",
+  "bugs": {
+    "url": "https://github.com/georgiosnikitas/commit-sage/issues"
+  },
+  "homepage": "https://github.com/georgiosnikitas/commit-sage#readme",
+  "dependencies": {
+    "@clack/prompts": "1.5.1",
+    "commander": "15.0.0"
+  },
+  "devDependencies": {
+    "@types/node": "22.19.21",
+    "eslint": "10.5.0",
+    "tsup": "8.5.1",
+    "typescript": "6.0.3",
+    "typescript-eslint": "8.61.0",
+    "vitest": "4.1.8"
+  }
+}

@@ -46,8 +46,8 @@ development_status:
   # ═══════════════════════════════════════════════════════════════
   # EPIC 1: Foundation & Walking Skeleton
   # ═══════════════════════════════════════════════════════════════
-  epic-1: backlog
-  1-1-project-scaffold-and-toolchain: backlog
+  epic-1: in-progress
+  1-1-project-scaffold-and-toolchain: done
   1-2-two-phase-configuration-resolver-and-frozen-runconfig: backlog
   1-3-error-model-exit-codes-and-stream-discipline: backlog
   1-4-local-repository-retrieval: backlog
