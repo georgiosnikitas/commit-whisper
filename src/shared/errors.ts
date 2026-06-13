@@ -1,12 +1,22 @@
 /**
- * Minimal typed-error seam for the configuration resolver.
+ * The typed error hierarchy (Story 1.3).
  *
- * Story 1.2 plants only what the Phase-2 gap handler needs: a `CommitSageError`
- * base carrying a machine `code` + numeric `exitCode`, and the single
- * `MissingRequiredConfigError` (exit code 3 = "required input missing,
- * non-interactive"). Story 1.3 expands this into the full error hierarchy, the
- * `cli/exit-codes.ts` enum (0-9), stream discipline, and `Secret<string>`.
+ * Every operational failure is a `CommitSageError` subclass carrying a stable
+ * machine `code` and a numeric `exitCode` (the C4 model). The CLI shell maps a
+ * thrown error to its `exitCode` and prints its `message` to stderr; any
+ * non-`CommitSageError` throwable maps to exit 1 (internal). See
+ * `cli/exit-codes.ts` for the canonical enum + the error->exit/message
+ * resolvers, `shared/secret.ts` for `Secret<string>`, and `shared/ui.ts` for
+ * the single stderr writer.
+ *
+ * Codes 0 (success) and 9 (degraded) are terminal STATES the shell sets, never
+ * thrown -- so there is no error class for them. The exit-code literals here are
+ * cross-checked against the `ExitCode` enum by `cli/exit-codes.test.ts` (the
+ * enum lives in `cli/` and `shared/` must not import it).
  */
+
+/** The user-facing message for an unexpected/internal failure (exit 1). */
+export const GENERIC_INTERNAL_MESSAGE = "An unexpected internal error occurred.";
 
 /** Base class for every operational failure mapped to a machine-readable exit code. */
 export class CommitSageError extends Error {
@@ -40,5 +50,54 @@ export class MissingRequiredConfigError extends CommitSageError {
     // The canonical 0-9 enum lands in cli/exit-codes.ts (Story 1.3).
     super(`Required configuration "${field}" is missing.${hint}`, "CONFIG_REQUIRED_MISSING", 3);
     this.field = field;
+  }
+}
+
+/** Exit 1 — an unexpected / internal error (also the fallback for unknown throwables). */
+export class InternalError extends CommitSageError {
+  constructor(message = GENERIC_INTERNAL_MESSAGE) {
+    super(message, "INTERNAL", 1);
+  }
+}
+
+/** Exit 2 — a usage / validation error (e.g. a bad flag). */
+export class UsageError extends CommitSageError {
+  constructor(message: string) {
+    super(message, "USAGE", 2);
+  }
+}
+
+/** Exit 4 — a retrieve / git failure. */
+export class RetrieveError extends CommitSageError {
+  constructor(message: string) {
+    super(message, "RETRIEVE", 4);
+  }
+}
+
+/** Exit 5 — a metrics-engine failure. */
+export class MetricsError extends CommitSageError {
+  constructor(message: string) {
+    super(message, "METRICS", 5);
+  }
+}
+
+/** Exit 6 — a narration / LLM failure (thrown only when `aiMode: required`). */
+export class NarrationError extends CommitSageError {
+  constructor(message: string) {
+    super(message, "NARRATION", 6);
+  }
+}
+
+/** Exit 7 — a render failure. */
+export class RenderError extends CommitSageError {
+  constructor(message: string) {
+    super(message, "RENDER", 7);
+  }
+}
+
+/** Exit 8 — a license-gate failure. */
+export class LicenseError extends CommitSageError {
+  constructor(message: string) {
+    super(message, "LICENSE", 8);
   }
 }
