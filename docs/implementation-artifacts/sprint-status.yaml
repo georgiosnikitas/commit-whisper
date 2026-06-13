@@ -48,7 +48,7 @@ development_status:
   # ═══════════════════════════════════════════════════════════════
   # EPIC 1: Foundation & Walking Skeleton
   # ═══════════════════════════════════════════════════════════════
-  epic-1: in-progress
+  epic-1: done
   1-1-project-scaffold-and-toolchain: done
   1-2-two-phase-configuration-resolver-and-frozen-runconfig: done
   1-3-error-model-exit-codes-and-stream-discipline: done
@@ -56,7 +56,7 @@ development_status:
   1-5-metrics-engine-framework-determinism-harness-and-group-a: done
   1-6-minimal-single-provider-ai-narration: done
   1-7-canonical-report-json-assembly: done
-  1-8-terminal-rendering-and-end-to-end-strict-single-shot-run: backlog
+  1-8-terminal-rendering-and-end-to-end-strict-single-shot-run: done
   epic-1-retrospective: optional
 
   # ═══════════════════════════════════════════════════════════════

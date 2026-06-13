@@ -1,12 +1,12 @@
 /**
- * commit-sage entrypoint.
+ * commit-sage entrypoint (Story 1.8).
  *
- * Walking-skeleton placeholder. The real bootstrap (`bootstrap → cli`, the only
- * top-level await in the codebase) lands in later Epic 1 stories that fill the
- * `cli/` and `config/` feature folders. This file exists now so the tsup build
- * has an entry and the package `main` resolves on the empty scaffold.
- *
- * Per architecture pattern P2, this module uses named exports only.
+ * The ONLY top-level await in the codebase: bootstrap the CLI shell and exit
+ * with its resolved code. All logic lives in `cli/cli.ts` (`main`), which is
+ * unit-tested directly — this file is the thin executable shim and has no
+ * co-located test (importing it would run the CLI and exit the process).
  */
 
-export const APP_NAME = "commit-sage";
+import { main } from "./cli/cli.js";
+
+process.exit(await main(process.argv.slice(2)));

@@ -131,3 +131,13 @@ export function readAiKey(
   // ollama: no key. openai / anthropic / openai-compatible: Story 3.6 extension point.
   return undefined;
 }
+
+/**
+ * The single ambient `process.env` accessor (Story 1.8). The CLI shell
+ * (`cli/`, `index.ts`) is forbidden by the hexagonal lint boundary from naming
+ * `process.env` directly, so it captures the environment through this
+ * config-owned reader and injects it into `resolveRunConfig` / `readAiKey`.
+ */
+export function readProcessEnv(): NodeJS.ProcessEnv {
+  return process.env;
+}

@@ -1,0 +1,152 @@
+import { describe, it, expect } from "vitest";
+
+import { runPipeline, type RunDeps } from "./run.js";
+import { ExitCode } from "./exit-codes.js";
+import { resolveRunConfig } from "../config/resolve-run-config.js";
+import type { RunConfig } from "../config/run-config.js";
+import type { PartialRunConfig } from "../config/run-config.js";
+import type { RepoHistory } from "../retrieve/retrieve.port.js";
+import type { NarrateOutcome } from "../narrate/narrate.port.js";
+import type { PreflightResult } from "../narrate/preflight.js";
+import { RetrieveError, NarrationError } from "../shared/errors.js";
+import type { Ui } from "../shared/ui.js";
+import { DEGRADED_BANNER, METRICS_ONLY_NOTE } from "../render/terminal/terminal-renderer.js";
+
+const EMPTY_HISTORY: RepoHistory = { repoTarget: "/repo", commits: [] };
+
+const NARRATIVE = {
+  summary: { headline: "Healthy and steady.", overview: "An overview.", keyFindings: ["A finding"] },
+};
+
+function makeConfig(flags: PartialRunConfig): RunConfig {
+  return resolveRunConfig({
+    cwd: "/repo",
+    env: {},
+    stdinIsTTY: false,
+    stdoutIsTTY: false,
+    nonInteractive: true,
+    analysisTimestamp: "2026-01-01T00:00:00.000Z",
+    flags,
+  });
+}
+
+function recorder() {
+  const stdout: string[] = [];
+  const warnings: string[] = [];
+  const errors: string[] = [];
+  const ui: Ui = {
+    error: (m) => errors.push(m),
+    warn: (m) => warnings.push(m),
+    info: () => {},
+    plain: () => {},
+  };
+  return { stdout, warnings, errors, ui, writeStdout: (s: string) => stdout.push(s) };
+}
+
+const reachable = async (): Promise<PreflightResult> => ({ reachable: true });
+const unreachable = (reason: string) => async (): Promise<PreflightResult> => ({ reachable: false, reason });
+
+describe("runPipeline — terminal outcomes", () => {
+  it("narrated (auto, provider reachable) → exit 0, showpiece on stdout", async () => {
+    const r = recorder();
+    const deps: RunDeps = {
+      retrieve: async () => EMPTY_HISTORY,
+      preflight: reachable,
+      narrate: async (): Promise<NarrateOutcome> => ({ kind: "narrated", narrative: NARRATIVE }),
+      ui: r.ui,
+      writeStdout: r.writeStdout,
+    };
+    const code = await runPipeline(makeConfig({ aiMode: "auto", provider: "gemini", llmModel: "m" }), deps);
+    expect(code).toBe(ExitCode.Success);
+    expect(r.stdout.join("")).toContain("Healthy and steady.");
+    expect(r.stdout.join("")).not.toContain(DEGRADED_BANNER);
+  });
+
+  it("skipped (off) → exit 0, neutral metrics-only substrate; preflight + narrate never called", async () => {
+    const r = recorder();
+    let preflightCalls = 0;
+    let narrateCalls = 0;
+    const code = await runPipeline(makeConfig({ aiMode: "off" }), {
+      retrieve: async () => EMPTY_HISTORY,
+      preflight: async () => {
+        preflightCalls += 1;
+        return { reachable: true };
+      },
+      narrate: async () => {
+        narrateCalls += 1;
+        return { kind: "skipped" };
+      },
+      ui: r.ui,
+      writeStdout: r.writeStdout,
+    });
+    expect(code).toBe(ExitCode.Success);
+    expect(r.stdout.join("")).toContain(METRICS_ONLY_NOTE);
+    expect(preflightCalls).toBe(0);
+    expect(narrateCalls).toBe(0);
+  });
+
+  it("fail-open (auto, provider unreachable) → exit 9, ⚠ substrate, up-front warning, doomed narrate skipped", async () => {
+    const r = recorder();
+    let narrateCalls = 0;
+    const code = await runPipeline(makeConfig({ aiMode: "auto", provider: "gemini", llmModel: "m" }), {
+      retrieve: async () => EMPTY_HISTORY,
+      preflight: unreachable("Ollama is not running."),
+      narrate: async () => {
+        narrateCalls += 1;
+        return { kind: "narrated", narrative: NARRATIVE };
+      },
+      ui: r.ui,
+      writeStdout: r.writeStdout,
+    });
+    expect(code).toBe(ExitCode.Degraded);
+    expect(r.stdout.join("")).toContain(DEGRADED_BANNER);
+    expect(r.warnings.join("")).toContain("Ollama is not running.");
+    expect(narrateCalls).toBe(0); // skipped the doomed call
+  });
+
+  it("forced-AI hard fail (required, provider unreachable) → throws NarrationError (6) before retrieve", async () => {
+    const r = recorder();
+    let retrieveCalls = 0;
+    await expect(
+      runPipeline(makeConfig({ aiMode: "required", provider: "gemini", llmModel: "m" }), {
+        retrieve: async () => {
+          retrieveCalls += 1;
+          return EMPTY_HISTORY;
+        },
+        preflight: unreachable("Auth failed."),
+        ui: r.ui,
+        writeStdout: r.writeStdout,
+      }),
+    ).rejects.toBeInstanceOf(NarrationError);
+    expect(retrieveCalls).toBe(0);
+    expect(r.stdout.join("")).toBe("");
+  });
+});
+
+describe("runPipeline — stage failures propagate", () => {
+  it("a retrieve failure propagates as RetrieveError (mapped to exit 4 at the shell)", async () => {
+    const r = recorder();
+    await expect(
+      runPipeline(makeConfig({ aiMode: "off" }), {
+        retrieve: async () => {
+          throw new RetrieveError("not a git repo");
+        },
+        ui: r.ui,
+        writeStdout: r.writeStdout,
+      }),
+    ).rejects.toBeInstanceOf(RetrieveError);
+    expect(r.stdout.join("")).toBe("");
+  });
+
+  it("the narrated showpiece path does not require AI keys when narrate is injected", async () => {
+    const r = recorder();
+    const code = await runPipeline(makeConfig({ aiMode: "auto", provider: "gemini", llmModel: "m" }), {
+      retrieve: async () => EMPTY_HISTORY,
+      preflight: reachable,
+      narrate: async () => ({ kind: "narrated", narrative: NARRATIVE }),
+      ui: r.ui,
+      writeStdout: r.writeStdout,
+    });
+    expect(code).toBe(ExitCode.Success);
+  });
+});

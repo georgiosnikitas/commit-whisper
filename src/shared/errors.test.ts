@@ -96,6 +96,14 @@ describe("error cause chaining", () => {
     expect(new RetrieveError("Cannot read /x").cause).toBeUndefined();
   });
 
+  it("RenderError carries an underlying cause when provided", () => {
+    const inner = new Error("picocolors blew up");
+    const err = new RenderError("Failed to render the terminal report.", { cause: inner });
+    expect(err.exitCode).toBe(7);
+    expect(err.code).toBe("RENDER");
+    expect(err.cause).toBe(inner);
+  });
+
   it("a CommitSageError without options has an undefined cause", () => {
     expect(new CommitSageError("m", "C", 1).cause).toBeUndefined();
   });

@@ -93,10 +93,10 @@ export class NarrationError extends CommitSageError {
   }
 }
 
-/** Exit 7 — a render failure. */
+/** Exit 7 — a render failure. Wraps the underlying error as `cause` when one exists. */
 export class RenderError extends CommitSageError {
-  constructor(message: string) {
-    super(message, "RENDER", 7);
+  constructor(message: string, options?: ErrorOptions) {
+    super(message, "RENDER", 7, options);
   }
 }
 
