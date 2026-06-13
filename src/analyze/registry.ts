@@ -10,8 +10,9 @@
 import type { RegisteredMetric } from "./model.js";
 import { GROUP_A_METRICS } from "./groups/a-cadence.js";
 import { GROUP_B_METRICS } from "./groups/b-contribution.js";
+import { GROUP_C_METRICS } from "./groups/c-message-quality.js";
 
 export type { RegisteredMetric };
 
 /** Every metric the engine runs, in stable output order. */
-export const ALL_METRICS: RegisteredMetric[] = [...GROUP_A_METRICS, ...GROUP_B_METRICS];
+export const ALL_METRICS: RegisteredMetric[] = [...GROUP_A_METRICS, ...GROUP_B_METRICS, ...GROUP_C_METRICS];

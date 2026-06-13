@@ -68,6 +68,11 @@ Tracked items deferred from reviews and other workflows. Each entry names its so
 - **Grapheme-/width-aware truncation in the terminal table** [src/render/terminal/terminal-renderer.ts] — `formatValue` truncates a metric-value preview with `json.slice(0, 59)`, which can split a UTF-16 surrogate pair (astral char / emoji) into a lone surrogate (rendered as `�`), and the hand-rolled `pad`/`maxWidth` count UTF-16 code units rather than display columns (wide/zero-width glyphs misalign). Deferred to Epic 4's render polish, which owns real terminal string-width handling (the architecture already flags width primitives for the hand-rolled tables); metric values from the engine are numeric/structural JSON today, so the preview is cosmetic.
 - **`--ai`/`--no-ai` conflict signalling** [src/cli/cli.ts] — passing both resolves by commander's last-flag-wins (`--ai --no-ai` ⇒ off; `--no-ai --ai` ⇒ required) with no warning. Conventional CLI semantics, so left as-is; if user-experience review later wants an explicit "conflicting flags" usage error (exit 2), add a guard in `buildFlags`. Deferred: not an AC, and last-wins is the standard, least-surprising behavior.
 
+## Deferred from: code review of 2-2-group-c-commit-message-quality (2026-06-13)
+
+- **Single-letter JIRA project keys not matched** [src/analyze/groups/c-message-quality.ts] — the issue-reference heuristic's JIRA pattern `\b[A-Z][A-Z0-9]+-\d+\b` requires ≥2 leading uppercase characters, so a single-letter project key (`A-456`) is not recognized as an issue reference. Deferred: ≥2 caps is the common, false-positive-resistant default (a lone `X-1` is highly ambiguous with numeric ranges / hyphenated tokens); widen via a configurable issue-key pattern if a real single-letter-project need surfaces — issue-tracker configuration is well beyond Epic 2's deterministic-catalog scope.
+
+
 
 
 
