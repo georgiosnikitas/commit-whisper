@@ -38,6 +38,20 @@ export function median(values: readonly number[]): number | null {
 }
 
 /**
+ * Population standard deviation, or `null` for an empty array (`0` for a single
+ * value — no spread). Deterministic. Used by Group F's churn-stability
+ * coefficient of variation (Story 2.5).
+ */
+export function stdev(values: readonly number[]): number | null {
+  if (values.length === 0) {
+    return null;
+  }
+  const avg = values.reduce((sum, v) => sum + v, 0) / values.length;
+  const variance = values.reduce((sum, v) => sum + (v - avg) ** 2, 0) / values.length;
+  return Math.sqrt(variance);
+}
+
+/**
  * Gini coefficient of inequality over non-negative values: `0` = perfectly even,
  * approaching `1` = fully concentrated in one holder. `null` for an empty array;
  * `0` when the total is zero (no inequality to measure). Deterministic — sorts a

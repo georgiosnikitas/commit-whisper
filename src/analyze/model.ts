@@ -20,6 +20,10 @@ export interface AnalysisContext {
   analysisTimestamp: string; // ISO-8601; the C2 determinism anchor
   timezone: string; // IANA tz; governs bucketing display (default "UTC")
   mailmap: MailmapIndex;
+  // Optional prior-report seam for Group F trend deltas (Story 2.5). Injected by a
+  // future CLI trend story / Epic 4 JSON read; absent ⇒ trend deltas not_available.
+  // Typed as `Metric[]` (not `Analysis`) to avoid a circular import with engine.ts.
+  priorMetrics?: readonly Metric[];
 }
 
 /** A normalized per-file change record. `null` add/del marks a binary file (git `-`). */
@@ -65,6 +69,19 @@ export type MetricFn = (model: RepoModel, ctx: AnalysisContext) => Metric;
 export interface RegisteredMetric {
   spec: MetricSpec;
   fn: MetricFn;
+}
+
+/**
+ * A roll-up metric: a pure function of the COMPUTED metric envelopes (indexed by
+ * id) plus the context — the shape Group F uses to consume Groups A–E (Story 2.5).
+ * It reads no raw model, so it is trivially testable with synthetic envelopes.
+ */
+export type RollupFn = (metrics: ReadonlyMap<string, Metric>, ctx: AnalysisContext) => Metric;
+
+/** A roll-up paired with its identity, so the engine knows it even if `fn` throws. */
+export interface RegisteredRollup {
+  spec: MetricSpec;
+  fn: RollupFn;
 }
 
 function identityKey(id: CanonicalIdentity): string {

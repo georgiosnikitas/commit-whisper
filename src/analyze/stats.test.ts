@@ -1,6 +1,6 @@
 import { describe, it, expect } from "vitest";
 
-import { gini } from "./stats.js";
+import { gini, stdev } from "./stats.js";
 
 describe("gini", () => {
   it("returns null for an empty array", () => {
@@ -31,5 +31,31 @@ describe("gini", () => {
     const b = gini([2, 3, 1, 4]);
     expect(a).toBe(b);
     expect(input).toEqual([4, 1, 3, 2]); // not mutated
+  });
+});
+
+describe("stdev", () => {
+  it("returns null for an empty array", () => {
+    expect(stdev([])).toBeNull();
+  });
+
+  it("is 0 for a single value (no spread)", () => {
+    expect(stdev([7])).toBe(0);
+  });
+
+  it("is 0 for identical values", () => {
+    expect(stdev([5, 5, 5])).toBe(0);
+  });
+
+  it("matches the known population standard deviation of a small vector", () => {
+    // [2,4,4,4,5,5,7,9]: mean 5, population stdev 2.
+    expect(stdev([2, 4, 4, 4, 5, 5, 7, 9])).toBeCloseTo(2, 10);
+  });
+
+  it("is order-independent (input untouched)", () => {
+    const input = [1, 2, 3, 4];
+    const a = stdev(input);
+    expect(stdev([4, 3, 2, 1])).toBe(a);
+    expect(input).toEqual([1, 2, 3, 4]);
   });
 });
