@@ -20,6 +20,15 @@ import { readEnvLayer } from "./env.js";
 import { mergeLayers } from "./resolver.js";
 import { finalizeRunConfig } from "./gaps.js";
 
+/**
+ * The Free-tier commit cap (FR-16 / FR-3). The pipeline only ever sees the
+ * RESOLVED `entitlement.commitCap`; this is the value the (Epic 7) license gate
+ * will vary by tier — Single-device / Unlimited resolve to no cap. Keeping the
+ * policy literal here (not in the pure `select` stage) holds the determinism/
+ * selection layer free of license policy. [Source: architecture.md#Date × Free-Cap]
+ */
+export const FREE_TIER_COMMIT_CAP = 100;
+
 export interface ResolveInput {
   cwd: string;
   env: NodeJS.ProcessEnv;
@@ -57,6 +66,6 @@ export function resolveRunConfig(input: ResolveInput): RunConfig {
     analysisTimestamp: input.analysisTimestamp,
     // Build a fresh default per call — `finalizeRunConfig` deep-freezes the
     // entitlement, so a shared module constant would be permanently frozen.
-    entitlement: input.entitlement ?? { tier: "free" },
+    entitlement: input.entitlement ?? { tier: "free", commitCap: FREE_TIER_COMMIT_CAP },
   });
 }

@@ -3,8 +3,7 @@ import { describe, it, expect } from "vitest";
 import { runPipeline, type RunDeps } from "./run.js";
 import { ExitCode } from "./exit-codes.js";
 import { resolveRunConfig } from "../config/resolve-run-config.js";
-import type { RunConfig } from "../config/run-config.js";
-import type { PartialRunConfig } from "../config/run-config.js";
+import type { RunConfig, PartialRunConfig, Entitlement } from "../config/run-config.js";
 import type { RepoHistory } from "../retrieve/retrieve.port.js";
 import type { NarrateOutcome } from "../narrate/narrate.port.js";
 import type { PreflightResult } from "../narrate/preflight.js";
@@ -18,7 +17,7 @@ const NARRATIVE = {
   summary: { headline: "Healthy and steady.", overview: "An overview.", keyFindings: ["A finding"] },
 };
 
-function makeConfig(flags: PartialRunConfig): RunConfig {
+function makeConfig(flags: PartialRunConfig, entitlement?: Entitlement): RunConfig {
   return resolveRunConfig({
     cwd: "/repo",
     env: {},
@@ -27,6 +26,7 @@ function makeConfig(flags: PartialRunConfig): RunConfig {
     nonInteractive: true,
     analysisTimestamp: "2026-01-01T00:00:00.000Z",
     flags,
+    entitlement,
   });
 }
 
@@ -34,13 +34,14 @@ function recorder() {
   const stdout: string[] = [];
   const warnings: string[] = [];
   const errors: string[] = [];
+  const infos: string[] = [];
   const ui: Ui = {
     error: (m) => errors.push(m),
     warn: (m) => warnings.push(m),
-    info: () => {},
+    info: (m) => infos.push(m),
     plain: () => {},
   };
-  return { stdout, warnings, errors, ui, writeStdout: (s: string) => stdout.push(s) };
+  return { stdout, warnings, errors, infos, ui, writeStdout: (s: string) => stdout.push(s) };
 }
 
 const reachable = async (): Promise<PreflightResult> => ({ reachable: true });
@@ -191,6 +192,44 @@ describe("runPipeline — commit selection (Story 2.6)", () => {
 
   it("applies no-merges before analyze — the merge commit is excluded from the metrics", async () => {
     expect(await analysisFor({ noMerges: true })).toBe(4); // c3 (merge) dropped → four
+  });
+});
+
+describe("runPipeline — Free-tier cap truncation notice (Story 2.7)", () => {
+  const THREE: RepoHistory = {
+    repoTarget: "/repo",
+    commits: ["2024-01-01", "2024-02-01", "2024-03-01"].map((day, i) => ({
+      sha: `c${i + 1}`,
+      author: { name: "Alice", email: "alice@x.com" },
+      committer: { name: "Alice", email: "alice@x.com" },
+      authoredAt: `${day}T10:00:00.000Z`,
+      committedAt: `${day}T10:00:00.000Z`,
+      message: `commit ${i + 1}`,
+      parents: ["p"],
+      files: [{ path: "a.ts", additions: 1, deletions: 0 }],
+    })),
+  };
+
+  it("emits the cap notice to stderr (info) when the Free cap truncates — never to stdout", async () => {
+    const r = recorder();
+    const code = await runPipeline(makeConfig({ aiMode: "off" }, { tier: "free", commitCap: 2 }), {
+      retrieve: async () => THREE,
+      ui: r.ui,
+      writeStdout: r.writeStdout,
+    });
+    expect(code).toBe(ExitCode.Success);
+    expect(r.infos.join("\n")).toContain("Analyzed 2 of 3 commits — Free tier cap");
+    expect(r.stdout.join("")).not.toContain("Free tier cap"); // stderr chrome, not the Report
+  });
+
+  it("emits no cap notice when the in-scope history is within the cap", async () => {
+    const r = recorder();
+    await runPipeline(makeConfig({ aiMode: "off" }, { tier: "free", commitCap: 100 }), {
+      retrieve: async () => THREE,
+      ui: r.ui,
+      writeStdout: r.writeStdout,
+    });
+    expect(r.infos.join("\n")).not.toContain("Free tier cap");
   });
 });
 

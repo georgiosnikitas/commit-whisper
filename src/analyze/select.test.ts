@@ -1,6 +1,6 @@
 import { describe, it, expect } from "vitest";
 
-import { selectCommits, projectSelection, type SelectionCriteria } from "./select.js";
+import { selectCommits, selectCommitsWithNotice, projectSelection, type SelectionCriteria } from "./select.js";
 import type { RepoHistory, RawCommit } from "../retrieve/retrieve.port.js";
 import { resolveRunConfig } from "../config/resolve-run-config.js";
 
@@ -155,6 +155,87 @@ describe("selectCommits — combination + ordering (date before cap)", () => {
   });
 });
 
+describe("selectCommitsWithNotice — Free-tier cap + truncation notice (Story 2.7)", () => {
+  it("caps to the most-recent commitCap and reports the truncation (analyzed of total)", () => {
+    const res = selectCommitsWithNotice(HISTORY, criteria({ commitCap: 2 }));
+    expect(shas(res.history)).toEqual(["c5", "c6"]); // most-recent 2 by [committedAtMs, sha]
+    expect(res.truncation).toEqual({ analyzed: 2, total: 6 });
+  });
+
+  it("emits no notice when the in-scope count is within the cap", () => {
+    const res = selectCommitsWithNotice(HISTORY, criteria({ commitCap: 10 }));
+    expect(shas(res.history)).toHaveLength(6);
+    expect(res.truncation).toBeUndefined();
+  });
+
+  it("emits no notice at the exact boundary (total === cap is not a truncation)", () => {
+    const res = selectCommitsWithNotice(HISTORY, criteria({ commitCap: 6 }));
+    expect(shas(res.history)).toHaveLength(6);
+    expect(res.truncation).toBeUndefined(); // strict >, so no "Analyzed 6 of 6" noise
+  });
+
+  it("lets a smaller --max-commits win and stays silent (not a Free-cap truncation)", () => {
+    const res = selectCommitsWithNotice(HISTORY, criteria({ maxCommits: 2, commitCap: 4 }));
+    expect(shas(res.history)).toEqual(["c5", "c6"]); // capped to the smaller user cap
+    expect(res.truncation).toBeUndefined();
+  });
+
+  it("lets the Free cap win over a larger --max-commits and emits the notice", () => {
+    const res = selectCommitsWithNotice(HISTORY, criteria({ maxCommits: 5, commitCap: 2 }));
+    expect(shas(res.history)).toEqual(["c5", "c6"]); // capped to the smaller Free cap
+    expect(res.truncation).toEqual({ analyzed: 2, total: 6 });
+  });
+
+  it("treats a tie (--max-commits === commitCap) as the Free cap binding (notice fires)", () => {
+    const res = selectCommitsWithNotice(HISTORY, criteria({ maxCommits: 2, commitCap: 2 }));
+    expect(res.truncation).toEqual({ analyzed: 2, total: 6 });
+  });
+
+  it("filters by date FIRST, then caps within the range (total = in-scope count, not repo total)", () => {
+    // start 2024-03-01 → in scope: c4, c5, c6 (3); Free cap 2 → most-recent c5, c6.
+    const res = selectCommitsWithNotice(HISTORY, criteria({ startDate: "2024-03-01", commitCap: 2 }));
+    expect(shas(res.history)).toEqual(["c5", "c6"]);
+    expect(res.truncation).toEqual({ analyzed: 2, total: 3 }); // N is the date-filtered count
+  });
+
+  it("a paid tier (no commitCap) caps only by --max-commits and emits no notice", () => {
+    const res = selectCommitsWithNotice(HISTORY, criteria({ maxCommits: 2 }));
+    expect(shas(res.history)).toEqual(["c5", "c6"]);
+    expect(res.truncation).toBeUndefined();
+  });
+
+  it("treats a non-positive commitCap as no cap (defensive)", () => {
+    const res = selectCommitsWithNotice(HISTORY, criteria({ commitCap: 0 }));
+    expect(shas(res.history)).toHaveLength(6);
+    expect(res.truncation).toBeUndefined();
+  });
+
+  it("floors a non-integer cap so the reported count stays a whole number", () => {
+    const res = selectCommitsWithNotice(HISTORY, criteria({ commitCap: 2.5 }));
+    expect(shas(res.history)).toEqual(["c5", "c6"]); // floor(2.5) = 2 → most-recent 2
+    expect(res.truncation).toEqual({ analyzed: 2, total: 6 }); // integer, never "2.5"
+  });
+
+  it("treats a sub-1 cap as no cap (no silently-wrong 'Analyzed 0.5 of 6')", () => {
+    const res = selectCommitsWithNotice(HISTORY, criteria({ commitCap: 0.5 }));
+    expect(shas(res.history)).toHaveLength(6); // floor(0.5) = 0 ⇒ no cap (not a silent slice(0))
+    expect(res.truncation).toBeUndefined();
+  });
+
+  it("is deterministic and input-order-independent (capped set + notice)", () => {
+    const c = criteria({ commitCap: 2 });
+    const forward = selectCommitsWithNotice(HISTORY, c);
+    const reversed = selectCommitsWithNotice({ repoTarget: "/repo", commits: [...HISTORY.commits].reverse() }, c);
+    expect(shas(forward.history)).toEqual(shas(reversed.history));
+    expect(forward.truncation).toEqual(reversed.truncation);
+  });
+
+  it("selectCommits delegate returns exactly selectCommitsWithNotice(...).history", () => {
+    const c = criteria({ commitCap: 2, authorFilter: "bob" });
+    expect(shas(selectCommits(HISTORY, c))).toEqual(shas(selectCommitsWithNotice(HISTORY, c).history));
+  });
+});
+
 describe("projectSelection", () => {
   it("maps the resolved RunConfig's selection fields into criteria", () => {
     const config = resolveRunConfig({
@@ -167,5 +248,32 @@ describe("projectSelection", () => {
       flags: { noMerges: true, maxCommits: 50, timezone: "Europe/Berlin", authorFilter: "alice" },
     });
     expect(projectSelection(config)).toMatchObject({ noMerges: true, maxCommits: 50, timezone: "Europe/Berlin", authorFilter: "alice" });
+  });
+
+  it("maps the resolved entitlement commit cap (Free tier ⇒ 100) into criteria.commitCap", () => {
+    const config = resolveRunConfig({
+      cwd: "/repo",
+      env: {},
+      stdinIsTTY: false,
+      stdoutIsTTY: false,
+      nonInteractive: true,
+      analysisTimestamp: "2024-06-01T00:00:00.000Z",
+      flags: {},
+    });
+    expect(projectSelection(config).commitCap).toBe(100);
+  });
+
+  it("maps an absent (paid-tier) commit cap to undefined", () => {
+    const config = resolveRunConfig({
+      cwd: "/repo",
+      env: {},
+      stdinIsTTY: false,
+      stdoutIsTTY: false,
+      nonInteractive: true,
+      analysisTimestamp: "2024-06-01T00:00:00.000Z",
+      flags: {},
+      entitlement: { tier: "unlimited" },
+    });
+    expect(projectSelection(config).commitCap).toBeUndefined();
   });
 });

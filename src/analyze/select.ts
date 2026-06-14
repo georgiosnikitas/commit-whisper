@@ -6,10 +6,12 @@
  * automatically compute over exactly the selected set — `no-merges` and the rest
  * change every group's values consistently with zero per-metric change (AC3).
  *
- * Filters apply in a FIXED, documented order so Story 2.7's Free cap composes
- * cleanly after: (1) no-merges → (2) author → (3) date range → (4) max-commits.
- * The cap is LAST (date-then-cap), keeping the most-recent N by the model's total
- * order `[committedAtMs, sha]`. Date bounds are interpreted at DAY granularity in
+ * Filters apply in a FIXED, documented order so the tier cap composes cleanly at
+ * the final step: (1) no-merges → (2) author → (3) date range → (4) cap, where the
+ * cap is the SMALLER of `maxCommits` and the entitlement `commitCap` (the Free-tier
+ * 100-cap; `min`, each absent/≤0 imposing no limit — Story 2.7). The cap is LAST
+ * (date-then-cap), keeping the most-recent N by the model's total order
+ * `[committedAtMs, sha]`. Date bounds are interpreted at DAY granularity in
  * the configured timezone (reusing Group A's `dayBucket`); an empty bound is
  * unbounded on that side. No I/O, no clock, no env — deterministic by construction.
  */
@@ -26,6 +28,26 @@ export interface SelectionCriteria {
   startDate?: string;
   endDate?: string;
   timezone: string;
+  /**
+   * The resolved entitlement commit cap (Free tier ⇒ 100); `undefined` on paid
+   * tiers (no tier cap). Composed with `maxCommits` as `min(...)` at the cap step.
+   */
+  commitCap?: number;
+}
+
+/**
+ * A truncation signal for the shell to surface as stderr chrome: the tier cap kept
+ * the most-recent `analyzed` of `total` in-scope (post-filter, pre-cap) commits.
+ */
+export interface TruncationNotice {
+  analyzed: number;
+  total: number;
+}
+
+/** The selection outcome: the narrowed history + an optional tier-cap truncation notice. */
+export interface SelectionResult {
+  history: RepoHistory;
+  truncation?: TruncationNotice;
 }
 
 /** Project the frozen `RunConfig`'s selection fields into criteria (no env/argv access). */
@@ -37,6 +59,7 @@ export function projectSelection(config: RunConfig): SelectionCriteria {
     startDate: config.startDate,
     endDate: config.endDate,
     timezone: config.timezone,
+    commitCap: config.entitlement.commitCap,
   };
 }
 
@@ -92,9 +115,9 @@ function dayBound(bound: string | undefined): string | undefined {
   return /^\d{4}-\d{2}-\d{2}$/.test(day) ? day : undefined;
 }
 
-/** Keep the most-recent N commits by the model's total order `[committedAtMs, sha]`. */
-function capMostRecent(commits: RawCommit[], maxCommits: number | undefined): RawCommit[] {
-  if (maxCommits === undefined || maxCommits <= 0 || commits.length <= maxCommits) {
+/** Keep the most-recent `cap` commits by the model's total order `[committedAtMs, sha]`. */
+function capMostRecent(commits: RawCommit[], cap: number | undefined): RawCommit[] {
+  if (cap === undefined || cap <= 0 || commits.length <= cap) {
     return commits;
   }
   const ordered = [...commits].sort((a, b) => {
@@ -110,14 +133,15 @@ function capMostRecent(commits: RawCommit[], maxCommits: number | undefined): Ra
     }
     return compareCodeUnits(a.sha, b.sha);
   });
-  return ordered.slice(-maxCommits);
+  return ordered.slice(-cap);
 }
 
 /**
- * Narrow a raw `RepoHistory` per the selection criteria (pure). Order: no-merges →
- * author → date range → max-commits cap. Returns a new history; the input is untouched.
+ * Apply the three set-narrowing filters (no-merges → author → date range) WITHOUT
+ * the cap, so both the capped result and the in-scope `total` count derive from a
+ * SINGLE filter implementation (no drift). Returns a new array; the input is untouched.
  */
-export function selectCommits(history: RepoHistory, criteria: SelectionCriteria): RepoHistory {
+function applyFilters(history: RepoHistory, criteria: SelectionCriteria): RawCommit[] {
   const authorQuery = criteria.authorFilter?.trim().toLowerCase();
   const startDay = dayBound(criteria.startDate);
   const endDay = dayBound(criteria.endDate);
@@ -132,7 +156,70 @@ export function selectCommits(history: RepoHistory, criteria: SelectionCriteria)
   if (startDay !== undefined || endDay !== undefined) {
     commits = commits.filter((c) => withinDateRange(c, startDay, endDay, criteria.timezone));
   }
-  commits = capMostRecent(commits, criteria.maxCommits);
+  return commits;
+}
 
-  return { repoTarget: history.repoTarget, commits };
+/**
+ * Normalize a cap to a whole positive limit, or `undefined` for "no limit". A cap
+ * is a COUNT of commits, so a non-integer is floored (`2.5 → 2`) — keeping the
+ * reported `analyzed` an integer and `capMostRecent`'s `slice(-cap)` well-defined —
+ * and any value `< 1` (incl. ≤0, NaN, ±Infinity) imposes no limit. Defensive: the
+ * resolved `commitCap` is the integer 100 and `--max-commits` is CLI-validated, but
+ * env/config-file or a future license response could still supply a float.
+ */
+function realCap(cap: number | undefined): number | undefined {
+  if (cap === undefined || !Number.isFinite(cap)) {
+    return undefined;
+  }
+  const whole = Math.floor(cap);
+  return whole > 0 ? whole : undefined;
+}
+
+/** The smaller of two optional caps; `undefined` means "no limit" on that side. */
+function minCap(a: number | undefined, b: number | undefined): number | undefined {
+  if (a === undefined) {
+    return b;
+  }
+  if (b === undefined) {
+    return a;
+  }
+  return a < b ? a : b;
+}
+
+/**
+ * Narrow a raw `RepoHistory` per the criteria AND report any tier-cap truncation
+ * (pure). Order: no-merges → author → date range → cap, where the cap is the
+ * SMALLER of `maxCommits` and the entitlement `commitCap` (`min`; each absent/≤0
+ * imposes no limit — Story 2.7). The cap is LAST (date-then-cap), so it acts only
+ * within the date window and never reshapes it.
+ *
+ * A `truncation` notice is returned ONLY when the entitlement cap is the BINDING
+ * cap (real, and not beaten by a smaller `maxCommits`) AND it STRICTLY truncated
+ * the in-scope set (`total > cap`) — so an explicit smaller `--max-commits`, or an
+ * in-scope count at-or-below the cap (incl. exactly equal), surfaces nothing
+ * (no misleading "Analyzed N of N"). The input history is untouched.
+ */
+export function selectCommitsWithNotice(history: RepoHistory, criteria: SelectionCriteria): SelectionResult {
+  const filtered = applyFilters(history, criteria);
+  const total = filtered.length;
+
+  const userCap = realCap(criteria.maxCommits);
+  const tierCap = realCap(criteria.commitCap);
+  const commits = capMostRecent(filtered, minCap(userCap, tierCap));
+
+  const truncation: TruncationNotice | undefined =
+    tierCap !== undefined && total > tierCap && (userCap === undefined || tierCap <= userCap)
+      ? { analyzed: tierCap, total }
+      : undefined;
+
+  return { history: { repoTarget: history.repoTarget, commits }, truncation };
+}
+
+/**
+ * Narrow a raw `RepoHistory` per the selection criteria (pure). A convenience that
+ * discards the truncation signal — see `selectCommitsWithNotice` for the shell path
+ * that surfaces it. Returns a new history; the input is untouched.
+ */
+export function selectCommits(history: RepoHistory, criteria: SelectionCriteria): RepoHistory {
+  return selectCommitsWithNotice(history, criteria).history;
 }

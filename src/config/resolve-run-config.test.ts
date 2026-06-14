@@ -26,7 +26,7 @@ describe("resolveRunConfig — end to end", () => {
     expect(cfg.repoTarget).toBe("/repo");
     expect(cfg.provenance.repoTarget).toBe("default");
     expect(cfg.timezone).toBe("UTC");
-    expect(cfg.entitlement).toEqual({ tier: "free" });
+    expect(cfg.entitlement).toEqual({ tier: "free", commitCap: 100 });
     expect(cfg.analysisTimestamp).toBe(TS);
     expect(Object.isFrozen(cfg)).toBe(true);
   });

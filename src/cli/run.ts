@@ -26,7 +26,7 @@
 import { analyze } from "../analyze/engine.js";
 import { emptyMailmap } from "../analyze/identity.js";
 import type { AnalysisContext } from "../analyze/model.js";
-import { projectSelection, selectCommits } from "../analyze/select.js";
+import { projectSelection, selectCommitsWithNotice } from "../analyze/select.js";
 import { reportFromOutcome } from "../assemble/report.js";
 import type { RunConfig } from "../config/run-config.js";
 import { createNarrate } from "../narrate/narrate.js";
@@ -76,14 +76,20 @@ export async function runPipeline(config: RunConfig, deps: RunDeps = {}): Promis
   // — Pipeline —
   const history = await retrieve(config); // RetrieveError → exit 4
   // Narrow the analyzed commit set per the selection inputs BEFORE analyze, so all
-  // 32 catalog metrics compute over exactly the selected slice (Story 2.6).
-  const selected = selectCommits(history, projectSelection(config));
+  // 32 catalog metrics compute over exactly the selected slice (Story 2.6); the
+  // tier cap (Free 100) is composed into the same step and any truncation is
+  // surfaced as stderr chrome — never into the byte-stable Report JSON (Story 2.7).
+  const selection = selectCommitsWithNotice(history, projectSelection(config));
+  if (selection.truncation !== undefined) {
+    const { analyzed, total } = selection.truncation;
+    ui.info(`Analyzed ${analyzed} of ${total} commits — Free tier cap`);
+  }
   const ctx: AnalysisContext = {
     analysisTimestamp: config.analysisTimestamp,
     timezone: config.timezone,
     mailmap: emptyMailmap(), // real .mailmap ingestion is deferred
   };
-  const analysis = analyze(selected, ctx); // MetricsError → exit 5
+  const analysis = analyze(selection.history, ctx); // MetricsError → exit 5
 
   const outcome = await narrateOutcome(config, narrateConfig, analysis, narrate, preflightReason);
   const report = reportFromOutcome(analysis, outcome);
