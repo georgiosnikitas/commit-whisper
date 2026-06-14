@@ -150,6 +150,40 @@ describe("main — output format flags (Story 4.4)", () => {
   });
 });
 
+describe("main — HTML auto-open decision (Story 4.5)", () => {
+  it("strict single-shot is non-interactive → autoOpen is false even for --format html", async () => {
+    const cap = captureRun();
+    await main([".", "--no-ai", "--format", "html"], { ...BASE, ui: recorder().ui, run: cap.run });
+    expect(cap.calls[0]!.deps.autoOpen).toBe(false); // AC3: headless never auto-opens
+  });
+
+  it("--no-open keeps autoOpen false (even were the terminal interactive)", async () => {
+    const cap = captureRun();
+    await main([".", "--no-ai", "--format", "html", "--no-open"], {
+      ...BASE,
+      stdinIsTTY: true,
+      stdoutIsTTY: true,
+      ui: recorder().ui,
+      run: cap.run,
+    });
+    expect(cap.calls[0]!.deps.autoOpen).toBe(false); // AC2: --no-open suppresses
+  });
+
+  it("an interactive TTY without --no-open would enable autoOpen — but single-shot forces non-interactive", async () => {
+    // STRICT single-shot passes nonInteractive: true, so even a TTY resolves to
+    // autoOpen=false. The live interactive path (autoOpen=true) is the Epic 6 menu.
+    const cap = captureRun();
+    await main([".", "--no-ai", "--format", "html"], {
+      ...BASE,
+      stdinIsTTY: true,
+      stdoutIsTTY: true,
+      ui: recorder().ui,
+      run: cap.run,
+    });
+    expect(cap.calls[0]!.deps.autoOpen).toBe(false);
+  });
+});
+
 describe("main — AC4: hard-fail names the gap and redirects", () => {
   it("a missing required input exits 3, names the missing config, and points to bare commit-sage", async () => {
     const r = recorder();

@@ -21,6 +21,7 @@ import { Command, CommanderError } from "commander";
 
 import { readAiKey, readProcessEnv } from "../config/env.js";
 import { resolveRunConfig } from "../config/resolve-run-config.js";
+import { detectCapability } from "../config/capability.js";
 import type { OutputFormat, PartialRunConfig, Provider } from "../config/run-config.js";
 import { MissingRequiredConfigError, UsageError } from "../shared/errors.js";
 import { ui as defaultUi, type Ui } from "../shared/ui.js";
@@ -39,6 +40,7 @@ interface CliOptions {
   // — output (Story 4.4) —
   format?: string; // comma-separated list, parsed + validated in buildFlags
   output?: string; // file path for the single file format; "-" = stdout
+  open?: boolean; // commander `--no-open` negation: false ⟺ --no-open passed (Story 4.5)
   // — commit-selection inputs (Story 2.6) —
   merges?: boolean; // commander `--no-merges` negation: false ⟺ --no-merges passed
   maxCommits?: string; // parsed to a positive int in buildFlags
@@ -83,18 +85,26 @@ export async function main(argv: string[], deps: CliDeps = {}): Promise<number> 
     const opts = program.opts<CliOptions>();
     const flags = buildFlags(program.args[0], opts);
     const env = deps.env ?? readProcessEnv();
+    const stdinIsTTY = deps.stdinIsTTY ?? process.stdin.isTTY;
+    const stdoutIsTTY = deps.stdoutIsTTY ?? process.stdout.isTTY;
     const config = resolveRunConfig({
       cwd: deps.cwd ?? process.cwd(),
       env,
-      stdinIsTTY: deps.stdinIsTTY ?? process.stdin.isTTY,
-      stdoutIsTTY: deps.stdoutIsTTY ?? process.stdout.isTTY,
+      stdinIsTTY,
+      stdoutIsTTY,
       nonInteractive: true, // STRICT single-shot — never prompts
       analysisTimestamp: deps.analysisTimestamp ?? new Date().toISOString(),
       flags,
     });
     const aiKey = readAiKey(env, config.provider);
+    // Auto-open the HTML showpiece only in an interactive terminal and unless
+    // `--no-open` was passed (Story 4.5). `interactive` already excludes CI /
+    // non-TTY / --non-interactive; STRICT single-shot is non-interactive, so this
+    // is `false` here — the live interactive path is the Epic 6 menu.
+    const { interactive } = detectCapability({ nonInteractive: true, stdinIsTTY, stdoutIsTTY, env });
+    const autoOpen = interactive && opts.open !== false;
     const run = deps.run ?? runPipeline;
-    return await run(config, { aiKey, ui, writeStdout: deps.writeStdout, ...deps.runDeps });
+    return await run(config, { aiKey, ui, writeStdout: deps.writeStdout, autoOpen, ...deps.runDeps });
   } catch (err) {
     ui.error(messageForError(err));
     if (err instanceof MissingRequiredConfigError) {
@@ -119,6 +129,7 @@ function buildProgram(): Command {
     .option("--timezone <tz>", "IANA timezone for bucketing + date bounds (default UTC)")
     .option("--format <list>", "one or more of terminal,html,markdown,json (comma-separated)")
     .option("-o, --output <path>", "output path for the single file format ('-' = stdout)")
+    .option("--no-open", "do not auto-open the HTML report in a browser")
     .option("--no-merges", "exclude merge commits from the analysis")
     .option("--max-commits <count>", "analyze only the most-recent N commits")
     .option("--author <text>", "only commits whose author name or email contains this text")

@@ -41,6 +41,7 @@ import type { Secret } from "../shared/secret.js";
 import { ui as defaultUi, type Ui } from "../shared/ui.js";
 import { ExitCode } from "./exit-codes.js";
 import { defaultWriteFile, type WriteFile } from "./write-file.js";
+import { defaultOpenBrowser, type OpenBrowser } from "./open-browser.js";
 
 export interface RunDeps {
   retrieve?: RetrievePort;
@@ -52,6 +53,10 @@ export interface RunDeps {
   writeStdout?: (text: string) => void;
   /** Injected file writer (defaults to the real `node:fs/promises` writer) — the one new I/O edge. */
   writeFile?: WriteFile;
+  /** Injected browser opener (defaults to the real cross-platform shell-out). */
+  openBrowser?: OpenBrowser;
+  /** Whether to auto-open a written HTML report (the shell sets this from `interactive && !--no-open`). */
+  autoOpen?: boolean;
   ui?: Ui;
 }
 
@@ -66,6 +71,8 @@ export async function runPipeline(config: RunConfig, deps: RunDeps = {}): Promis
       process.stdout.write(text);
     });
   const writeFile = deps.writeFile ?? defaultWriteFile;
+  const openBrowser = deps.openBrowser ?? defaultOpenBrowser;
+  const autoOpen = deps.autoOpen ?? false; // fail-closed: never open unless the shell enabled it
 
   const narrateConfig: NarrateConfig = {
     aiMode: config.aiMode,
@@ -103,13 +110,25 @@ export async function runPipeline(config: RunConfig, deps: RunDeps = {}): Promis
   // LLM call) and emit each to its planned destination (Story 4.4). The default
   // ["terminal"] selection is one stdout target — back-compatible with 1.8. —
   const targets = planOutputs(config.outputFormats, config.outputPath); // UsageError (2) on ambiguous path
+  let htmlFilePath: string | undefined;
   for (const target of targets) {
     const text = renderOne(report, target);
     if (target.destination.kind === "stdout") {
       writeStdout(text.endsWith("\n") ? text : `${text}\n`);
     } else {
       await writeOne(writeFile, target.destination.path, text, target.format, ui);
+      if (target.format === "html") {
+        htmlFilePath = target.destination.path; // the showpiece to auto-open (at most one)
+      }
     }
+  }
+
+  // — Auto-open the written HTML in a browser (Story 4.5) — only when the shell
+  // enabled it (interactive && !--no-open) and an HTML FILE was actually written.
+  // NON-FATAL: the file is on disk, so a browser that won't launch never fails the
+  // run — it just prints the path. Runs AFTER all writes (a write failure pre-empts it).
+  if (autoOpen && htmlFilePath !== undefined) {
+    await tryOpen(openBrowser, htmlFilePath, ui);
   }
 
   return report.degraded ? ExitCode.Degraded : ExitCode.Success;
@@ -144,6 +163,20 @@ async function writeOne(
     );
   }
   ui.info(`Wrote ${format} → ${path}`); // stderr run-summary chrome (stdout stays machine-clean)
+}
+
+/**
+ * Try to open the written HTML report in a browser. NON-FATAL by design: the
+ * artifact is already on disk, so a launch failure prints the path and the run
+ * proceeds with its normal exit code — auto-open is a convenience, not a stage.
+ */
+async function tryOpen(openBrowser: OpenBrowser, path: string, ui: Ui): Promise<void> {
+  try {
+    await openBrowser(path);
+    ui.info(`Opened ${path} in your browser`);
+  } catch {
+    ui.warn(`Could not open a browser automatically — open ${path} manually`);
+  }
 }
 
 /**

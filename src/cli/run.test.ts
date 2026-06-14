@@ -340,4 +340,107 @@ describe("runPipeline — multi-format output dispatch (Story 4.4)", () => {
   });
 });
 
+describe("runPipeline — HTML auto-open (Story 4.5)", () => {
+  /** A recorder that also captures injected file writes + browser opens. */
+  function openRecorder() {
+    const base = writeRecorder();
+    const opened: string[] = [];
+    const openBrowser = async (target: string): Promise<void> => {
+      opened.push(target);
+    };
+    return { ...base, opened, openBrowser };
+  }
+
+  it("autoOpen + an HTML file → opens it once + a stderr 'Opened' line", async () => {
+    const r = openRecorder();
+    const code = await runPipeline(makeConfig({ aiMode: "off", outputFormats: ["html"] }), {
+      retrieve: async () => EMPTY_HISTORY,
+      ui: r.ui,
+      writeStdout: r.writeStdout,
+      writeFile: r.writeFile,
+      openBrowser: r.openBrowser,
+      autoOpen: true,
+    });
+    expect(code).toBe(ExitCode.Success);
+    expect(r.opened).toEqual(["commit-sage-report.html"]);
+    expect(r.infos.join("\n")).toContain("Opened commit-sage-report.html in your browser");
+  });
+
+  it("autoOpen defaults off — html is written but never opened", async () => {
+    const r = openRecorder();
+    await runPipeline(makeConfig({ aiMode: "off", outputFormats: ["html"] }), {
+      retrieve: async () => EMPTY_HISTORY,
+      ui: r.ui,
+      writeStdout: r.writeStdout,
+      writeFile: r.writeFile,
+      openBrowser: r.openBrowser,
+      // autoOpen omitted → false
+    });
+    expect(r.files).toHaveLength(1); // file written
+    expect(r.opened).toHaveLength(0); // but not opened
+  });
+
+  it("autoOpen but HTML went to stdout ('-') → nothing to open", async () => {
+    const r = openRecorder();
+    await runPipeline(makeConfig({ aiMode: "off", outputFormats: ["html"], outputPath: "-" }), {
+      retrieve: async () => EMPTY_HISTORY,
+      ui: r.ui,
+      writeStdout: r.writeStdout,
+      writeFile: r.writeFile,
+      openBrowser: r.openBrowser,
+      autoOpen: true,
+    });
+    expect(r.opened).toHaveLength(0); // stdout has no file path to open
+    expect(r.files).toHaveLength(0);
+  });
+
+  it("autoOpen but no HTML selected (json only) → opener not called", async () => {
+    const r = openRecorder();
+    await runPipeline(makeConfig({ aiMode: "off", outputFormats: ["json"] }), {
+      retrieve: async () => EMPTY_HISTORY,
+      ui: r.ui,
+      writeStdout: r.writeStdout,
+      writeFile: r.writeFile,
+      openBrowser: r.openBrowser,
+      autoOpen: true,
+    });
+    expect(r.opened).toHaveLength(0);
+  });
+
+  it("an open failure is NON-FATAL — the run still exits normally + a stderr 'Could not open' line", async () => {
+    const r = writeRecorder();
+    const code = await runPipeline(makeConfig({ aiMode: "off", outputFormats: ["html"] }), {
+      retrieve: async () => EMPTY_HISTORY,
+      ui: r.ui,
+      writeStdout: r.writeStdout,
+      writeFile: r.writeFile,
+      openBrowser: async () => {
+        throw new Error("no DISPLAY");
+      },
+      autoOpen: true,
+    });
+    expect(code).toBe(ExitCode.Success); // browser failure never fails the run
+    expect(r.files).toHaveLength(1); // the artifact is on disk
+    expect(r.warnings.join("\n")).toContain("Could not open a browser automatically — open commit-sage-report.html manually");
+  });
+
+  it("auto-open never fires when a write fails first (exit 7 pre-empts it)", async () => {
+    const r = openRecorder();
+    await expect(
+      runPipeline(makeConfig({ aiMode: "off", outputFormats: ["html"] }), {
+        retrieve: async () => EMPTY_HISTORY,
+        ui: r.ui,
+        writeStdout: r.writeStdout,
+        writeFile: async () => {
+          throw new Error("EACCES");
+        },
+        openBrowser: r.openBrowser,
+        autoOpen: true,
+      }),
+    ).rejects.toMatchObject({ exitCode: ExitCode.Render });
+    expect(r.opened).toHaveLength(0); // write threw before the open step
+  });
+});
+
+
 

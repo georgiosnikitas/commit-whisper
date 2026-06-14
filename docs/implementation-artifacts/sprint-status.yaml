@@ -87,12 +87,12 @@ development_status:
   # ═══════════════════════════════════════════════════════════════
   # EPIC 4: Rich Rendered Reports
   # ═══════════════════════════════════════════════════════════════
-  epic-4: in-progress
+  epic-4: done
   4-1-self-contained-html-report-shell: done
   4-2-per-group-charts-with-accessible-data-table-fallback: done
   4-3-markdown-renderer: done
   4-4-json-output-and-multi-select-formats: done
-  4-5-html-auto-open-with-no-open: backlog
+  4-5-html-auto-open-with-no-open: done
   epic-4-retrospective: optional
 
   # ═══════════════════════════════════════════════════════════════

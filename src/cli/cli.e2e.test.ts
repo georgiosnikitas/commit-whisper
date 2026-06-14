@@ -143,4 +143,23 @@ describe("e2e — multi-format output (Story 4.4)", () => {
     expect(code).toBe(ExitCode.Usage);
     expect(h.errors.join(" ")).toContain("--output cannot be used with multiple file formats");
   });
+
+  it("--no-ai --format html writes the file but NEVER auto-opens (single-shot is headless, AC3)", async () => {
+    const h = harness();
+    const files: { path: string; content: string }[] = [];
+    const opened: string[] = [];
+    const runDeps: RunDeps = {
+      retrieve: retrieveSynthetic,
+      writeFile: async (path, content) => {
+        files.push({ path, content });
+      },
+      openBrowser: async (target) => {
+        opened.push(target);
+      },
+    };
+    const code = await main([".", "--no-ai", "--format", "html"], { ...h.base, stdinIsTTY: true, stdoutIsTTY: true, runDeps });
+    expect(code).toBe(ExitCode.Success);
+    expect(files.map((f) => f.path)).toEqual(["commit-sage-report.html"]); // written
+    expect(opened).toHaveLength(0); // but not opened — strict single-shot is non-interactive
+  });
 });
