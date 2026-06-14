@@ -6,6 +6,7 @@ import type { RunDeps } from "./run.js";
 import type { NarrateOutcome } from "../narrate/narrate.port.js";
 import type { PreflightResult } from "../narrate/preflight.js";
 import type { RepoHistory } from "../retrieve/retrieve.port.js";
+import { parseReport } from "../assemble/report.js";
 import { SYNTHETIC_HISTORY } from "../analyze/sample-history.js";
 import { DEGRADED_BANNER, METRICS_ONLY_NOTE } from "../render/terminal/terminal-renderer.js";
 
@@ -114,5 +115,32 @@ describe("e2e — AC3 headless parity", () => {
     await main([".", "--no-ai"], { ...headless.base, stdoutIsTTY: false, stdinIsTTY: false, runDeps });
 
     expect(stripAnsi(tty.stdout.join(""))).toBe(stripAnsi(headless.stdout.join("")));
+  });
+});
+
+describe("e2e — multi-format output (Story 4.4)", () => {
+  it("--no-ai --format json -o - emits a parseable canonical Report JSON on stdout (exit 0)", async () => {
+    const h = harness();
+    const files: { path: string; content: string }[] = [];
+    const runDeps: RunDeps = {
+      retrieve: retrieveSynthetic,
+      writeFile: async (path, content) => {
+        files.push({ path, content });
+      },
+    };
+    const code = await main([".", "--no-ai", "--format", "json", "-o", "-"], { ...h.base, runDeps });
+    expect(code).toBe(ExitCode.Success);
+    expect(files).toHaveLength(0); // '-' → stdout, no file
+    const report = parseReport(h.stdout.join(""));
+    expect(report.analysis.metrics.length).toBeGreaterThan(0);
+    expect(report.narrative).toBeUndefined(); // metrics-only substrate
+  });
+
+  it("--format json,html -o report.json is an ambiguous usage error (exit 2)", async () => {
+    const h = harness();
+    const runDeps: RunDeps = { retrieve: retrieveSynthetic };
+    const code = await main([".", "--no-ai", "--format", "json,html", "-o", "report.json"], { ...h.base, runDeps });
+    expect(code).toBe(ExitCode.Usage);
+    expect(h.errors.join(" ")).toContain("--output cannot be used with multiple file formats");
   });
 });

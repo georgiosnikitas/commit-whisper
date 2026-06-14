@@ -21,13 +21,14 @@ import { Command, CommanderError } from "commander";
 
 import { readAiKey, readProcessEnv } from "../config/env.js";
 import { resolveRunConfig } from "../config/resolve-run-config.js";
-import type { PartialRunConfig, Provider } from "../config/run-config.js";
+import type { OutputFormat, PartialRunConfig, Provider } from "../config/run-config.js";
 import { MissingRequiredConfigError, UsageError } from "../shared/errors.js";
 import { ui as defaultUi, type Ui } from "../shared/ui.js";
 import { exitCodeForError, ExitCode, messageForError } from "./exit-codes.js";
 import { runPipeline, type RunDeps } from "./run.js";
 
 const PROVIDERS: readonly Provider[] = ["ollama", "openai", "gemini", "anthropic", "openai-compatible"];
+const OUTPUT_FORMATS: readonly OutputFormat[] = ["terminal", "html", "markdown", "json"];
 
 interface CliOptions {
   ai?: boolean; // undefined = resolver default; true = required; false = off
@@ -35,6 +36,9 @@ interface CliOptions {
   model?: string;
   baseUrl?: string;
   timezone?: string;
+  // — output (Story 4.4) —
+  format?: string; // comma-separated list, parsed + validated in buildFlags
+  output?: string; // file path for the single file format; "-" = stdout
   // — commit-selection inputs (Story 2.6) —
   merges?: boolean; // commander `--no-merges` negation: false ⟺ --no-merges passed
   maxCommits?: string; // parsed to a positive int in buildFlags
@@ -113,6 +117,8 @@ function buildProgram(): Command {
     .option("--model <name>", "LLM model id")
     .option("--base-url <url>", "LLM base URL (ollama / openai-compatible)")
     .option("--timezone <tz>", "IANA timezone for bucketing + date bounds (default UTC)")
+    .option("--format <list>", "one or more of terminal,html,markdown,json (comma-separated)")
+    .option("-o, --output <path>", "output path for the single file format ('-' = stdout)")
     .option("--no-merges", "exclude merge commits from the analysis")
     .option("--max-commits <count>", "analyze only the most-recent N commits")
     .option("--author <text>", "only commits whose author name or email contains this text")
@@ -134,6 +140,14 @@ function buildFlags(repoTarget: string | undefined, opts: CliOptions): PartialRu
   if (repoTarget !== undefined) {
     flags.repoTarget = repoTarget;
   }
+  applyAiFlags(flags, opts);
+  applyOutputFlags(flags, opts);
+  applySelectionFlags(flags, opts);
+  return flags;
+}
+
+/** AI-cluster flags: `--ai`/`--no-ai`, `--provider`, `--model`, `--base-url`, `--timezone`. */
+function applyAiFlags(flags: PartialRunConfig, opts: CliOptions): void {
   if (opts.ai === true) {
     flags.aiMode = "required";
   } else if (opts.ai === false) {
@@ -154,7 +168,24 @@ function buildFlags(repoTarget: string | undefined, opts: CliOptions): PartialRu
   if (opts.timezone !== undefined) {
     flags.timezone = opts.timezone;
   }
-  // — commit-selection inputs (Story 2.6) —
+}
+
+/** Output flags (Story 4.4): `--format <list>`, `--output <path>`. */
+function applyOutputFlags(flags: PartialRunConfig, opts: CliOptions): void {
+  if (opts.format !== undefined) {
+    flags.outputFormats = parseFormats(opts.format);
+  }
+  if (opts.output !== undefined) {
+    const trimmed = opts.output.trim();
+    if (trimmed === "") {
+      throw new UsageError("Invalid --output: expected a file path or '-' for stdout.");
+    }
+    flags.outputPath = trimmed;
+  }
+}
+
+/** Commit-selection inputs (Story 2.6): `--no-merges`, `--max-commits`, `--author`, `--since`, `--until`. */
+function applySelectionFlags(flags: PartialRunConfig, opts: CliOptions): void {
   if (opts.merges === false) {
     flags.noMerges = true; // `--no-merges` passed (default `true` means not negated)
   }
@@ -174,7 +205,6 @@ function buildFlags(repoTarget: string | undefined, opts: CliOptions): PartialRu
   if (opts.until !== undefined) {
     flags.endDate = validateDateFlag("--until", opts.until);
   }
-  return flags;
 }
 
 /** Require a `YYYY-MM-DD`-shaped date flag (a full ISO timestamp is allowed); else a usage error. */
@@ -183,6 +213,27 @@ function validateDateFlag(flag: string, value: string): string {
     throw new UsageError(`Invalid ${flag} "${value}". Expected a date in YYYY-MM-DD format.`);
   }
   return value;
+}
+
+/** Parse + validate the `--format` comma list against the closed enum (de-duped, ≥1). */
+function parseFormats(raw: string): OutputFormat[] {
+  const tokens = raw
+    .split(",")
+    .map((token) => token.trim())
+    .filter((token) => token !== "");
+  const formats: OutputFormat[] = [];
+  for (const token of tokens) {
+    if (!OUTPUT_FORMATS.includes(token as OutputFormat)) {
+      throw new UsageError(`Unknown format "${token}". Expected one or more of: ${OUTPUT_FORMATS.join(", ")}.`);
+    }
+    if (!formats.includes(token as OutputFormat)) {
+      formats.push(token as OutputFormat);
+    }
+  }
+  if (formats.length === 0) {
+    throw new UsageError(`Invalid --format: expected one or more of: ${OUTPUT_FORMATS.join(", ")}.`);
+  }
+  return formats;
 }
 
 /** Help / version are clean exits; any other commander error is a usage error (exit 2). */

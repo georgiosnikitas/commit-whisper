@@ -115,6 +115,41 @@ describe("main — commit-selection flags (Story 2.6)", () => {
   });
 });
 
+describe("main — output format flags (Story 4.4)", () => {
+  it("resolves --format json,html and --output into the config", async () => {
+    const cap = captureRun();
+    await main([".", "--no-ai", "--format", "json", "--output", "report.json"], { ...BASE, ui: recorder().ui, run: cap.run });
+    const config = cap.calls[0]!.config;
+    expect(config.outputFormats).toEqual(["json"]);
+    expect(config.outputPath).toBe("report.json");
+  });
+
+  it("parses a comma-separated --format list, de-duped and order-preserving", async () => {
+    const cap = captureRun();
+    await main([".", "--no-ai", "--format", "terminal,html,json,html"], { ...BASE, ui: recorder().ui, run: cap.run });
+    expect(cap.calls[0]!.config.outputFormats).toEqual(["terminal", "html", "json"]);
+  });
+
+  it("accepts -o as the --output alias and '-' for stdout", async () => {
+    const cap = captureRun();
+    await main([".", "--no-ai", "--format", "json", "-o", "-"], { ...BASE, ui: recorder().ui, run: cap.run });
+    expect(cap.calls[0]!.config.outputPath).toBe("-");
+  });
+
+  it("defaults outputFormats to ['terminal'] when --format is absent", async () => {
+    const cap = captureRun();
+    await main([".", "--no-ai"], { ...BASE, ui: recorder().ui, run: cap.run });
+    expect(cap.calls[0]!.config.outputFormats).toEqual(["terminal"]);
+  });
+
+  it("rejects an unknown --format token with a usage error naming the valid set", async () => {
+    const r = recorder();
+    const code = await main([".", "--no-ai", "--format", "bogus"], { ...BASE, ui: r.ui });
+    expect(code).toBe(ExitCode.Usage);
+    expect(r.errors.join(" ")).toContain("Unknown format");
+  });
+});
+
 describe("main — AC4: hard-fail names the gap and redirects", () => {
   it("a missing required input exits 3, names the missing config, and points to bare commit-sage", async () => {
     const r = recorder();

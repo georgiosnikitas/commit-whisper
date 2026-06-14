@@ -32,13 +32,15 @@ import type { RunConfig } from "../config/run-config.js";
 import { createNarrate } from "../narrate/narrate.js";
 import type { NarrateConfig, NarrateOutcome, NarratePort } from "../narrate/narrate.port.js";
 import { preflightProvider } from "../narrate/preflight.js";
-import { renderTerminal } from "../render/terminal/terminal-renderer.js";
+import { renderFormat } from "../render/render.js";
+import { planOutputs, type OutputTarget } from "../render/output-plan.js";
 import { createLocalRetrieve } from "../retrieve/local.js";
 import type { RetrievePort } from "../retrieve/retrieve.port.js";
 import { NarrationError, RenderError } from "../shared/errors.js";
 import type { Secret } from "../shared/secret.js";
 import { ui as defaultUi, type Ui } from "../shared/ui.js";
 import { ExitCode } from "./exit-codes.js";
+import { defaultWriteFile, type WriteFile } from "./write-file.js";
 
 export interface RunDeps {
   retrieve?: RetrievePort;
@@ -48,6 +50,8 @@ export interface RunDeps {
   aiKey?: Secret<string>;
   fetchImpl?: typeof fetch;
   writeStdout?: (text: string) => void;
+  /** Injected file writer (defaults to the real `node:fs/promises` writer) — the one new I/O edge. */
+  writeFile?: WriteFile;
   ui?: Ui;
 }
 
@@ -61,6 +65,7 @@ export async function runPipeline(config: RunConfig, deps: RunDeps = {}): Promis
     ((text: string): void => {
       process.stdout.write(text);
     });
+  const writeFile = deps.writeFile ?? defaultWriteFile;
 
   const narrateConfig: NarrateConfig = {
     aiMode: config.aiMode,
@@ -94,18 +99,51 @@ export async function runPipeline(config: RunConfig, deps: RunDeps = {}): Promis
   const outcome = await narrateOutcome(config, narrateConfig, analysis, narrate, preflightReason);
   const report = reportFromOutcome(analysis, outcome);
 
-  let rendered: string;
+  // — Render every selected format from the ONE report (no re-analysis, no second
+  // LLM call) and emit each to its planned destination (Story 4.4). The default
+  // ["terminal"] selection is one stdout target — back-compatible with 1.8. —
+  const targets = planOutputs(config.outputFormats, config.outputPath); // UsageError (2) on ambiguous path
+  for (const target of targets) {
+    const text = renderOne(report, target);
+    if (target.destination.kind === "stdout") {
+      writeStdout(text.endsWith("\n") ? text : `${text}\n`);
+    } else {
+      await writeOne(writeFile, target.destination.path, text, target.format, ui);
+    }
+  }
+
+  return report.degraded ? ExitCode.Degraded : ExitCode.Success;
+}
+
+/** Render one target's format, mapping any renderer throw to a `RenderError` (exit 7). */
+function renderOne(report: ReturnType<typeof reportFromOutcome>, target: OutputTarget): string {
   try {
-    rendered = renderTerminal(report);
+    return renderFormat(report, target.format);
   } catch (cause) {
     throw new RenderError(
-      `Failed to render the terminal report: ${cause instanceof Error ? cause.message : String(cause)}`,
+      `Failed to render the ${target.format} report: ${cause instanceof Error ? cause.message : String(cause)}`,
       { cause },
     );
   }
-  writeStdout(rendered.endsWith("\n") ? rendered : `${rendered}\n`);
+}
 
-  return report.degraded ? ExitCode.Degraded : ExitCode.Success;
+/** Write one rendered file, mapping a write failure to a `RenderError` (exit 7) naming the path. */
+async function writeOne(
+  writeFile: WriteFile,
+  path: string,
+  text: string,
+  format: OutputTarget["format"],
+  ui: Ui,
+): Promise<void> {
+  try {
+    await writeFile(path, text);
+  } catch (cause) {
+    throw new RenderError(
+      `Failed to write the ${format} report to ${path}: ${cause instanceof Error ? cause.message : String(cause)}`,
+      { cause },
+    );
+  }
+  ui.info(`Wrote ${format} → ${path}`); // stderr run-summary chrome (stdout stays machine-clean)
 }
 
 /**

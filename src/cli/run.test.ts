@@ -7,6 +7,7 @@ import type { RunConfig, PartialRunConfig, Entitlement } from "../config/run-con
 import type { RepoHistory } from "../retrieve/retrieve.port.js";
 import type { NarrateOutcome } from "../narrate/narrate.port.js";
 import type { PreflightResult } from "../narrate/preflight.js";
+import { parseReport } from "../assemble/report.js";
 import { RetrieveError, NarrationError } from "../shared/errors.js";
 import type { Ui } from "../shared/ui.js";
 import { DEGRADED_BANNER, METRICS_ONLY_NOTE } from "../render/terminal/terminal-renderer.js";
@@ -44,6 +45,16 @@ function recorder() {
     plain: () => {},
   };
   return { stdout, warnings, errors, infos, ui, writeStdout: (s: string) => stdout.push(s) };
+}
+
+/** A recorder that also captures injected file writes (Story 4.4). */
+function writeRecorder() {
+  const base = recorder();
+  const files: { path: string; content: string }[] = [];
+  const writeFile = async (path: string, content: string): Promise<void> => {
+    files.push({ path, content });
+  };
+  return { ...base, files, writeFile };
 }
 
 const reachable = async (): Promise<PreflightResult> => ({ reachable: true });
@@ -234,4 +245,99 @@ describe("runPipeline — Free-tier cap truncation notice (Story 2.7)", () => {
     expect(r.infos.join("\n")).not.toContain("Free tier cap");
   });
 });
+
+describe("runPipeline — multi-format output dispatch (Story 4.4)", () => {
+  const narrate = async (): Promise<NarrateOutcome> => ({ kind: "narrated", narrative: NARRATIVE });
+
+  it("the default (terminal) selection still renders to stdout — back-compat", async () => {
+    const r = writeRecorder();
+    const code = await runPipeline(makeConfig({ aiMode: "off" }), {
+      retrieve: async () => EMPTY_HISTORY,
+      ui: r.ui,
+      writeStdout: r.writeStdout,
+      writeFile: r.writeFile,
+    });
+    expect(code).toBe(ExitCode.Success);
+    expect(r.stdout.join("")).toContain(METRICS_ONLY_NOTE);
+    expect(r.files.length).toBe(0); // nothing written to disk
+  });
+
+  it("--format json -o - writes the canonical Report JSON to STDOUT (machine-clean)", async () => {
+    const r = writeRecorder();
+    await runPipeline(makeConfig({ aiMode: "auto", provider: "gemini", llmModel: "m", outputFormats: ["json"], outputPath: "-" }), {
+      retrieve: async () => EMPTY_HISTORY,
+      preflight: reachable,
+      narrate,
+      ui: r.ui,
+      writeStdout: r.writeStdout,
+      writeFile: r.writeFile,
+    });
+    expect(r.files.length).toBe(0); // '-' → stdout, not a file
+    const out = r.stdout.join("");
+    const parsed = parseReport(out); // it is the canonical, parseable Report JSON
+    expect(parsed.narrative?.summary.headline).toBe("Healthy and steady.");
+  });
+
+  it("--format json (no path) writes the file and keeps stdout empty + a stderr 'Wrote' line", async () => {
+    const r = writeRecorder();
+    await runPipeline(makeConfig({ aiMode: "off", outputFormats: ["json"] }), {
+      retrieve: async () => EMPTY_HISTORY,
+      ui: r.ui,
+      writeStdout: r.writeStdout,
+      writeFile: r.writeFile,
+    });
+    expect(r.stdout.join("")).toBe(""); // machine-clean: nothing on stdout
+    expect(r.files).toHaveLength(1);
+    expect(r.files[0].path).toBe("commit-sage-report.json");
+    expect(parseReport(r.files[0].content).analysis).toBeDefined();
+    expect(r.infos.join("\n")).toContain("Wrote json → commit-sage-report.json");
+  });
+
+  it("--format terminal,html writes terminal to stdout AND the html file", async () => {
+    const r = writeRecorder();
+    await runPipeline(makeConfig({ aiMode: "off", outputFormats: ["terminal", "html"] }), {
+      retrieve: async () => EMPTY_HISTORY,
+      ui: r.ui,
+      writeStdout: r.writeStdout,
+      writeFile: r.writeFile,
+    });
+    expect(r.stdout.join("")).toContain(METRICS_ONLY_NOTE); // terminal on stdout
+    expect(r.files).toHaveLength(1);
+    expect(r.files[0].path).toBe("commit-sage-report.html");
+    expect(r.files[0].content).toContain("<!doctype html>");
+  });
+
+  it("renders all selected formats from ONE report — narrate is called at most once", async () => {
+    const r = writeRecorder();
+    let narrateCalls = 0;
+    await runPipeline(makeConfig({ aiMode: "auto", provider: "gemini", llmModel: "m", outputFormats: ["terminal", "html", "markdown", "json"] }), {
+      retrieve: async () => EMPTY_HISTORY,
+      preflight: reachable,
+      narrate: async () => {
+        narrateCalls += 1;
+        return { kind: "narrated", narrative: NARRATIVE };
+      },
+      ui: r.ui,
+      writeStdout: r.writeStdout,
+      writeFile: r.writeFile,
+    });
+    expect(narrateCalls).toBe(1); // one narration feeds every format
+    expect(r.files.map((f) => f.path)).toEqual(["commit-sage-report.html", "commit-sage-report.md", "commit-sage-report.json"]);
+  });
+
+  it("a writeFile failure surfaces as RenderError (exit 7) naming the path", async () => {
+    const r = writeRecorder();
+    await expect(
+      runPipeline(makeConfig({ aiMode: "off", outputFormats: ["json"] }), {
+        retrieve: async () => EMPTY_HISTORY,
+        ui: r.ui,
+        writeStdout: r.writeStdout,
+        writeFile: async () => {
+          throw new Error("EACCES: permission denied");
+        },
+      }),
+    ).rejects.toMatchObject({ exitCode: ExitCode.Render });
+  });
+});
+
 
