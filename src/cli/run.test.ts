@@ -152,6 +152,22 @@ describe("runPipeline — stage failures propagate", () => {
     expect(r.stdout.join("")).toBe("");
   });
 
+  it("a retrieve failure produces NO partial output — empty stdout, no file written (Story 5.3 AC3)", async () => {
+    const r = writeRecorder();
+    await expect(
+      runPipeline(makeConfig({ aiMode: "off", outputFormats: ["terminal", "html", "json"] }), {
+        retrieve: async () => {
+          throw new RetrieveError("Could not reach the remote.");
+        },
+        ui: r.ui,
+        writeStdout: r.writeStdout,
+        writeFile: r.writeFile,
+      }),
+    ).rejects.toBeInstanceOf(RetrieveError);
+    expect(r.stdout.join("")).toBe(""); // nothing rendered to stdout
+    expect(r.files).toHaveLength(0); // no artifact written — never a partial Report
+  });
+
   it("the narrated showpiece path does not require AI keys when narrate is injected", async () => {
     const r = recorder();
     const code = await runPipeline(makeConfig({ aiMode: "auto", provider: "gemini", llmModel: "m" }), {

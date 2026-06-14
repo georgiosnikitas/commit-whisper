@@ -160,7 +160,7 @@ describe("createRemoteRetrieve — private-remote auth (Story 5.2)", () => {
   it("a NON-auth clone failure stays the generic message (the taxonomy is Story 5.3)", async () => {
     const { runner } = fakeRunner({
       clone: async () => {
-        throw Object.assign(new Error("clone failed"), { stderr: "fatal: unable to access: Could not resolve host: example.invalid" });
+        throw Object.assign(new Error("clone failed"), { stderr: "fatal: some unrecognized git problem" });
       },
     });
     const ws = fakeWorkspace();
@@ -168,6 +168,58 @@ describe("createRemoteRetrieve — private-remote auth (Story 5.2)", () => {
     expect(err).toBeInstanceOf(RetrieveError);
     expect((err as RetrieveError).message).toMatch(/Failed to clone/);
     expect((err as RetrieveError).message).not.toContain(TOKEN);
+  });
+});
+
+describe("createRemoteRetrieve — classified failures + no-retry (Story 5.3)", () => {
+  function failing(stderr: string): { runner: GitRunner; cloneCalls: () => number } {
+    let cloneCalls = 0;
+    const runner: GitRunner = async (args) => {
+      if (subcommand(args) === "clone") {
+        cloneCalls += 1;
+        throw Object.assign(new Error("clone failed"), { stderr });
+      }
+      throw new Error(`unexpected git args: ${args.join(" ")}`);
+    };
+    return { runner, cloneCalls: () => cloneCalls };
+  }
+
+  it("a network failure → a network-worded RetrieveError", async () => {
+    const { runner } = failing("fatal: unable to access: Could not resolve host: example.invalid");
+    const ws = fakeWorkspace();
+    const err = await createRemoteRetrieve(runner, ws.deps)(cfg("https://example.invalid/repo")).catch((e: unknown) => e);
+    expect((err as RetrieveError).message).toMatch(/network connection/i);
+  });
+
+  it("a not-found failure → a not-found-worded RetrieveError", async () => {
+    const { runner } = failing("remote: Repository not found.\nfatal: repository not found");
+    const ws = fakeWorkspace();
+    const err = await createRemoteRetrieve(runner, ws.deps)(cfg("https://github.com/owner/nope")).catch((e: unknown) => e);
+    expect((err as RetrieveError).message).toMatch(/not found|visibility/i);
+  });
+
+  it("a rate-limit failure → a rate-limit-worded error that states it will not retry", async () => {
+    const { runner } = failing("You have exceeded a secondary rate limit");
+    const ws = fakeWorkspace();
+    const err = await createRemoteRetrieve(runner, ws.deps)(cfg("https://github.com/owner/repo")).catch((e: unknown) => e);
+    expect((err as RetrieveError).message).toMatch(/rate limit/i);
+    expect((err as RetrieveError).message).toMatch(/does not retry/i);
+  });
+
+  it("clones exactly once on failure — no retry/backoff", async () => {
+    const f = failing("fatal: Could not resolve host: example.invalid");
+    const ws = fakeWorkspace();
+    await createRemoteRetrieve(f.runner, ws.deps)(cfg("https://example.invalid/repo")).catch(() => {});
+    expect(f.cloneCalls()).toBe(1);
+  });
+
+  it("cleans up the temp dir on every class of failure", async () => {
+    for (const stderr of ["Could not resolve host", "Repository not found", "rate limit", "Authentication failed", "boom"]) {
+      const { runner } = failing(stderr);
+      const ws = fakeWorkspace();
+      await createRemoteRetrieve(runner, ws.deps)(cfg("https://x/repo")).catch(() => {});
+      expect(ws.removed).toEqual(["/tmp/commit-sage-AAAA"]);
+    }
   });
 });
 
