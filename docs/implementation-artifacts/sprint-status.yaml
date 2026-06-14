@@ -90,7 +90,7 @@ development_status:
   epic-4: in-progress
   4-1-self-contained-html-report-shell: done
   4-2-per-group-charts-with-accessible-data-table-fallback: done
-  4-3-markdown-renderer: backlog
+  4-3-markdown-renderer: done
   4-4-json-output-and-multi-select-formats: backlog
   4-5-html-auto-open-with-no-open: backlog
   epic-4-retrospective: optional
