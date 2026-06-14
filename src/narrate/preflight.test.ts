@@ -99,3 +99,129 @@ describe("preflightProvider", () => {
     expect(res.reachable).toBe(false);
   });
 });
+
+describe("preflightProvider — full BYOK breadth (Story 3.6)", () => {
+  it("openai: GET {base}/models 200 with the key in an Authorization HEADER → reachable", async () => {
+    let seenUrl = "";
+    let seenHeaders: Record<string, string> | undefined;
+    const res = await preflightProvider(cfg({ provider: "openai", aiKey: new Secret("sk-openai-123") }), {
+      fetchImpl: fakeFetch((url, init) => {
+        seenUrl = url;
+        seenHeaders = init?.headers as Record<string, string>;
+        return new Response("{}", { status: 200 });
+      }),
+    });
+    expect(res).toEqual({ reachable: true });
+    expect(seenUrl).toBe("https://api.openai.com/v1/models"); // vendor default base URL
+    expect(seenUrl).not.toContain("sk-openai-123"); // key NOT in the URL
+    expect(seenHeaders?.Authorization).toBe("Bearer sk-openai-123");
+  });
+
+  it("openai: a custom base URL is used (trailing slash trimmed)", async () => {
+    let seenUrl = "";
+    await preflightProvider(cfg({ provider: "openai", aiKey: new Secret("k"), llmBaseUrl: "https://proxy.test/v1/" }), {
+      fetchImpl: fakeFetch((url) => {
+        seenUrl = url;
+        return new Response("{}", { status: 200 });
+      }),
+    });
+    expect(seenUrl).toBe("https://proxy.test/v1/models");
+  });
+
+  it("openai: missing key → not reachable, no fetch", async () => {
+    const fetchSpy = fakeFetch(() => new Response("{}", { status: 200 }));
+    const res = await preflightProvider(cfg({ provider: "openai", aiKey: undefined }), { fetchImpl: fetchSpy });
+    expect(res.reachable).toBe(false);
+    expect((res as { reason: string }).reason).toContain("OPENAI_API_KEY");
+    expect(fetchSpy).not.toHaveBeenCalled();
+  });
+
+  it("anthropic: GET {base}/models with x-api-key + anthropic-version headers → reachable", async () => {
+    let seenUrl = "";
+    let seenHeaders: Record<string, string> | undefined;
+    const res = await preflightProvider(cfg({ provider: "anthropic", aiKey: new Secret("sk-ant-123") }), {
+      fetchImpl: fakeFetch((url, init) => {
+        seenUrl = url;
+        seenHeaders = init?.headers as Record<string, string>;
+        return new Response("{}", { status: 200 });
+      }),
+    });
+    expect(res).toEqual({ reachable: true });
+    expect(seenUrl).toBe("https://api.anthropic.com/v1/models");
+    expect(seenUrl).not.toContain("sk-ant-123");
+    expect(seenHeaders?.["x-api-key"]).toBe("sk-ant-123");
+    expect(seenHeaders?.["anthropic-version"]).toBe("2023-06-01");
+  });
+
+  it("anthropic: 403 → auth-failed reason", async () => {
+    const res = await preflightProvider(cfg({ provider: "anthropic", aiKey: new Secret("k") }), {
+      fetchImpl: fakeFetch(() => new Response("", { status: 403 })),
+    });
+    expect(res.reachable).toBe(false);
+    expect((res as { reason: string }).reason).toMatch(/Authentication/i);
+  });
+
+  it("openai-compatible: GET {base}/models with a key → reachable, key in header", async () => {
+    let seenUrl = "";
+    let seenHeaders: Record<string, string> | undefined;
+    const res = await preflightProvider(
+      cfg({ provider: "openai-compatible", aiKey: new Secret("sk-c"), llmBaseUrl: "https://custom.test/v1/" }),
+      {
+        fetchImpl: fakeFetch((url, init) => {
+          seenUrl = url;
+          seenHeaders = init?.headers as Record<string, string> | undefined;
+          return new Response("{}", { status: 200 });
+        }),
+      },
+    );
+    expect(res).toEqual({ reachable: true });
+    expect(seenUrl).toBe("https://custom.test/v1/models");
+    expect(seenHeaders?.Authorization).toBe("Bearer sk-c");
+  });
+
+  it("openai-compatible: no key → reachable with NO auth header (key optional)", async () => {
+    let seenHeaders: HeadersInit | undefined;
+    const res = await preflightProvider(
+      cfg({ provider: "openai-compatible", aiKey: undefined, llmBaseUrl: "https://custom.test/v1" }),
+      {
+        fetchImpl: fakeFetch((_url, init) => {
+          seenHeaders = init?.headers;
+          return new Response("{}", { status: 200 });
+        }),
+      },
+    );
+    expect(res).toEqual({ reachable: true });
+    expect(seenHeaders).toBeUndefined();
+  });
+
+  it("openai-compatible: missing base URL → not reachable, no fetch", async () => {
+    const fetchSpy = fakeFetch(() => new Response("{}", { status: 200 }));
+    const res = await preflightProvider(cfg({ provider: "openai-compatible", aiKey: undefined, llmBaseUrl: undefined }), {
+      fetchImpl: fetchSpy,
+    });
+    expect(res.reachable).toBe(false);
+    expect((res as { reason: string }).reason).toContain("COMMIT_SAGE_LLM_BASE_URL");
+    expect(fetchSpy).not.toHaveBeenCalled();
+  });
+
+  it("openai-compatible: a blank/whitespace base URL is treated as unset (no relative-URL fetch)", async () => {
+    const fetchSpy = fakeFetch(() => new Response("{}", { status: 200 }));
+    const res = await preflightProvider(cfg({ provider: "openai-compatible", aiKey: undefined, llmBaseUrl: "   " }), {
+      fetchImpl: fetchSpy,
+    });
+    expect(res.reachable).toBe(false);
+    expect((res as { reason: string }).reason).toContain("COMMIT_SAGE_LLM_BASE_URL");
+    expect(fetchSpy).not.toHaveBeenCalled();
+  });
+
+  it("openai: a blank base URL falls back to the vendor default (not a relative URL)", async () => {
+    let seenUrl = "";
+    await preflightProvider(cfg({ provider: "openai", aiKey: new Secret("k"), llmBaseUrl: "" }), {
+      fetchImpl: fakeFetch((url) => {
+        seenUrl = url;
+        return new Response("{}", { status: 200 });
+      }),
+    });
+    expect(seenUrl).toBe("https://api.openai.com/v1/models");
+  });
+});

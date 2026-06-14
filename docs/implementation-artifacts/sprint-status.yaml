@@ -75,13 +75,13 @@ development_status:
   # ═══════════════════════════════════════════════════════════════
   # EPIC 3: Grounded AI Narrative & Coaching
   # ═══════════════════════════════════════════════════════════════
-  epic-3: in-progress
+  epic-3: done
   3-1-full-three-part-narrative: done
   3-2-four-facet-per-metric-explanations: done
   3-3-per-group-batched-generation: done
   3-4-deterministic-grounding-verification-pass: done
   3-5-confidence-self-assessment-and-escalation: done
-  3-6-full-byok-provider-breadth: backlog
+  3-6-full-byok-provider-breadth: done
   epic-3-retrospective: optional
 
   # ═══════════════════════════════════════════════════════════════

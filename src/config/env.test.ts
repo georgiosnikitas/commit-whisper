@@ -1,6 +1,7 @@
 import { describe, it, expect } from "vitest";
 
 import { readAiKey, readEnvLayer } from "./env.js";
+import { Secret } from "../shared/secret.js";
 
 describe("readEnvLayer", () => {
   it("returns an empty layer for empty env", () => {
@@ -104,13 +105,27 @@ describe("readAiKey", () => {
     expect(readAiKey({}, "gemini")).toBeUndefined();
   });
 
-  it("returns undefined for ollama / undefined / not-yet-supported providers", () => {
+  it("returns undefined for ollama / undefined provider (no key needed)", () => {
     expect(readAiKey({ GOOGLE_GENERATIVE_AI_API_KEY: "x" }, "ollama")).toBeUndefined();
     expect(readAiKey({ GOOGLE_GENERATIVE_AI_API_KEY: "x" }, undefined)).toBeUndefined();
-    expect(readAiKey({ OPENAI_API_KEY: "x" }, "openai")).toBeUndefined(); // Story 3.6 seam
+  });
+
+  it("reads each provider's native env var (Story 3.6)", () => {
+    expect(readAiKey({ OPENAI_API_KEY: "o-key" }, "openai")?.reveal()).toBe("o-key");
+    expect(readAiKey({ ANTHROPIC_API_KEY: "a-key" }, "anthropic")?.reveal()).toBe("a-key");
+    // openai-compatible reuses the OpenAI-native var (optional).
+    expect(readAiKey({ OPENAI_API_KEY: "c-key" }, "openai-compatible")?.reveal()).toBe("c-key");
+    // The right var only: an openai run does not pick up the anthropic var.
+    expect(readAiKey({ ANTHROPIC_API_KEY: "a" }, "openai")).toBeUndefined();
+  });
+
+  it("wraps the key in a Secret (not the raw string)", () => {
+    const key = readAiKey({ OPENAI_API_KEY: "o-key" }, "openai");
+    expect(key).toBeInstanceOf(Secret);
   });
 
   it("treats a blank key as unset", () => {
     expect(readAiKey({ GOOGLE_GENERATIVE_AI_API_KEY: "   " }, "gemini")).toBeUndefined();
+    expect(readAiKey({ OPENAI_API_KEY: "  " }, "openai")).toBeUndefined();
   });
 });

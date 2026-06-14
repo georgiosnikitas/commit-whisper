@@ -7,10 +7,9 @@
  * so parsing stays pure and table-testable. Per the hexagonal boundary, this is
  * the only place `process.env` is read.
  *
- * Remaining SECRET env vars are still deferred: the other providers' native LLM
- * keys (`OPENAI_API_KEY` / `ANTHROPIC_API_KEY` / ...) land with the full BYOK
- * breadth (Story 3.6), and the git PAT (`COMMIT_SAGE_GIT_TOKEN` / host fallbacks)
- * in Epic 5.
+ * Remaining SECRET env vars are still deferred: the git PAT
+ * (`COMMIT_SAGE_GIT_TOKEN` / host fallbacks) lands in Epic 5. The LLM key now
+ * reads every provider's native variable (Story 3.6).
  */
 
 import type { AiMode, Branch, OutputFormat, PartialRunConfig, Provider } from "./run-config.js";
@@ -114,22 +113,37 @@ export function readEnvLayer(env: NodeJS.ProcessEnv = process.env): PartialRunCo
 
 /**
  * Read the LLM API key for the given provider from its native environment
- * variable, wrapped in `Secret` (env-only; bypasses the resolver merge). For
- * `gemini`, the SDK-native `GOOGLE_GENERATIVE_AI_API_KEY` wins, with
- * `GEMINI_API_KEY` accepted as an explicitly-read friendly alias. `ollama` needs
- * no key. Other providers' native keys land with the full BYOK breadth (Story
- * 3.6) — they return `undefined` here for now.
+ * variable, wrapped in `Secret` (env-only; bypasses the resolver merge). Each
+ * provider reads its SDK-native variable — `OPENAI_API_KEY` (`openai`),
+ * `ANTHROPIC_API_KEY` (`anthropic`), `GOOGLE_GENERATIVE_AI_API_KEY` (with
+ * `GEMINI_API_KEY` accepted as an explicitly-read friendly alias, `gemini`), and
+ * `OPENAI_API_KEY` (optional, for the OpenAI-compatible `openai-compatible`
+ * endpoint). `ollama` (local) needs no key. Returns `undefined` when the variable
+ * is unset (the narrate layer decides whether that is an error per provider).
  */
 export function readAiKey(
   env: NodeJS.ProcessEnv,
   provider: Provider | undefined,
 ): Secret<string> | undefined {
-  if (provider === "gemini") {
-    const key = str(env.GOOGLE_GENERATIVE_AI_API_KEY) ?? str(env.GEMINI_API_KEY);
-    return key === undefined ? undefined : new Secret(key);
+  switch (provider) {
+    case "gemini": {
+      const key = str(env.GOOGLE_GENERATIVE_AI_API_KEY) ?? str(env.GEMINI_API_KEY);
+      return wrapKey(key);
+    }
+    case "openai":
+    case "openai-compatible":
+      return wrapKey(str(env.OPENAI_API_KEY));
+    case "anthropic":
+      return wrapKey(str(env.ANTHROPIC_API_KEY));
+    default:
+      // ollama (no key), undefined provider, or aiMode "off".
+      return undefined;
   }
-  // ollama: no key. openai / anthropic / openai-compatible: Story 3.6 extension point.
-  return undefined;
+}
+
+/** Wrap a present key in `Secret`; `undefined` passes through. */
+function wrapKey(key: string | undefined): Secret<string> | undefined {
+  return key === undefined ? undefined : new Secret(key);
 }
 
 /**

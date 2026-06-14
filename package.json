@@ -33,7 +33,10 @@
   },
   "homepage": "https://github.com/georgiosnikitas/commit-sage#readme",
   "dependencies": {
+    "@ai-sdk/anthropic": "3.0.84",
     "@ai-sdk/google": "3.0.82",
+    "@ai-sdk/openai": "3.0.71",
+    "@ai-sdk/openai-compatible": "2.0.50",
     "@clack/prompts": "1.5.1",
     "ai": "6.0.203",
     "commander": "15.0.0",
