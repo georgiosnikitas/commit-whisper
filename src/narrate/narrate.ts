@@ -18,6 +18,7 @@
 import type { Analysis } from "../analyze/engine.js";
 import { NarrationError } from "../shared/errors.js";
 import { generateNarrative, generateExplanations } from "./generate.js";
+import { groundNarrative } from "./grounding.js";
 import type { NarrateConfig, NarrateOutcome, NarratePort } from "./narrate.port.js";
 import { resolveModel } from "./provider.js";
 import type { NarrativeParts, MetricExplanations } from "./schema.js";
@@ -50,13 +51,18 @@ export function createNarrate(deps: NarrateDeps = {}): NarratePort {
       // is required for the showpiece); a single failing explanation GROUP instead
       // degrades gracefully INSIDE `generateExplanations` (its metrics are absent
       // from the map, the rest are carried). An incomplete map (a model omitting
-      // metrics) is surfaced by the grounding pass (3.4) / confidence (3.5), not
-      // fabricated here.
+      // metrics) is surfaced by the confidence pass (3.5), not fabricated here.
       const [parts, explanations] = await Promise.all([
         generate(model, analysis),
         generateExpl(model, analysis),
       ]);
-      return { kind: "narrated", narrative: { ...parts, explanations } };
+      // Deterministic grounding pass (Story 3.4): remove every numeric claim that
+      // does not trace to a metric value (no second LLM call), inserting honest
+      // placeholders where removal would empty a required field — so a fabricated
+      // figure never reaches assemble/render. `report` (claim counts) feeds the
+      // confidence self-assessment (Story 3.5); it is unconsumed here.
+      const grounded = groundNarrative({ ...parts, explanations }, analysis);
+      return { kind: "narrated", narrative: grounded.narrative };
     } catch (err) {
       const reason = narrationReason(err, config.aiKey?.reveal());
       if (config.aiMode === "required") {

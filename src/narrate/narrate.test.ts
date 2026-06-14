@@ -52,6 +52,24 @@ describe("createNarrate", () => {
     expect(outcome).toEqual({ kind: "narrated", narrative: { ...NARRATIVE, explanations: EXPLANATIONS } });
   });
 
+  it("applies the deterministic grounding pass — a fabricated numeric claim is removed before returning (Story 3.4)", async () => {
+    // ANALYSIS's only number is 3 (a-commit-volume value), so "999" is ungrounded.
+    const parts = {
+      summary: { headline: "Healthy.", overview: "The repo has 3 commits. It has 999 reverts.", keyFindings: ["A fabricated 999-contributor finding"] },
+      explanation: { paragraphs: ["Steady cadence."] },
+      coaching: { introduction: "A plan.", chapters: [{ theme: "Cadence", steps: ["Commit smaller"] }], closingSummary: "Done." },
+    };
+    const outcome = await createNarrate({
+      resolveModel: () => fakeModel,
+      generate: async () => parts,
+      generateExplanations: okExplanations,
+    })(ANALYSIS, cfg());
+    expect(outcome.kind).toBe("narrated");
+    const narrative = (outcome as { narrative: typeof parts }).narrative;
+    expect(narrative.summary.overview).toBe("The repo has 3 commits."); // grounded sentence kept, 999 sentence removed
+    expect(narrative.summary.keyFindings).toEqual([]); // the fabricated 999 bullet dropped
+  });
+
   it("auto + a throwing generate → degraded (fail open, no throw)", async () => {
     const outcome = await createNarrate({
       resolveModel: () => fakeModel,
