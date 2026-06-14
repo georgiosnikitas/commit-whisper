@@ -35,3 +35,31 @@ export function buildNarrativePrompt(analysis: Analysis): string {
   const metricsJson = JSON.stringify(analysis.metrics, null, 2);
   return `${INSTRUCTION}\n\nMetrics:\n${metricsJson}`;
 }
+
+const EXPLANATIONS_INSTRUCTION = [
+  "You are a senior engineering analyst. Using ONLY the deterministic git metrics provided",
+  "below, write a per-metric explanation for EVERY metric in the list. Return an array of",
+  "entries; for each entry set `metricId` to that metric's exact `id` (anchoring), and cover",
+  "all FOUR facets:",
+  "(1) explanation — what this metric's value(s) MEAN for this repository;",
+  "(2) goodBehaviours — the good behaviours the metric reveals (an explicit entry where",
+  "notable, or an empty list where there are none);",
+  "(3) needsImprovement — what needs improvement (an explicit entry where applicable, or an",
+  "empty list where the metric is already healthy);",
+  "(4) suggestions — concrete, prioritized suggestions to improve, referencing the repo's own",
+  "metric values.",
+  "",
+  "Rules: Produce one entry per metric — do not skip any, and do not invent a `metricId` that",
+  "is not in the list. For a metric whose status is \"not_available\", the explanation facet",
+  "must state that it could NOT be computed and why (use its `reason`), with the other facets",
+  "empty or noting it is not applicable. Anchor each explanation in its OWN metric; you may",
+  "cross-reference another metric ONLY where that metric is in the list and the connection is",
+  "genuinely informative. Write plain language with no unexplained jargon, ground every claim",
+  "in the provided metrics (invent no numbers, dates, contributors, or events), and keep any",
+  "manager-facing content at TEAM level — never rank or single out individual developers.",
+].join(" ");
+
+export function buildExplanationsPrompt(analysis: Analysis): string {
+  const metricsJson = JSON.stringify(analysis.metrics, null, 2);
+  return `${EXPLANATIONS_INSTRUCTION}\n\nMetrics:\n${metricsJson}`;
+}

@@ -1,6 +1,6 @@
 import { describe, it, expect } from "vitest";
 
-import { buildNarrativePrompt } from "./prompt.js";
+import { buildNarrativePrompt, buildExplanationsPrompt } from "./prompt.js";
 import type { Analysis } from "../analyze/engine.js";
 
 const ANALYSIS: Analysis = {
@@ -44,6 +44,35 @@ describe("buildNarrativePrompt", () => {
     expect(prompt).not.toContain(SECRET_DIFF);
     expect(prompt).not.toContain("password");
     // The prompt is a pure function of analysis.metrics — serializes exactly them.
+    expect(prompt).toContain(JSON.stringify(ANALYSIS.metrics, null, 2));
+  });
+});
+
+describe("buildExplanationsPrompt", () => {
+  it("names the four facets and the metricId anchoring", () => {
+    const prompt = buildExplanationsPrompt(ANALYSIS);
+    const lower = prompt.toLowerCase();
+    expect(prompt).toContain("metricId"); // each entry tagged with the metric's id (anchoring)
+    expect(lower).toContain("explanation");
+    expect(lower).toContain("goodbehaviours");
+    expect(lower).toContain("needsimprovement");
+    expect(lower).toContain("suggestions");
+  });
+
+  it("instructs the not_available-still-explained, grounded-cross-ref, and team-level rules", () => {
+    const prompt = buildExplanationsPrompt(ANALYSIS);
+    const lower = prompt.toLowerCase();
+    expect(lower).toContain("not_available"); // a not_available metric still gets an explanation
+    expect(lower).toContain("cross-reference"); // only where grounded
+    expect(lower).toContain("team level"); // never per-developer ranking
+    expect(lower).toContain("every metric"); // produce one per metric (no skipping)
+  });
+
+  it("only contains data present in the analysis (privacy: no RepoHistory leakage)", () => {
+    const SECRET_DIFF = "TOP_SECRET_RAW_DIFF_LINE_+password=hunter2";
+    const prompt = buildExplanationsPrompt(ANALYSIS);
+    expect(prompt).not.toContain(SECRET_DIFF);
+    expect(prompt).not.toContain("password");
     expect(prompt).toContain(JSON.stringify(ANALYSIS.metrics, null, 2));
   });
 });

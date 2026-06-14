@@ -16,7 +16,7 @@
 
 import { z } from "zod";
 
-import { SummarySchema, ExplanationSchema, CoachingSchema } from "../narrate/schema.js";
+import { SummarySchema, ExplanationSchema, CoachingSchema, MetricExplanationSchema } from "../narrate/schema.js";
 
 export const SCHEMA_VERSION = "1.0.0";
 
@@ -53,32 +53,21 @@ export const AnalysisSchema = z
   .strict();
 
 /**
- * A per-metric Metric Explanation (four facets, keyed by metric id under
- * `narrative.explanations`). DISTINCT from the narrative-level `explanation`
- * part (`ExplanationSchema` from `narrate/schema.ts`) — this is the §3.2
- * per-metric assessment. The SHAPE is pinned at 1.0.0; it is not populated until
- * Epic 3 (Story 3.2), so it is optional everywhere it appears.
- */
-export const MetricExplanationSchema = z
-  .object({
-    explanation: z.string(),
-    goodBehaviours: z.array(z.string()),
-    needsImprovement: z.array(z.string()),
-    suggestions: z.array(z.string()),
-  })
-  .strict();
-
-/**
  * The Report-JSON `narrative` subtree (C1 read-back trust boundary, `.strict()`).
  * Carries the three REQUIRED narrative parts (Summary · Explanation · Coaching —
- * Story 3.1) plus the OPTIONAL per-metric Metric Explanation map (Story 3.2).
+ * Story 3.1) plus the per-metric Metric Explanation map (Story 3.2) keyed by
+ * metric id — OPTIONAL, since a narrated run may carry it but the shape predates
+ * its population. The four-facet `MetricExplanationSchema` is the canonical
+ * AI-output schema, imported from `narrate/schema.ts` (single source of truth);
+ * it is lenient there (model-output coercion) but `.strict()` HERE — the read-back
+ * boundary rejects an explanation carrying unknown keys.
  */
 export const NarrativeSchema = z
   .object({
     summary: SummarySchema,
     explanation: ExplanationSchema,
     coaching: CoachingSchema,
-    explanations: z.record(z.string(), MetricExplanationSchema).optional(),
+    explanations: z.record(z.string(), MetricExplanationSchema.strict()).optional(),
   })
   .strict();
 

@@ -45,6 +45,23 @@ describe("assembleReport", () => {
     expect(ANALYSIS).toEqual(analysisCopy);
   });
 
+  it("carries the per-metric explanations map (keyed by id) verbatim, and it survives read-back", () => {
+    const narrative: Narrative = {
+      ...NARRATIVE,
+      explanations: {
+        "a-commit-volume": { explanation: "Low but steady.", goodBehaviours: ["Consistent"], needsImprovement: [], suggestions: ["Commit smaller"] },
+        "a-commit-cadence": { explanation: "Could not be computed: too few commits.", goodBehaviours: [], needsImprovement: [], suggestions: [] },
+      },
+    };
+    const report = assembleReport({ analysis: ANALYSIS, narrative, degraded: false });
+    expect(report.narrative?.explanations).toEqual(narrative.explanations);
+    // The metric envelope itself still carries no welded explanation (analysis stays byte-stable).
+    expect(report.analysis.metrics[0]).not.toHaveProperty("explanation");
+    // The explanations map round-trips through the strict Report read-back schema.
+    const reparsed = parseReport(JSON.stringify(report));
+    expect(reparsed.narrative?.explanations?.["a-commit-cadence"].explanation).toContain("Could not be computed");
+  });
+
   it("owns a defensive copy: mutating the caller's input afterward cannot poison the report", () => {
     const analysis = structuredClone(ANALYSIS);
     const narrative = structuredClone(NARRATIVE);

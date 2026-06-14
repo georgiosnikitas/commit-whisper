@@ -88,4 +88,76 @@ export const NarrativeSchema = z.object({
   coaching: CoachingSchema,
 });
 
-export type Narrative = z.infer<typeof NarrativeSchema>;
+/** The three generated repo-level parts `generateNarrative` produces (Story 3.1). */
+export type NarrativeParts = z.infer<typeof NarrativeSchema>;
+
+/**
+ * A per-metric Metric Explanation: the four facets (Story 3.2). DISTINCT from the
+ * repo-level `explanation` PART above (same English word, different thing — FR-8 /
+ * §3.2). The `explanation` (meaning) facet is always a non-empty string; the three
+ * facet arrays hold non-empty strings but MAY be empty (an empty list is an honest
+ * "none for this facet" — e.g. a healthy metric's `needsImprovement`, or a
+ * `not_available` metric's `goodBehaviours`). Canonical home: the AI-output schema;
+ * `assemble/report-schema.ts` imports this for the Report read-back.
+ */
+export const MetricExplanationSchema = z.object({
+  explanation: z
+    .string()
+    .min(1)
+    .describe(
+      "What this metric's value(s) MEAN for this repo. For a not_available metric, state it could not be computed and why (from its reason).",
+    ),
+  goodBehaviours: z
+    .array(z.string().min(1))
+    .describe("Good behaviours this metric reveals; an explicit entry where notable, or empty where there are none."),
+  needsImprovement: z
+    .array(z.string().min(1))
+    .describe("What needs improvement; an explicit entry where applicable, or empty where the metric is already healthy."),
+  suggestions: z
+    .array(z.string().min(1))
+    .describe("Concrete suggestions to improve, grounded in this repo's own metric values."),
+});
+
+export type MetricExplanation = z.infer<typeof MetricExplanationSchema>;
+
+/** The per-metric explanation map carried in the report, keyed by metric id. */
+export const MetricExplanationsSchema = z.record(z.string(), MetricExplanationSchema);
+
+export type MetricExplanations = z.infer<typeof MetricExplanationsSchema>;
+
+/**
+ * One AI-output entry: a four-facet explanation TAGGED with the metric id it is
+ * anchored to (an explicit id ⇒ reliable structured output + the AC3 anchoring /
+ * grounding seam). Transformed to the keyed `MetricExplanations` record by
+ * `buildExplanationsRecord` (which drops any id not present in the analysis).
+ */
+export const MetricExplanationEntrySchema = MetricExplanationSchema.extend({
+  metricId: z
+    .string()
+    .min(1)
+    .describe("The id of the metric this explanation is anchored to — MUST match a metric in the provided analysis."),
+});
+
+export type MetricExplanationEntry = z.infer<typeof MetricExplanationEntrySchema>;
+
+/** The object `generateObject` binds for the batched per-metric explanations (Story 3.2). */
+export const ExplanationBatchSchema = z.object({
+  explanations: z
+    .array(MetricExplanationEntrySchema)
+    .min(1)
+    .describe("One four-facet explanation per metric in the analysis, including not_available metrics; each tagged with its metricId."),
+});
+
+export type ExplanationBatch = z.infer<typeof ExplanationBatchSchema>;
+
+/**
+ * The full AI Narrative carried in the Report `narrative` subtree: the three
+ * generated parts (Story 3.1) plus the OPTIONAL per-metric explanation map
+ * (Story 3.2, keyed by metric id). This is the shape that flows through the
+ * narrate outcome into the assembled report.
+ */
+export const FullNarrativeSchema = NarrativeSchema.extend({
+  explanations: MetricExplanationsSchema.optional(),
+});
+
+export type Narrative = z.infer<typeof FullNarrativeSchema>;

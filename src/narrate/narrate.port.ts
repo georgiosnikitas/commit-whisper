@@ -21,7 +21,16 @@ import type { AiMode, Provider } from "../config/run-config.js";
 import type { Secret } from "../shared/secret.js";
 import type { Narrative } from "./schema.js";
 
-export type { Summary, Explanation, Chapter, Coaching, Narrative } from "./schema.js";
+export type {
+  Summary,
+  Explanation,
+  Chapter,
+  Coaching,
+  Narrative,
+  NarrativeParts,
+  MetricExplanation,
+  MetricExplanations,
+} from "./schema.js";
 
 /** The AI-relevant subset of `RunConfig` + the env-only secret key. */
 export interface NarrateConfig {

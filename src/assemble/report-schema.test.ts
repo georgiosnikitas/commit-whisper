@@ -63,6 +63,23 @@ describe("ReportSchema", () => {
     expect(ReportSchema.safeParse(report).success).toBe(true);
   });
 
+  it("rejects an explanation carrying an unknown key on read-back (strict boundary)", () => {
+    const report = {
+      schemaVersion: SCHEMA_VERSION,
+      degraded: false,
+      analysis: ANALYSIS,
+      narrative: {
+        summary: NARRATIVE.summary,
+        explanation: NARRATIVE.explanation,
+        coaching: NARRATIVE.coaching,
+        explanations: {
+          "a-commit-volume": { explanation: "e", goodBehaviours: [], needsImprovement: [], suggestions: [], welded: "nope" },
+        },
+      },
+    };
+    expect(ReportSchema.safeParse(report).success).toBe(false);
+  });
+
   it("rejects a narrative missing a required part (Explanation/Coaching)", () => {
     const report = {
       schemaVersion: SCHEMA_VERSION,

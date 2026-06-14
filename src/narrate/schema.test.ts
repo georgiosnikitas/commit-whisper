@@ -1,6 +1,13 @@
 import { describe, it, expect } from "vitest";
 
-import { SummarySchema, ExplanationSchema, CoachingSchema, NarrativeSchema } from "./schema.js";
+import {
+  SummarySchema,
+  ExplanationSchema,
+  CoachingSchema,
+  NarrativeSchema,
+  MetricExplanationSchema,
+  ExplanationBatchSchema,
+} from "./schema.js";
 
 const SUMMARY = {
   headline: "Healthy, steady cadence.",
@@ -91,5 +98,60 @@ describe("NarrativeSchema — exactly three parts", () => {
 
   it("rejects a narrative missing the coaching part", () => {
     expect(NarrativeSchema.safeParse({ summary: SUMMARY, explanation: EXPLANATION }).success).toBe(false);
+  });
+});
+
+describe("MetricExplanationSchema — four facets", () => {
+  const FULL = {
+    explanation: "Commit volume is low but steady.",
+    goodBehaviours: ["Consistent cadence"],
+    needsImprovement: ["Throughput could grow"],
+    suggestions: ["Commit in smaller increments"],
+  };
+
+  it("parses a full four-facet explanation", () => {
+    expect(MetricExplanationSchema.safeParse(FULL).success).toBe(true);
+  });
+
+  it("accepts empty facet arrays (an honest 'none' for a facet)", () => {
+    expect(
+      MetricExplanationSchema.safeParse({ explanation: "Could not be computed: too few commits.", goodBehaviours: [], needsImprovement: [], suggestions: [] }).success,
+    ).toBe(true);
+  });
+
+  it("rejects an empty meaning (explanation) string", () => {
+    expect(MetricExplanationSchema.safeParse({ ...FULL, explanation: "" }).success).toBe(false);
+  });
+
+  it("rejects a missing facet key", () => {
+    expect(MetricExplanationSchema.safeParse({ explanation: "e", goodBehaviours: [], needsImprovement: [] }).success).toBe(false);
+  });
+
+  it("rejects an empty-string facet entry (no blank filler)", () => {
+    expect(MetricExplanationSchema.safeParse({ ...FULL, suggestions: [""] }).success).toBe(false);
+  });
+});
+
+describe("ExplanationBatchSchema — AI output", () => {
+  const ENTRY = {
+    metricId: "a-commit-volume",
+    explanation: "Low but steady.",
+    goodBehaviours: ["Consistent"],
+    needsImprovement: [],
+    suggestions: ["Commit smaller"],
+  };
+
+  it("parses a batch of entries each tagged with a metricId", () => {
+    expect(ExplanationBatchSchema.safeParse({ explanations: [ENTRY] }).success).toBe(true);
+  });
+
+  it("rejects an entry with no metricId", () => {
+    const noId = { explanation: ENTRY.explanation, goodBehaviours: ENTRY.goodBehaviours, needsImprovement: ENTRY.needsImprovement, suggestions: ENTRY.suggestions };
+    expect(ExplanationBatchSchema.safeParse({ explanations: [noId] }).success).toBe(false);
+  });
+
+  it("rejects an empty metricId and an empty batch", () => {
+    expect(ExplanationBatchSchema.safeParse({ explanations: [{ ...ENTRY, metricId: "" }] }).success).toBe(false);
+    expect(ExplanationBatchSchema.safeParse({ explanations: [] }).success).toBe(false);
   });
 });
