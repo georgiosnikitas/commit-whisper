@@ -147,6 +147,25 @@ function wrapKey(key: string | undefined): Secret<string> | undefined {
 }
 
 /**
+ * Read the git PAT for a private remote from the environment (env-only, like the
+ * LLM key). `COMMIT_SAGE_GIT_TOKEN` takes precedence over the host-specific
+ * `GITHUB_TOKEN` / `GITLAB_TOKEN` / `BITBUCKET_TOKEN` fallbacks, then wraps the
+ * value in `Secret` (so it redacts to `***` everywhere). `undefined` when none is
+ * set — a local path or public remote needs no token (its absence is never an
+ * error). Note the GitHub-Actions footgun: the auto-injected `GITHUB_TOKEN` is
+ * scoped to the workflow's OWN repo, so analyzing a different private repo from
+ * Actions needs an explicit `COMMIT_SAGE_GIT_TOKEN` (which takes precedence).
+ */
+export function readGitToken(env: NodeJS.ProcessEnv): Secret<string> | undefined {
+  const token =
+    str(env.COMMIT_SAGE_GIT_TOKEN) ??
+    str(env.GITHUB_TOKEN) ??
+    str(env.GITLAB_TOKEN) ??
+    str(env.BITBUCKET_TOKEN);
+  return wrapKey(token);
+}
+
+/**
  * The single ambient `process.env` accessor (Story 1.8). The CLI shell
  * (`cli/`, `index.ts`) is forbidden by the hexagonal lint boundary from naming
  * `process.env` directly, so it captures the environment through this

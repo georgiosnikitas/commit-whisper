@@ -5,6 +5,7 @@ import type { GitRunner } from "./git.js";
 import type { TempWorkspaceDeps } from "./temp-workspace.js";
 import type { RunConfig } from "../config/run-config.js";
 import { RetrieveError } from "../shared/errors.js";
+import { Secret } from "../shared/secret.js";
 
 const RS = "\x1e";
 const US = "\x1f";
@@ -17,14 +18,19 @@ function cfg(repoTarget: string): RunConfig {
   return { repoTarget } as unknown as RunConfig;
 }
 
+interface CallRecord {
+  args: string[];
+  extraEnv?: Record<string, string>;
+}
+
 interface Handlers {
   clone?: (args: readonly string[]) => Promise<string>;
 }
 
-function fakeRunner(h: Handlers = {}): { runner: GitRunner; calls: string[][] } {
-  const calls: string[][] = [];
-  const runner: GitRunner = async (args) => {
-    calls.push([...args]);
+function fakeRunner(h: Handlers = {}): { runner: GitRunner; calls: CallRecord[] } {
+  const calls: CallRecord[] = [];
+  const runner: GitRunner = async (args, options) => {
+    calls.push({ args: [...args], extraEnv: options.extraEnv });
     const sub = subcommand(args);
     if (sub === "clone") {
       return (h.clone ?? (async () => ""))(args);
@@ -71,28 +77,23 @@ function fakeWorkspace(): { deps: TempWorkspaceDeps; removed: string[] } {
   };
 }
 
+const cloneCall = (calls: CallRecord[]): CallRecord => calls.find((c) => subcommand(c.args) === "clone")!;
+
 describe("createRemoteRetrieve — AC1 clone-into-temp + read", () => {
-  it("clones the URL into a temp dir and reads the history from the clone", async () => {
+  it("clones the URL into a temp dir (— guard) and reads the history from the clone", async () => {
     const { runner, calls } = fakeRunner();
     const ws = fakeWorkspace();
     const history = await createRemoteRetrieve(runner, ws.deps)(cfg("https://github.com/owner/repo"));
 
-    // First git call is the clone: `clone --quiet -- <url> <dest>` (dest under the temp dir).
-    expect(calls[0]).toEqual(["clone", "--quiet", "--", "https://github.com/owner/repo", "/tmp/commit-sage-AAAA/repo"]);
+    const clone = cloneCall(calls).args;
+    expect(clone).toContain("clone");
+    expect(clone).toContain("--"); // end-of-options guard before the url
+    expect(clone).toContain("https://github.com/owner/repo"); // the url is ONE argv element
+    expect(clone).toContain("/tmp/commit-sage-AAAA/repo"); // dest under the temp dir
     // The history is read FROM the clone, but LABELLED with the URL (not the temp path).
     expect(history.repoTarget).toBe("https://github.com/owner/repo");
     expect(history.commits).toHaveLength(1);
-    // A subsequent read call runs inside the cloned dir.
-    expect(calls.some((c) => c.join(" ") === "rev-parse --is-inside-work-tree")).toBe(true);
-  });
-
-  it("passes the URL and dest as separate argv elements with a `--` guard (injection-safe)", async () => {
-    const { runner, calls } = fakeRunner();
-    const ws = fakeWorkspace();
-    await createRemoteRetrieve(runner, ws.deps)(cfg("https://example.com/a b/repo"));
-    const clone = calls[0]!;
-    expect(clone).toContain("--"); // end-of-options guard before the url
-    expect(clone).toContain("https://example.com/a b/repo"); // the url is ONE argv element
+    expect(calls.some((c) => c.args.join(" ") === "rev-parse --is-inside-work-tree")).toBe(true);
   });
 
   it("cleans up the temp dir after a successful read (stateless)", async () => {
@@ -103,7 +104,74 @@ describe("createRemoteRetrieve — AC1 clone-into-temp + read", () => {
   });
 });
 
-describe("createRemoteRetrieve — clone failure", () => {
+describe("createRemoteRetrieve — private-remote auth (Story 5.2)", () => {
+  const TOKEN = "ghp_supersecretvalue";
+
+  it("a no-token clone clears credential helpers + disables prompts, but adds NO inline helper or token", async () => {
+    const { runner, calls } = fakeRunner();
+    const ws = fakeWorkspace();
+    await createRemoteRetrieve(runner, ws.deps)(cfg("https://github.com/owner/public"));
+    const clone = cloneCall(calls);
+    expect(clone.args).toContain("credential.helper="); // clears any inherited helper (no GUI/system prompt)
+    expect(clone.args.some((a) => a.startsWith("credential.helper=!f()"))).toBe(false); // but no inline helper
+    expect(clone.extraEnv).toMatchObject({ GIT_TERMINAL_PROMPT: "0" }); // prompts off → fail fast, no hang
+    expect(clone.extraEnv?.COMMIT_SAGE_GIT_PAT).toBeUndefined(); // no token channel
+  });
+
+  it("an authenticated clone feeds the token via the child ENV, never argv (anti-ps-leak)", async () => {
+    const { runner, calls } = fakeRunner();
+    const ws = fakeWorkspace();
+    await createRemoteRetrieve(runner, ws.deps, new Secret(TOKEN))(cfg("https://github.com/owner/private"));
+    const clone = cloneCall(calls);
+    expect(clone.args.some((a) => a.includes("$COMMIT_SAGE_GIT_PAT"))).toBe(true); // helper references the env-var NAME
+    expect(clone.extraEnv?.COMMIT_SAGE_GIT_PAT).toBe(TOKEN); // the VALUE is only in the child env
+    expect(clone.args.every((a) => !a.includes(TOKEN))).toBe(true); // never in argv / ps
+    expect(clone.extraEnv).toMatchObject({ GIT_TERMINAL_PROMPT: "0" });
+  });
+
+  it("an auth-rejected clone WITH a token → a scope-hint error that never contains the token", async () => {
+    const { runner } = fakeRunner({
+      clone: async () => {
+        throw Object.assign(new Error("clone failed"), { stderr: "fatal: Authentication failed for 'https://...'" });
+      },
+    });
+    const ws = fakeWorkspace();
+    const err = await createRemoteRetrieve(runner, ws.deps, new Secret(TOKEN))(cfg("https://github.com/owner/private")).catch((e: unknown) => e);
+    expect(err).toBeInstanceOf(RetrieveError);
+    expect((err as RetrieveError).message).toMatch(/scope|permission/i);
+    expect((err as RetrieveError).message).toContain("COMMIT_SAGE_GIT_TOKEN");
+    expect((err as RetrieveError).message).not.toContain(TOKEN); // never leaks the token
+    expect(ws.removed).toEqual(["/tmp/commit-sage-AAAA"]); // still cleaned up
+  });
+
+  it("an auth-rejected clone WITHOUT a token → a set-the-var error", async () => {
+    const { runner } = fakeRunner({
+      clone: async () => {
+        throw Object.assign(new Error("clone failed"), { stderr: "fatal: could not read Username for 'https://...': terminal prompts disabled" });
+      },
+    });
+    const ws = fakeWorkspace();
+    const err = await createRemoteRetrieve(runner, ws.deps)(cfg("https://github.com/owner/private")).catch((e: unknown) => e);
+    expect(err).toBeInstanceOf(RetrieveError);
+    expect((err as RetrieveError).message).toMatch(/Authentication is required/i);
+    expect((err as RetrieveError).message).toContain("COMMIT_SAGE_GIT_TOKEN");
+  });
+
+  it("a NON-auth clone failure stays the generic message (the taxonomy is Story 5.3)", async () => {
+    const { runner } = fakeRunner({
+      clone: async () => {
+        throw Object.assign(new Error("clone failed"), { stderr: "fatal: unable to access: Could not resolve host: example.invalid" });
+      },
+    });
+    const ws = fakeWorkspace();
+    const err = await createRemoteRetrieve(runner, ws.deps, new Secret(TOKEN))(cfg("https://example.invalid/repo")).catch((e: unknown) => e);
+    expect(err).toBeInstanceOf(RetrieveError);
+    expect((err as RetrieveError).message).toMatch(/Failed to clone/);
+    expect((err as RetrieveError).message).not.toContain(TOKEN);
+  });
+});
+
+describe("createRemoteRetrieve — clone failure + cleanup (Story 5.1)", () => {
   it("maps a clone failure to a RetrieveError (exit 4) and still cleans up the temp dir", async () => {
     const { runner } = fakeRunner({
       clone: async () => {
@@ -118,10 +186,7 @@ describe("createRemoteRetrieve — clone failure", () => {
   });
 
   it("a post-clone read error names the URL, never the disposable temp path", async () => {
-    // The clone succeeds, but the cloned tree reads back as a non-work-tree.
-    const calls: string[][] = [];
     const runner: GitRunner = async (args) => {
-      calls.push([...args]);
       if (subcommand(args) === "clone") {
         return "";
       }

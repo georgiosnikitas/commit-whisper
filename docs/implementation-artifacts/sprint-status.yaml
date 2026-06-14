@@ -100,7 +100,7 @@ development_status:
   # ═══════════════════════════════════════════════════════════════
   epic-5: in-progress
   5-1-remote-https-clone-with-stateless-cleanup: done
-  5-2-private-remote-token-authentication: backlog
+  5-2-private-remote-token-authentication: done
   5-3-graceful-no-retry-failure-handling: backlog
   epic-5-retrospective: optional
 

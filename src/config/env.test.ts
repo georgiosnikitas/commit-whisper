@@ -1,6 +1,6 @@
 import { describe, it, expect } from "vitest";
 
-import { readAiKey, readEnvLayer } from "./env.js";
+import { readAiKey, readGitToken, readEnvLayer } from "./env.js";
 import { Secret } from "../shared/secret.js";
 
 describe("readEnvLayer", () => {
@@ -127,5 +127,31 @@ describe("readAiKey", () => {
   it("treats a blank key as unset", () => {
     expect(readAiKey({ GOOGLE_GENERATIVE_AI_API_KEY: "   " }, "gemini")).toBeUndefined();
     expect(readAiKey({ OPENAI_API_KEY: "  " }, "openai")).toBeUndefined();
+  });
+});
+
+describe("readGitToken (Story 5.2)", () => {
+  it("reads COMMIT_SAGE_GIT_TOKEN with precedence over the host fallbacks", () => {
+    expect(readGitToken({ COMMIT_SAGE_GIT_TOKEN: "primary", GITHUB_TOKEN: "gh" })?.reveal()).toBe("primary");
+  });
+
+  it("falls back GITHUB_TOKEN → GITLAB_TOKEN → BITBUCKET_TOKEN in order", () => {
+    expect(readGitToken({ GITHUB_TOKEN: "gh" })?.reveal()).toBe("gh");
+    expect(readGitToken({ GITLAB_TOKEN: "gl" })?.reveal()).toBe("gl");
+    expect(readGitToken({ BITBUCKET_TOKEN: "bb" })?.reveal()).toBe("bb");
+    expect(readGitToken({ GITLAB_TOKEN: "gl", BITBUCKET_TOKEN: "bb" })?.reveal()).toBe("gl");
+  });
+
+  it("is undefined when no token var is set, and ignores a blank value", () => {
+    expect(readGitToken({})).toBeUndefined();
+    expect(readGitToken({ COMMIT_SAGE_GIT_TOKEN: "   " })).toBeUndefined();
+  });
+
+  it("wraps the token in a Secret that redacts everywhere (never leaks)", () => {
+    const token = readGitToken({ COMMIT_SAGE_GIT_TOKEN: "ghp_supersecret" });
+    expect(token).toBeInstanceOf(Secret);
+    expect(String(token)).toBe("***");
+    expect(JSON.stringify({ token })).toBe('{"token":"***"}');
+    expect(token?.reveal()).toBe("ghp_supersecret"); // only via the explicit accessor
   });
 });

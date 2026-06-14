@@ -64,6 +64,24 @@ describe("main — strict single-shot wiring", () => {
     });
     expect(cap.calls[0]!.deps.aiKey?.reveal()).toBe("secret-key");
   });
+
+  it("reads the env-only git PAT into the pipeline deps (Story 5.2)", async () => {
+    const cap = captureRun();
+    await main([".", "--no-ai"], {
+      ...BASE,
+      env: { COMMIT_SAGE_GIT_TOKEN: "ghp_tok" },
+      ui: recorder().ui,
+      run: cap.run,
+    });
+    expect(cap.calls[0]!.deps.gitToken?.reveal()).toBe("ghp_tok");
+  });
+
+  it("a run with no git token still succeeds — absence is never an error (Story 5.2)", async () => {
+    const cap = captureRun();
+    const code = await main([".", "--no-ai"], { ...BASE, env: {}, ui: recorder().ui, run: cap.run });
+    expect(code).toBe(ExitCode.Success);
+    expect(cap.calls[0]!.deps.gitToken).toBeUndefined();
+  });
 });
 
 describe("main — commit-selection flags (Story 2.6)", () => {

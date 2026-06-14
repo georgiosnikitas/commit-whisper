@@ -23,4 +23,20 @@ describe("execFileGitRunner", () => {
     expect(args).toEqual(["log", "--numstat"]);
     expect(opts).toMatchObject({ cwd: "/repo", windowsHide: true });
   });
+
+  it("passes no `env` when no extraEnv is given (clean inherit of process.env)", async () => {
+    execFileMock.mockClear();
+    await execFileGitRunner(["log"], { cwd: "/repo" });
+    const opts = execFileMock.mock.calls[0][2] as { env?: unknown };
+    expect(opts.env).toBeUndefined();
+  });
+
+  it("merges extraEnv over the inherited env when given (the git-auth channel, Story 5.2)", async () => {
+    execFileMock.mockClear();
+    await execFileGitRunner(["clone"], { cwd: "/repo", extraEnv: { GIT_TERMINAL_PROMPT: "0", COMMIT_SAGE_GIT_PAT: "tok" } });
+    const opts = execFileMock.mock.calls[0][2] as { env?: Record<string, string> };
+    expect(opts.env).toMatchObject({ GIT_TERMINAL_PROMPT: "0", COMMIT_SAGE_GIT_PAT: "tok" });
+    // The inherited base env is merged in too (more than just the two extras present).
+    expect(Object.keys(opts.env ?? {}).length).toBeGreaterThan(2);
+  });
 });

@@ -49,6 +49,8 @@ export interface RunDeps {
   preflight?: typeof preflightProvider;
   /** The env-only LLM key, read by the shell (`config/env.ts`) and injected here. */
   aiKey?: Secret<string>;
+  /** The env-only git PAT (Story 5.2), used only to authenticate a remote clone. */
+  gitToken?: Secret<string>;
   fetchImpl?: typeof fetch;
   writeStdout?: (text: string) => void;
   /** Injected file writer (defaults to the real `node:fs/promises` writer) — the one new I/O edge. */
@@ -61,7 +63,7 @@ export interface RunDeps {
 }
 
 export async function runPipeline(config: RunConfig, deps: RunDeps = {}): Promise<number> {
-  const retrieve = deps.retrieve ?? createRetrieve();
+  const retrieve = deps.retrieve ?? createRetrieve({ gitToken: deps.gitToken });
   const narrate = deps.narrate ?? createNarrate();
   const preflight = deps.preflight ?? preflightProvider;
   const ui = deps.ui ?? defaultUi;

@@ -19,7 +19,7 @@
 
 import { Command, CommanderError } from "commander";
 
-import { readAiKey, readProcessEnv } from "../config/env.js";
+import { readAiKey, readGitToken, readProcessEnv } from "../config/env.js";
 import { resolveRunConfig } from "../config/resolve-run-config.js";
 import { detectCapability } from "../config/capability.js";
 import type { OutputFormat, PartialRunConfig, Provider } from "../config/run-config.js";
@@ -97,6 +97,7 @@ export async function main(argv: string[], deps: CliDeps = {}): Promise<number> 
       flags,
     });
     const aiKey = readAiKey(env, config.provider);
+    const gitToken = readGitToken(env); // env-only PAT for a private remote (Story 5.2)
     // Auto-open the HTML showpiece only in an interactive terminal and unless
     // `--no-open` was passed (Story 4.5). `interactive` already excludes CI /
     // non-TTY / --non-interactive; STRICT single-shot is non-interactive, so this
@@ -104,7 +105,7 @@ export async function main(argv: string[], deps: CliDeps = {}): Promise<number> 
     const { interactive } = detectCapability({ nonInteractive: true, stdinIsTTY, stdoutIsTTY, env });
     const autoOpen = interactive && opts.open !== false;
     const run = deps.run ?? runPipeline;
-    return await run(config, { aiKey, ui, writeStdout: deps.writeStdout, autoOpen, ...deps.runDeps });
+    return await run(config, { aiKey, gitToken, ui, writeStdout: deps.writeStdout, autoOpen, ...deps.runDeps });
   } catch (err) {
     ui.error(messageForError(err));
     if (err instanceof MissingRequiredConfigError) {

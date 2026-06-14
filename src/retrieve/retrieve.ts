@@ -15,18 +15,21 @@ import { isRemoteTarget } from "./target.js";
 import { createLocalRetrieve } from "./local.js";
 import { createRemoteRetrieve } from "./remote.js";
 import type { TempWorkspaceDeps } from "./temp-workspace.js";
+import type { Secret } from "../shared/secret.js";
 
 export interface RetrieveDeps {
   /** The git shell-out (shared by both adapters). Default: the real `execFile` runner. */
   runner?: GitRunner;
   /** Temp-workspace side-effect seams for the remote adapter (offline-testable). */
   workspace?: TempWorkspaceDeps;
+  /** The env-only git PAT (Story 5.2), used only to authenticate a remote clone. */
+  gitToken?: Secret<string>;
 }
 
 /** Build the dispatching retriever: remote URL ⇒ clone-into-temp, else local path. */
 export function createRetrieve(deps: RetrieveDeps = {}): RetrievePort {
   const runner = deps.runner ?? execFileGitRunner;
   const local = createLocalRetrieve(runner);
-  const remote = createRemoteRetrieve(runner, deps.workspace);
+  const remote = createRemoteRetrieve(runner, deps.workspace, deps.gitToken);
   return async (config) => (isRemoteTarget(config.repoTarget) ? remote : local)(config);
 }
