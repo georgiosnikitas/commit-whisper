@@ -280,6 +280,68 @@ describe("main — zero-arg launchpad (Story 6.1)", () => {
     expect(lp.calls[0]!.helpText.length).toBeGreaterThan(0);
   });
 
+  it("wires a guided-run executor and the git-token presence flag into the launchpad (Story 6.2)", async () => {
+    const withToken = captureLaunchpad();
+    await main([], {
+      ...BASE,
+      stdinIsTTY: true,
+      stdoutIsTTY: true,
+      env: { COMMIT_SAGE_GIT_TOKEN: "ghp_tok" },
+      gitRunner: repoRunner,
+      launchpad: withToken.launchpad,
+    });
+    expect(typeof withToken.calls[0]!.runAnalysis).toBe("function");
+    expect(withToken.calls[0]!.gitTokenConfigured).toBe(true);
+
+    const noToken = captureLaunchpad();
+    await main([], {
+      ...BASE,
+      stdinIsTTY: true,
+      stdoutIsTTY: true,
+      env: {},
+      gitRunner: repoRunner,
+      launchpad: noToken.launchpad,
+    });
+    expect(noToken.calls[0]!.gitTokenConfigured).toBe(false);
+  });
+
+  it("the wired guided executor resolves aiMode=auto and runs the pipeline with the collected flags", async () => {
+    const lp = captureLaunchpad();
+    const cap = captureRun();
+    await main([], {
+      ...BASE,
+      stdinIsTTY: true,
+      stdoutIsTTY: true,
+      env: { COMMIT_SAGE_PROVIDER: "openai", COMMIT_SAGE_LLM_MODEL: "gpt-4o" },
+      gitRunner: repoRunner,
+      launchpad: lp.launchpad,
+      run: cap.run,
+    });
+    const code = await lp.calls[0]!.runAnalysis!({ repoTarget: ".", maxCommits: 7 });
+    expect(code).toBe(ExitCode.Success);
+    expect(cap.calls).toHaveLength(1);
+    expect(cap.calls[0]!.config.aiMode).toBe("auto"); // interactive default
+    expect(cap.calls[0]!.config.maxCommits).toBe(7);
+    expect(cap.calls[0]!.config.repoTarget).toBe(".");
+  });
+
+  it("a guided run with no AI configured surfaces the typed error gracefully (no throw, back to menu)", async () => {
+    const r = recorder();
+    const lp = captureLaunchpad();
+    await main([], {
+      ...BASE,
+      stdinIsTTY: true,
+      stdoutIsTTY: true,
+      env: {}, // interactive ⇒ aiMode auto ⇒ provider/model required ⇒ MissingRequiredConfigError
+      gitRunner: repoRunner,
+      launchpad: lp.launchpad,
+      ui: r.ui,
+    });
+    const code = await lp.calls[0]!.runAnalysis!({ repoTarget: "." });
+    expect(code).toBe(ExitCode.MissingInput); // caught, named, not thrown into the menu
+    expect(r.errors.join(" ")).toContain("Required configuration");
+  });
+
   it("a CI env is non-interactive even at a TTY — 0 args fails fast and skips the launchpad", async () => {
     const lp = captureLaunchpad();
     const code = await main([], {

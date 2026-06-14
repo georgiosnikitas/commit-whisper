@@ -5,13 +5,19 @@ import { describe, it, expect } from "vitest";
 import {
   buildLaunchpadOptions,
   FLAGS_CHEATSHEET,
+  formatEquivalentCommand,
   formatReadinessLine,
+  interpretDateRange,
+  interpretLimit,
   LAUNCHPAD_TAGLINE,
   runLaunchpad,
+  type GuidedPrompts,
   type LaunchpadAction,
+  type LaunchpadDeps,
   type LaunchpadSelect,
   type LaunchpadState,
 } from "./interactive.js";
+import type { OutputFormat, PartialRunConfig } from "../config/run-config.js";
 import { ExitCode } from "./exit-codes.js";
 
 function captureStream() {
@@ -164,7 +170,238 @@ describe("runLaunchpad (AC1, AC4)", () => {
   it("the Analyze placeholder teaches the headless command (self-teaching bridge)", async () => {
     const out = captureStream();
     const sel = scriptedSelect(["analyze-cwd", "quit"]);
-    await runLaunchpad({ state: FREE_CONFIGURED, helpText: "HELP", output: out.stream, select: sel.select });
+    await runLaunchpad({
+      state: FREE_CONFIGURED,
+      helpText: "HELP",
+      output: out.stream,
+      select: sel.select,
+      prompts: scriptedPrompts({ texts: ["", ""], formats: ["terminal"] }).prompts,
+      runAnalysis: captureAnalysis().runAnalysis,
+    });
     expect(out.text()).toContain("commit-sage .");
   });
 });
+
+// ── Story 6.2: guided prompts + command echo ────────────────────────────────
+
+/** A scripted guided-prompt primitive: returns each text answer in turn, then the formats. */
+function scriptedPrompts(script: { texts?: (string | null)[]; formats?: OutputFormat[] | null }) {
+  let ti = 0;
+  const textMessages: string[] = [];
+  const prompts: GuidedPrompts = {
+    async text(opts) {
+      textMessages.push(opts.message);
+      const next = script.texts?.[ti++];
+      return next ?? null;
+    },
+    async multiselect() {
+      if (script.formats === undefined) {
+        return ["terminal"];
+      }
+      return script.formats;
+    },
+  };
+  return { prompts, textMessages };
+}
+
+function captureAnalysis() {
+  const calls: PartialRunConfig[] = [];
+  const runAnalysis = async (flags: PartialRunConfig): Promise<number> => {
+    calls.push(flags);
+    return ExitCode.Success;
+  };
+  return { calls, runAnalysis };
+}
+
+function guidedDeps(over: Partial<LaunchpadDeps>): LaunchpadDeps {
+  return { state: FREE_CONFIGURED, helpText: "HELP", ...over };
+}
+
+describe("formatEquivalentCommand (AC2)", () => {
+  it("emits the cwd target + real flags (max-commits, format)", () => {
+    const cmd = formatEquivalentCommand(".", { repoTarget: ".", maxCommits: 500, outputFormats: ["markdown"] });
+    expect(cmd).toBe("commit-sage . --max-commits 500 --format markdown");
+  });
+
+  it("omits --format when the selection is the default ['terminal']", () => {
+    expect(formatEquivalentCommand(".", { outputFormats: ["terminal"] })).toBe("commit-sage .");
+  });
+
+  it("comma-joins multiple formats", () => {
+    const cmd = formatEquivalentCommand(".", { outputFormats: ["terminal", "html"] });
+    expect(cmd).toBe("commit-sage . --format terminal,html");
+  });
+
+  it("emits --since / --until from the date bounds", () => {
+    const cmd = formatEquivalentCommand(".", { startDate: "2024-01-01", endDate: "2024-06-30" });
+    expect(cmd).toBe("commit-sage . --since 2024-01-01 --until 2024-06-30");
+  });
+
+  it("uses the remote URL as the positional target", () => {
+    expect(formatEquivalentCommand("https://github.com/x/y", {})).toBe("commit-sage https://github.com/x/y");
+  });
+
+  it("never emits a --branch flag (no such flag exists)", () => {
+    const cmd = formatEquivalentCommand(".", { maxCommits: 10, outputFormats: ["json"] });
+    expect(cmd).not.toContain("--branch");
+  });
+
+  it("shell-quotes a target with whitespace or metacharacters (faithful, paste-safe)", () => {
+    expect(formatEquivalentCommand("/a path/repo", {})).toBe("commit-sage '/a path/repo'");
+    expect(formatEquivalentCommand("https://h/x?a=1&b=2", {})).toBe("commit-sage 'https://h/x?a=1&b=2'");
+    expect(formatEquivalentCommand("/o'reilly", {})).toBe("commit-sage '/o'\\''reilly'");
+  });
+
+  it("leaves a normal URL or path bare", () => {
+    expect(formatEquivalentCommand("https://github.com/acme/app.git", {})).toBe(
+      "commit-sage https://github.com/acme/app.git",
+    );
+  });
+});
+
+describe("interpretLimit (AC1)", () => {
+  it("empty → all history (no cap, no error)", () => {
+    expect(interpretLimit("")).toEqual({});
+    expect(interpretLimit("   ")).toEqual({});
+  });
+
+  it("a positive integer → the cap (trimmed)", () => {
+    expect(interpretLimit("500")).toEqual({ maxCommits: 500 });
+    expect(interpretLimit("  42 ")).toEqual({ maxCommits: 42 });
+  });
+
+  it("rejects zero, negatives, decimals, and non-numbers", () => {
+    for (const bad of ["0", "-3", "1.5", "abc", "0x10", "1e3"]) {
+      expect("error" in interpretLimit(bad)).toBe(true);
+    }
+  });
+
+  it("rejects an out-of-safe-range number (the echo must stay runnable)", () => {
+    expect("error" in interpretLimit("99999999999999999999")).toBe(true);
+  });
+});
+
+describe("interpretDateRange (AC1)", () => {
+  it("empty → all history", () => {
+    expect(interpretDateRange("")).toEqual({});
+  });
+
+  it("since..until → both bounds", () => {
+    expect(interpretDateRange("2024-01-01..2024-06-30")).toEqual({
+      startDate: "2024-01-01",
+      endDate: "2024-06-30",
+    });
+  });
+
+  it("one-sided ranges", () => {
+    expect(interpretDateRange("2024-01-01..")).toEqual({ startDate: "2024-01-01" });
+    expect(interpretDateRange("..2024-06-30")).toEqual({ endDate: "2024-06-30" });
+  });
+
+  it("a bare date is treated as since", () => {
+    expect(interpretDateRange("2024-01-01")).toEqual({ startDate: "2024-01-01" });
+  });
+
+  it("rejects malformed dates", () => {
+    for (const bad of ["nope", "2024-1-1", "01-01-2024", "2024/01/01"]) {
+      expect("error" in interpretDateRange(bad)).toBe(true);
+    }
+  });
+
+  it("rejects a triple-split range instead of silently dropping the extra part", () => {
+    expect("error" in interpretDateRange("2024-01-01..2024-06-30..2024-12-31")).toBe(true);
+  });
+});
+
+describe("runGuidedAnalyze via runLaunchpad (AC1, AC2, AC3)", () => {
+  it("a cwd run collects inputs, executes once, echoes the command, and returns to the menu", async () => {
+    const out = captureStream();
+    const sel = scriptedSelect(["analyze-cwd", "quit"]);
+    const analysis = captureAnalysis();
+    await runLaunchpad(
+      guidedDeps({
+        output: out.stream,
+        select: sel.select,
+        prompts: scriptedPrompts({ texts: ["500", ""], formats: ["terminal", "html"] }).prompts,
+        runAnalysis: analysis.runAnalysis,
+      }),
+    );
+    expect(analysis.calls).toHaveLength(1);
+    expect(analysis.calls[0]).toEqual({
+      repoTarget: ".",
+      maxCommits: 500,
+      outputFormats: ["terminal", "html"],
+    });
+    expect(out.text()).toContain("▸ Next time: commit-sage . --max-commits 500 --format terminal,html");
+    expect(sel.calls()).toBe(2); // looped back to the menu
+  });
+
+  it("cancelling a guided prompt aborts the run (no execution) and returns to the menu", async () => {
+    const out = captureStream();
+    const sel = scriptedSelect(["analyze-cwd", "quit"]);
+    const analysis = captureAnalysis();
+    await runLaunchpad(
+      guidedDeps({
+        output: out.stream,
+        select: sel.select,
+        prompts: scriptedPrompts({ texts: [null] }).prompts, // cancel at the first prompt
+        runAnalysis: analysis.runAnalysis,
+      }),
+    );
+    expect(analysis.calls).toHaveLength(0);
+    expect(sel.calls()).toBe(2);
+  });
+
+  it("a remote run prompts the URL, names the token env var when absent (AC3), and targets the URL", async () => {
+    const out = captureStream();
+    const sel = scriptedSelect(["analyze-remote", "quit"]);
+    const analysis = captureAnalysis();
+    const scripted = scriptedPrompts({
+      texts: ["https://github.com/acme/app", "", ""],
+      formats: ["terminal"],
+    });
+    await runLaunchpad(
+      guidedDeps({
+        output: out.stream,
+        select: sel.select,
+        prompts: scripted.prompts,
+        runAnalysis: analysis.runAnalysis,
+        gitTokenConfigured: false,
+      }),
+    );
+    expect(analysis.calls[0]?.repoTarget).toBe("https://github.com/acme/app");
+    expect(out.text()).toContain("COMMIT_SAGE_GIT_TOKEN");
+    expect(out.text()).toContain("▸ Next time: commit-sage https://github.com/acme/app");
+    // AC3: the secret itself is never prompted (no prompt collects a key/token).
+    expect(scripted.textMessages.some((m) => /key|token|secret/i.test(m))).toBe(false);
+  });
+
+  it("omits the token hint when a git token is already configured", async () => {
+    const out = captureStream();
+    const sel = scriptedSelect(["analyze-remote", "quit"]);
+    await runLaunchpad(
+      guidedDeps({
+        output: out.stream,
+        select: sel.select,
+        prompts: scriptedPrompts({ texts: ["https://github.com/acme/app", "", ""], formats: ["terminal"] }).prompts,
+        runAnalysis: captureAnalysis().runAnalysis,
+        gitTokenConfigured: true,
+      }),
+    );
+    expect(out.text()).not.toContain("COMMIT_SAGE_GIT_TOKEN");
+  });
+
+  it("echo-only when no executor is injected (still teaches the command)", async () => {
+    const out = captureStream();
+    const sel = scriptedSelect(["analyze-cwd", "quit"]);
+    await runLaunchpad(
+      guidedDeps({
+        output: out.stream,
+        select: sel.select,
+        prompts: scriptedPrompts({ texts: ["", "2024-01-01..2024-06-30"], formats: ["json"] }).prompts,
+      }),
+    );
+    expect(out.text()).toContain("▸ Next time: commit-sage . --since 2024-01-01 --until 2024-06-30 --format json");
+  });
+});
+

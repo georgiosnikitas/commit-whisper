@@ -14,17 +14,20 @@
  * (default `process.stderr`) — stdout stays clean for machine data (`cli/` is
  * under `no-console`, so we write via the stream, never `console.*`).
  *
- * 6.1 is the menu only: `Help` (full flag reference) and `Quit` (cheatsheet +
- * exit 0) are the live actions; every other row is shown (discovery is the
- * point) but routes to a calm "coming soon" placeholder until its owning story
- * (Analyze 6.2 · Status 6.3 · Settings 6.5 · license actions Epic 7) lands.
+ * Story 6.2 turns the two Analyze rows into live GUIDED RUNS: infer the target
+ * (cwd `.` or a prompted remote URL), ask only the optional scoping inputs
+ * (limit · date range · output format) with defaults, run the pipeline through
+ * an INJECTED `runAnalysis` executor, then echo the equivalent strict
+ * single-shot command (`▸ Next time: …`) — the self-teaching bridge. Status
+ * (6.3) · Settings (6.5) · license actions (Epic 7) stay "coming soon"
+ * placeholders. All prompt chrome is stderr, so the stdout report never bleeds.
  */
 
 import { Writable } from "node:stream";
 
-import { isCancel, select as clackSelect } from "@clack/prompts";
+import { isCancel, multiselect as clackMultiselect, select as clackSelect, text as clackText } from "@clack/prompts";
 
-import type { Provider, Tier } from "../config/run-config.js";
+import type { OutputFormat, PartialRunConfig, Provider, Tier } from "../config/run-config.js";
 import { ExitCode } from "./exit-codes.js";
 
 /** A launchpad row's stable identity (the value returned by the menu). */
@@ -68,6 +71,27 @@ export type LaunchpadSelect = (opts: {
   options: LaunchpadOption[];
 }) => Promise<LaunchpadAction | null>;
 
+/** A single-line text prompt's options (a `@clack` `text` subset). */
+export interface GuidedTextOptions {
+  message: string;
+  placeholder?: string;
+  defaultValue?: string;
+  validate?: (value: string) => string | undefined;
+}
+
+/** A multi-select prompt's options (the output-format picker). */
+export interface GuidedMultiselectOptions {
+  message: string;
+  options: { value: OutputFormat; label: string }[];
+  initialValues?: OutputFormat[];
+}
+
+/** The injected guided-prompt primitives (cancel → `null`, mirroring `LaunchpadSelect`). */
+export interface GuidedPrompts {
+  text(opts: GuidedTextOptions): Promise<string | null>;
+  multiselect(opts: GuidedMultiselectOptions): Promise<OutputFormat[] | null>;
+}
+
 export interface LaunchpadDeps {
   state: LaunchpadState;
   /** The full flag reference (commander's help text), shown by "Help / show all flags". */
@@ -76,6 +100,12 @@ export interface LaunchpadDeps {
   output?: Writable;
   /** The menu primitive. Default: a `@clack/prompts` `select` wired to `output`. */
   select?: LaunchpadSelect;
+  /** The guided-run prompt primitives. Default: `@clack` `text`/`multiselect` wired to `output`. */
+  prompts?: GuidedPrompts;
+  /** The pipeline executor for a guided Analyze run; injected by `cli/`. Absent ⇒ echo-only. */
+  runAnalysis?: (flags: PartialRunConfig) => Promise<number>;
+  /** Whether a git token is set in the environment (for the AC3 private-remote hint). */
+  gitTokenConfigured?: boolean;
 }
 
 /** The locked product tagline (brief.md / DESIGN.md). */
@@ -97,10 +127,11 @@ const TIER_LABEL: Record<Tier, string> = {
   unlimited: "Unlimited",
 };
 
-/** Calm placeholders for the rows whose actions land in later stories (6.1 ships the menu only). */
-const COMING_SOON: Record<Exclude<LaunchpadAction, "help" | "quit">, string> = {
-  "analyze-cwd": "Guided analysis is coming soon. For now, run: commit-sage .",
-  "analyze-remote": "Guided remote analysis is coming soon. For now, run: commit-sage <url>",
+/** Calm placeholders for the rows whose actions land in later stories (Status 6.3 · Settings 6.5 · license Epic 7). */
+const COMING_SOON: Record<
+  Exclude<LaunchpadAction, "help" | "quit" | "analyze-cwd" | "analyze-remote">,
+  string
+> = {
   settings: "Settings is coming soon.",
   status: "Status / doctor is coming soon.",
   activate: "License activation is coming soon.",
@@ -108,6 +139,14 @@ const COMING_SOON: Record<Exclude<LaunchpadAction, "help" | "quit">, string> = {
   coffee: "Buy Me a Coffee — link coming soon.",
   deactivate: "Deactivation is coming soon.",
 };
+
+/** The output-format picker rows (the resolver tokens — `markdown`, not the `md` extension). */
+const OUTPUT_FORMAT_OPTIONS: { value: OutputFormat; label: string }[] = [
+  { value: "terminal", label: "terminal" },
+  { value: "html", label: "html" },
+  { value: "markdown", label: "markdown" },
+  { value: "json", label: "json" },
+];
 
 function aiSegment(state: LaunchpadState): string {
   if (state.provider === undefined) {
@@ -160,6 +199,109 @@ export function buildLaunchpadOptions(state: LaunchpadState): LaunchpadOption[] 
   return options;
 }
 
+// ── Guided run: pure command echo + input interpreters (Story 6.2) ──────────
+
+/** A YYYY-MM-DD date, optionally with an ISO time tail (mirrors cli.ts `validateDateFlag`). */
+const GUIDED_DATE = /^\d{4}-\d{2}-\d{2}/;
+
+/**
+ * The equivalent strict single-shot command for a guided run (AC2) — the
+ * self-teaching `▸ Next time:` bridge. Emits ONLY flags the CLI actually has
+ * (`--max-commits`/`--since`/`--until`/`--format`) plus the inferred positional
+ * target; never `--branch` (no such flag). `--format` is emitted only when the
+ * selection differs from the default `["terminal"]`.
+ */
+export function formatEquivalentCommand(target: string, flags: PartialRunConfig): string {
+  const parts = ["commit-sage", quoteArg(target)];
+  if (flags.maxCommits !== undefined) {
+    parts.push("--max-commits", String(flags.maxCommits));
+  }
+  if (flags.startDate !== undefined) {
+    parts.push("--since", flags.startDate);
+  }
+  if (flags.endDate !== undefined) {
+    parts.push("--until", flags.endDate);
+  }
+  if (flags.outputFormats !== undefined && !isDefaultFormats(flags.outputFormats)) {
+    parts.push("--format", flags.outputFormats.join(","));
+  }
+  return parts.join(" ");
+}
+
+function isDefaultFormats(formats: OutputFormat[]): boolean {
+  return formats.length === 1 && formats[0] === "terminal";
+}
+
+function quoteArg(value: string): string {
+  // Leave shell-neutral tokens bare (`.`, `/path/to/repo`, `https://host/x.git`);
+  // otherwise POSIX single-quote — closing/escaping/reopening any embedded single
+  // quote — so the echoed command is faithful and copy-paste-safe even with
+  // spaces or shell metacharacters (the echo is a teaching aid the user pastes).
+  if (value !== "" && /^[A-Za-z0-9_./:@%+=-]+$/.test(value)) {
+    return value;
+  }
+  return `'${value.replace(/'/g, "'\\''")}'`;
+}
+
+/**
+ * Interpret the "Limit" input — dual-purpose (a `@clack` validator AND the
+ * parser). Empty ⇒ all history; a decimal positive integer ⇒ the cap; anything
+ * else ⇒ an error string. Mirrors cli.ts `applySelectionFlags`.
+ */
+export function interpretLimit(raw: string): { error: string } | { maxCommits?: number } {
+  const trimmed = raw.trim();
+  if (trimmed === "") {
+    return {};
+  }
+  const error = { error: "Enter a positive whole number, or leave blank for all history." };
+  if (!/^\d+$/.test(trimmed)) {
+    return error;
+  }
+  const value = Number(trimmed);
+  // Reject 0 and anything beyond the safe-integer range — `String(1e21)` would
+  // echo as `1e+21`, which the CLI's `/^\d+$/` flag parser then rejects (the
+  // self-teaching command must stay runnable).
+  if (value <= 0 || value > Number.MAX_SAFE_INTEGER) {
+    return error;
+  }
+  return { maxCommits: value };
+}
+
+/**
+ * Interpret the "Date range" input — dual-purpose. Empty ⇒ all history;
+ * `since..until` (either side optional) ⇒ the bounds; a bare date ⇒ `since`.
+ * Each non-empty side must be YYYY-MM-DD (an ISO time tail allowed).
+ */
+export function interpretDateRange(
+  raw: string,
+): { error: string } | { startDate?: string; endDate?: string } {
+  const trimmed = raw.trim();
+  if (trimmed === "") {
+    return {};
+  }
+  const rangeError = {
+    error: "Use YYYY-MM-DD..YYYY-MM-DD (either side optional), or leave blank for all history.",
+  };
+  const parts = trimmed.split("..");
+  if (parts.length > 2) {
+    return rangeError; // `a..b..c` is malformed — never silently drop the extra parts.
+  }
+  const [sinceRaw, untilRaw = ""] = parts;
+  const since = sinceRaw.trim();
+  const until = untilRaw.trim();
+  if ((since !== "" && !GUIDED_DATE.test(since)) || (until !== "" && !GUIDED_DATE.test(until))) {
+    return rangeError;
+  }
+  const bounds: { startDate?: string; endDate?: string } = {};
+  if (since !== "") {
+    bounds.startDate = since;
+  }
+  if (until !== "") {
+    bounds.endDate = until;
+  }
+  return bounds;
+}
+
 function writeLine(output: Writable, text: string): void {
   output.write(text.endsWith("\n") ? text : `${text}\n`);
 }
@@ -170,6 +312,135 @@ function clackLaunchpadSelect(output: Writable): LaunchpadSelect {
     const result = await clackSelect<LaunchpadAction>({ message, options, output });
     return isCancel(result) ? null : result;
   };
+}
+
+/** The default guided-prompt primitives: `@clack` `text`/`multiselect` wired to `output`; cancel → `null`. */
+function clackGuidedPrompts(output: Writable): GuidedPrompts {
+  return {
+    async text(opts) {
+      const validate = opts.validate;
+      const result = await clackText({
+        message: opts.message,
+        placeholder: opts.placeholder,
+        defaultValue: opts.defaultValue,
+        // `@clack` may pass `undefined` (empty input); our validators are total over strings.
+        validate: validate === undefined ? undefined : (value) => validate(value ?? ""),
+        output,
+      });
+      return isCancel(result) ? null : result;
+    },
+    async multiselect(opts) {
+      const result = await clackMultiselect<OutputFormat>({
+        message: opts.message,
+        options: opts.options,
+        initialValues: opts.initialValues,
+        required: false,
+        output,
+      });
+      return isCancel(result) ? null : result;
+    },
+  };
+}
+
+/** A simple HTTPS-URL validator for the remote-repository prompt (clone targets are http(s)). */
+function validateRemoteUrl(value: string): string | undefined {
+  return /^https?:\/\/\S+/i.test(value.trim()) ? undefined : "Enter a repository URL starting with https://.";
+}
+
+/** Adapt an interpreter result into a `@clack` validator return (the error string, or `undefined`). */
+function errorOf(
+  result: { error: string } | { maxCommits?: number } | { startDate?: string; endDate?: string },
+): string | undefined {
+  return "error" in result ? result.error : undefined;
+}
+
+/**
+ * Collect the optional scoping inputs (AC1) — limit · date range · output
+ * format — each defaulted so the user mostly confirms. Returns the assembled
+ * flags (no `repoTarget`), or `null` if any prompt is cancelled. Branch is NOT
+ * asked (the CLI has no `--branch` flag).
+ */
+async function collectGuidedInputs(prompts: GuidedPrompts): Promise<PartialRunConfig | null> {
+  const limitRaw = await prompts.text({
+    message: "Limit — most-recent commits to analyze",
+    placeholder: "all history",
+    validate: (v) => errorOf(interpretLimit(v)),
+  });
+  if (limitRaw === null) {
+    return null;
+  }
+
+  const rangeRaw = await prompts.text({
+    message: "Date range — since..until (absolute, optional)",
+    placeholder: "all history",
+    validate: (v) => errorOf(interpretDateRange(v)),
+  });
+  if (rangeRaw === null) {
+    return null;
+  }
+
+  const formats = await prompts.multiselect({
+    message: "Output — one or more formats",
+    options: OUTPUT_FORMAT_OPTIONS,
+    initialValues: ["terminal"],
+  });
+  if (formats === null) {
+    return null;
+  }
+
+  const flags: PartialRunConfig = {};
+  const limit = interpretLimit(limitRaw);
+  if ("maxCommits" in limit && limit.maxCommits !== undefined) {
+    flags.maxCommits = limit.maxCommits;
+  }
+  const range = interpretDateRange(rangeRaw);
+  if ("startDate" in range && range.startDate !== undefined) {
+    flags.startDate = range.startDate;
+  }
+  if ("endDate" in range && range.endDate !== undefined) {
+    flags.endDate = range.endDate;
+  }
+  flags.outputFormats = formats.length > 0 ? formats : ["terminal"];
+  return flags;
+}
+
+/**
+ * Drive one guided Analyze run (AC1, AC2, AC3): infer the target (cwd `.` or a
+ * prompted remote URL), name a needed secret's env var (never collect it),
+ * collect the scoping inputs, execute via the injected `runAnalysis`, then echo
+ * the equivalent command. Always returns to the menu — cancel is never a
+ * dead-end.
+ */
+async function runGuidedAnalyze(deps: LaunchpadDeps, mode: "cwd" | "remote", output: Writable): Promise<void> {
+  const prompts = deps.prompts ?? clackGuidedPrompts(output);
+
+  let target = ".";
+  if (mode === "remote") {
+    const url = await prompts.text({ message: "Repository URL", validate: validateRemoteUrl });
+    if (url === null) {
+      return;
+    }
+    target = url.trim();
+    if (deps.gitTokenConfigured !== true) {
+      // AC3: name the env var for a private remote — never a collect field.
+      writeLine(
+        output,
+        "If this repository is private, set COMMIT_SAGE_GIT_TOKEN in your environment first — commit-sage never collects it.",
+      );
+    }
+  }
+
+  const inputs = await collectGuidedInputs(prompts);
+  if (inputs === null) {
+    return;
+  }
+  const flags: PartialRunConfig = { repoTarget: target, ...inputs };
+
+  if (deps.runAnalysis !== undefined) {
+    await deps.runAnalysis(flags);
+  }
+  // AC2: the self-teaching bridge — echo the equivalent strict single-shot command.
+  writeLine(output, `▸ Next time: ${formatEquivalentCommand(target, flags)}`);
 }
 
 /**
@@ -193,6 +464,10 @@ export async function runLaunchpad(deps: LaunchpadDeps): Promise<number> {
     }
     if (action === "help") {
       writeLine(output, deps.helpText);
+      continue;
+    }
+    if (action === "analyze-cwd" || action === "analyze-remote") {
+      await runGuidedAnalyze(deps, action === "analyze-cwd" ? "cwd" : "remote", output);
       continue;
     }
     writeLine(output, COMING_SOON[action]);

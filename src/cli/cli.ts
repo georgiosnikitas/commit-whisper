@@ -92,25 +92,18 @@ export async function main(argv: string[], deps: CliDeps = {}): Promise<number> 
 
     const opts = program.opts<CliOptions>();
     const flags = buildFlags(program.args[0], opts);
-    const config = resolveRunConfig({
-      cwd,
+    return await resolveAndRun({
+      flags,
       env,
+      cwd,
       stdinIsTTY,
       stdoutIsTTY,
-      nonInteractive: true, // STRICT single-shot — never prompts
       analysisTimestamp: deps.analysisTimestamp ?? new Date().toISOString(),
-      flags,
+      nonInteractive: true, // STRICT single-shot — never prompts
+      openAllowed: opts.open !== false, // honoured only when interactive (false here)
+      deps,
+      ui,
     });
-    const aiKey = readAiKey(env, config.provider);
-    const gitToken = readGitToken(env); // env-only PAT for a private remote (Story 5.2)
-    // Auto-open the HTML showpiece only in an interactive terminal and unless
-    // `--no-open` was passed (Story 4.5). `interactive` already excludes CI /
-    // non-TTY / --non-interactive; STRICT single-shot is non-interactive, so this
-    // is `false` here — the live interactive path is the Epic 6 menu.
-    const { interactive } = detectCapability({ nonInteractive: true, stdinIsTTY, stdoutIsTTY, env });
-    const autoOpen = interactive && opts.open !== false;
-    const run = deps.run ?? runPipeline;
-    return await run(config, { aiKey, gitToken, ui, writeStdout: deps.writeStdout, autoOpen, ...deps.runDeps });
   } catch (err) {
     ui.error(messageForError(err));
     if (err instanceof MissingRequiredConfigError) {
@@ -119,6 +112,56 @@ export async function main(argv: string[], deps: CliDeps = {}): Promise<number> 
     }
     return exitCodeForError(err);
   }
+}
+
+interface ResolveAndRunInput {
+  flags: PartialRunConfig;
+  env: NodeJS.ProcessEnv;
+  cwd: string;
+  stdinIsTTY: boolean | undefined;
+  stdoutIsTTY: boolean | undefined;
+  analysisTimestamp: string;
+  nonInteractive: boolean;
+  /** Allow HTML auto-open — honoured only when the run resolves interactive. */
+  openAllowed: boolean;
+  deps: CliDeps;
+  ui: Ui;
+}
+
+/**
+ * The shared resolve → read-keys → run-pipeline tail used by BOTH the strict
+ * single-shot path (`nonInteractive: true`) and the guided interactive run
+ * (`nonInteractive: false`, Story 6.2). `autoOpen = interactive && openAllowed`,
+ * so single-shot (never interactive) never auto-opens — behaviour-preserving.
+ */
+async function resolveAndRun(input: ResolveAndRunInput): Promise<number> {
+  const config = resolveRunConfig({
+    cwd: input.cwd,
+    env: input.env,
+    stdinIsTTY: input.stdinIsTTY,
+    stdoutIsTTY: input.stdoutIsTTY,
+    nonInteractive: input.nonInteractive,
+    analysisTimestamp: input.analysisTimestamp,
+    flags: input.flags,
+  });
+  const aiKey = readAiKey(input.env, config.provider);
+  const gitToken = readGitToken(input.env); // env-only PAT for a private remote (Story 5.2)
+  const { interactive } = detectCapability({
+    nonInteractive: input.nonInteractive,
+    stdinIsTTY: input.stdinIsTTY,
+    stdoutIsTTY: input.stdoutIsTTY,
+    env: input.env,
+  });
+  const autoOpen = interactive && input.openAllowed;
+  const run = input.deps.run ?? runPipeline;
+  return await run(config, {
+    aiKey,
+    gitToken,
+    ui: input.ui,
+    writeStdout: input.deps.writeStdout,
+    autoOpen,
+    ...input.deps.runDeps,
+  });
 }
 
 interface ZeroArgContext {
@@ -165,8 +208,37 @@ async function runZeroArg(ctx: ZeroArgContext): Promise<number> {
     isRepo: repo.isRepo,
     branch: repo.branch,
   };
+
+  // The guided-run executor (Story 6.2): resolve + run the pipeline per guided
+  // run (interactive ⇒ aiMode auto, autoOpen on). A pipeline throw surfaces
+  // calmly and returns its exit code so the menu never dead-ends.
+  const runAnalysis = async (flags: PartialRunConfig): Promise<number> => {
+    try {
+      return await resolveAndRun({
+        flags,
+        env: ctx.env,
+        cwd: ctx.cwd,
+        stdinIsTTY: ctx.stdinIsTTY,
+        stdoutIsTTY: ctx.stdoutIsTTY,
+        analysisTimestamp: ctx.deps.analysisTimestamp ?? new Date().toISOString(),
+        nonInteractive: false,
+        openAllowed: true,
+        deps: ctx.deps,
+        ui: ctx.ui,
+      });
+    } catch (err) {
+      ctx.ui.error(messageForError(err));
+      return exitCodeForError(err);
+    }
+  };
+
   const launchpad = ctx.deps.launchpad ?? runLaunchpad;
-  return await launchpad({ state, helpText: buildProgram().helpInformation() });
+  return await launchpad({
+    state,
+    helpText: buildProgram().helpInformation(),
+    runAnalysis,
+    gitTokenConfigured: readGitToken(ctx.env) !== undefined,
+  });
 }
 
 /** Collapse a leading `$HOME` to `~` for a calmer cwd display. Pure; passthrough when unset. */
