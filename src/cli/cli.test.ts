@@ -3,6 +3,8 @@ import { describe, it, expect } from "vitest";
 import { main, type CliDeps } from "./cli.js";
 import { ExitCode } from "./exit-codes.js";
 import type { RunConfig } from "../config/run-config.js";
+import type { GitRunner } from "../retrieve/git.js";
+import type { LaunchpadDeps, LaunchpadState } from "./interactive.js";
 import type { RunDeps } from "./run.js";
 import type { Ui } from "../shared/ui.js";
 
@@ -28,6 +30,19 @@ function captureRun() {
   };
   return { calls, run };
 }
+
+function captureLaunchpad() {
+  const calls: LaunchpadDeps[] = [];
+  const launchpad = async (deps: LaunchpadDeps): Promise<number> => {
+    calls.push(deps);
+    return ExitCode.Success;
+  };
+  return { calls, launchpad };
+}
+
+/** A fake git for the launchpad header: a work tree on branch `feature-x`. */
+const repoRunner: GitRunner = async (args) =>
+  args.join(" ") === "rev-parse --is-inside-work-tree" ? "true\n" : "feature-x\n";
 
 const BASE: CliDeps = {
   cwd: "/repo",
@@ -226,10 +241,56 @@ describe("main — usage errors (exit 2)", () => {
     expect(r.errors.join(" ")).toContain("Unknown provider");
   });
 
-  it("a bare invocation (0 args) reports usage and points at guided setup", async () => {
+  it("a bare invocation (0 args) in a non-interactive context fails fast (exit 2), naming the fix", async () => {
     const r = recorder();
     const code = await main([], { ...BASE, ui: r.ui });
     expect(code).toBe(ExitCode.Usage);
-    expect(r.infos.join(" ")).toContain("guided setup");
+    expect(r.errors.join(" ")).toContain("interactive terminal");
+  });
+});
+
+describe("main — zero-arg launchpad (Story 6.1)", () => {
+  it("0 args + non-interactive (non-TTY/CI) never opens the launchpad", async () => {
+    const r = recorder();
+    const lp = captureLaunchpad();
+    const code = await main([], { ...BASE, ui: r.ui, launchpad: lp.launchpad });
+    expect(code).toBe(ExitCode.Usage);
+    expect(lp.calls).toHaveLength(0);
+  });
+
+  it("0 args + interactive TTY opens the launchpad with the env-resolved header state", async () => {
+    const lp = captureLaunchpad();
+    const code = await main([], {
+      ...BASE,
+      stdinIsTTY: true,
+      stdoutIsTTY: true,
+      env: { COMMIT_SAGE_PROVIDER: "ollama", COMMIT_SAGE_LLM_MODEL: "llama3" },
+      gitRunner: repoRunner,
+      launchpad: lp.launchpad,
+    });
+    expect(code).toBe(ExitCode.Success);
+    expect(lp.calls).toHaveLength(1);
+    const state: LaunchpadState = lp.calls[0]!.state;
+    expect(state.provider).toBe("ollama");
+    expect(state.llmModel).toBe("llama3");
+    expect(state.branch).toBe("feature-x");
+    expect(state.isRepo).toBe(true);
+    expect(state.tier).toBe("free");
+    expect(state.licensed).toBe(false);
+    expect(lp.calls[0]!.helpText.length).toBeGreaterThan(0);
+  });
+
+  it("a CI env is non-interactive even at a TTY — 0 args fails fast and skips the launchpad", async () => {
+    const lp = captureLaunchpad();
+    const code = await main([], {
+      ...BASE,
+      stdinIsTTY: true,
+      stdoutIsTTY: true,
+      env: { CI: "true" },
+      ui: recorder().ui,
+      launchpad: lp.launchpad,
+    });
+    expect(code).toBe(ExitCode.Usage);
+    expect(lp.calls).toHaveLength(0);
   });
 });

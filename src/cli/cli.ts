@@ -19,13 +19,16 @@
 
 import { Command, CommanderError } from "commander";
 
-import { readAiKey, readGitToken, readProcessEnv } from "../config/env.js";
+import { readAiKey, readEnvLayer, readGitToken, readProcessEnv } from "../config/env.js";
 import { resolveRunConfig } from "../config/resolve-run-config.js";
 import { detectCapability } from "../config/capability.js";
 import type { OutputFormat, PartialRunConfig, Provider } from "../config/run-config.js";
+import { execFileGitRunner, type GitRunner } from "../retrieve/git.js";
 import { MissingRequiredConfigError, UsageError } from "../shared/errors.js";
 import { ui as defaultUi, type Ui } from "../shared/ui.js";
 import { exitCodeForError, ExitCode, messageForError } from "./exit-codes.js";
+import { runLaunchpad, type LaunchpadState } from "./interactive.js";
+import { readRepoContext } from "./repo-context.js";
 import { runPipeline, type RunDeps } from "./run.js";
 
 const PROVIDERS: readonly Provider[] = ["ollama", "openai", "gemini", "anthropic", "openai-compatible"];
@@ -61,18 +64,23 @@ export interface CliDeps {
   run?: typeof runPipeline;
   /** Inject pipeline collaborators (used by the e2e test to exercise the real `runPipeline`). */
   runDeps?: RunDeps;
+  /** Inject a fake git for the launchpad header's branch read; defaults to `execFileGitRunner`. */
+  gitRunner?: GitRunner;
+  /** Inject a fake launchpad to isolate the 0-arg shell wiring; defaults to the real `runLaunchpad`. */
+  launchpad?: typeof runLaunchpad;
 }
 
 export async function main(argv: string[], deps: CliDeps = {}): Promise<number> {
   const ui = deps.ui ?? defaultUi;
+  const env = deps.env ?? readProcessEnv();
+  const cwd = deps.cwd ?? process.cwd();
+  const stdinIsTTY = deps.stdinIsTTY ?? process.stdin.isTTY;
+  const stdoutIsTTY = deps.stdoutIsTTY ?? process.stdout.isTTY;
   try {
     if (argv.length === 0) {
-      // STRICT: the sole interactive entry point (0-arg TTY guided setup) is Epic 6.
-      ui.info(
-        "commit-sage: interactive guided setup is not yet available. " +
-          "Run with arguments — e.g. `commit-sage . --no-ai` — or `commit-sage --help`.",
-      );
-      return ExitCode.Usage;
+      // The sole interactive entry point: the bare zero-arg command in a TTY
+      // opens the launchpad (Story 6.1); a non-TTY / CI 0-arg fails fast.
+      return await runZeroArg({ deps, ui, env, cwd, stdinIsTTY, stdoutIsTTY });
     }
 
     const program = buildProgram();
@@ -84,11 +92,8 @@ export async function main(argv: string[], deps: CliDeps = {}): Promise<number> 
 
     const opts = program.opts<CliOptions>();
     const flags = buildFlags(program.args[0], opts);
-    const env = deps.env ?? readProcessEnv();
-    const stdinIsTTY = deps.stdinIsTTY ?? process.stdin.isTTY;
-    const stdoutIsTTY = deps.stdoutIsTTY ?? process.stdout.isTTY;
     const config = resolveRunConfig({
-      cwd: deps.cwd ?? process.cwd(),
+      cwd,
       env,
       stdinIsTTY,
       stdoutIsTTY,
@@ -114,6 +119,62 @@ export async function main(argv: string[], deps: CliDeps = {}): Promise<number> 
     }
     return exitCodeForError(err);
   }
+}
+
+interface ZeroArgContext {
+  deps: CliDeps;
+  ui: Ui;
+  env: NodeJS.ProcessEnv;
+  cwd: string;
+  stdinIsTTY: boolean | undefined;
+  stdoutIsTTY: boolean | undefined;
+}
+
+/**
+ * The bare zero-argument path (Story 6.1). In an interactive TTY it opens the
+ * launchpad; in a non-TTY / CI context it fails fast with a typed usage error
+ * (the STRICT truth table's "0 args + non-TTY" row), naming the fix. This is the
+ * ONLY path in the product allowed to go interactive (`nonInteractive: false`).
+ */
+async function runZeroArg(ctx: ZeroArgContext): Promise<number> {
+  const { interactive } = detectCapability({
+    nonInteractive: false,
+    stdinIsTTY: ctx.stdinIsTTY,
+    stdoutIsTTY: ctx.stdoutIsTTY,
+    env: ctx.env,
+  });
+  if (!interactive) {
+    ctx.ui.error(
+      "commit-sage needs a repository argument when it is not run in an interactive terminal — " +
+        "e.g. `commit-sage . --no-ai`, or `commit-sage --help` for all options.",
+    );
+    return ExitCode.Usage;
+  }
+
+  // The launchpad does no I/O: resolve the header snapshot here (env-configured
+  // AI, repo context) and hand it over already resolved. Tier is Free / unlicensed
+  // until the Epic 7 license gate supplies the real entitlement.
+  const aiLayer = readEnvLayer(ctx.env);
+  const repo = await readRepoContext(ctx.deps.gitRunner ?? execFileGitRunner, ctx.cwd);
+  const state: LaunchpadState = {
+    tier: "free",
+    licensed: false,
+    provider: aiLayer.provider,
+    llmModel: aiLayer.llmModel,
+    cwdLabel: collapseHome(ctx.cwd, ctx.env.HOME),
+    isRepo: repo.isRepo,
+    branch: repo.branch,
+  };
+  const launchpad = ctx.deps.launchpad ?? runLaunchpad;
+  return await launchpad({ state, helpText: buildProgram().helpInformation() });
+}
+
+/** Collapse a leading `$HOME` to `~` for a calmer cwd display. Pure; passthrough when unset. */
+function collapseHome(cwd: string, home: string | undefined): string {
+  if (home !== undefined && home !== "" && (cwd === home || cwd.startsWith(`${home}/`))) {
+    return `~${cwd.slice(home.length)}`;
+  }
+  return cwd;
 }
 
 function buildProgram(): Command {
