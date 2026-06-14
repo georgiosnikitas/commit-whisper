@@ -16,19 +16,19 @@
 
 import type { Analysis } from "../analyze/engine.js";
 import { NarrationError } from "../shared/errors.js";
-import { generateSummary } from "./generate.js";
+import { generateNarrative } from "./generate.js";
 import type { NarrateConfig, NarrateOutcome, NarratePort } from "./narrate.port.js";
 import { resolveModel } from "./provider.js";
-import type { Summary } from "./schema.js";
+import type { Narrative } from "./schema.js";
 
 export interface NarrateDeps {
   resolveModel?: typeof resolveModel;
-  generate?: (model: ReturnType<typeof resolveModel>, analysis: Analysis) => Promise<Summary>;
+  generate?: (model: ReturnType<typeof resolveModel>, analysis: Analysis) => Promise<Narrative>;
 }
 
 export function createNarrate(deps: NarrateDeps = {}): NarratePort {
   const resolve = deps.resolveModel ?? resolveModel;
-  const generate = deps.generate ?? generateSummary;
+  const generate = deps.generate ?? generateNarrative;
 
   return async (analysis: Analysis, config: NarrateConfig): Promise<NarrateOutcome> => {
     if (config.aiMode === "off") {
@@ -36,8 +36,8 @@ export function createNarrate(deps: NarrateDeps = {}): NarratePort {
     }
     try {
       const model = resolve(config);
-      const summary = await generate(model, analysis);
-      return { kind: "narrated", narrative: { summary } };
+      const narrative = await generate(model, analysis);
+      return { kind: "narrated", narrative };
     } catch (err) {
       const reason = narrationReason(err, config.aiKey?.reveal());
       if (config.aiMode === "required") {

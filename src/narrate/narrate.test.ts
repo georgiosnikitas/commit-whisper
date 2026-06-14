@@ -11,7 +11,11 @@ const ANALYSIS: Analysis = {
   metrics: [{ id: "a-commit-volume", group: "A", title: "Commit volume", status: "computed", value: 3 }],
 };
 
-const SUMMARY = { headline: "h", overview: "o", keyFindings: ["k"] };
+const NARRATIVE = {
+  summary: { headline: "h", overview: "o", keyFindings: ["k"] },
+  explanation: { paragraphs: ["p"] },
+  coaching: { introduction: "i", chapters: [{ theme: "t", steps: ["s"] }], closingSummary: "c" },
+};
 
 function cfg(overrides: Partial<NarrateConfig> = {}): NarrateConfig {
   return { aiMode: "auto", provider: "gemini", llmModel: "m", aiKey: new Secret("dummy"), ...overrides };
@@ -30,12 +34,12 @@ describe("createNarrate", () => {
     expect(generate).not.toHaveBeenCalled();
   });
 
-  it("happy path → narrated with the summary", async () => {
+  it("happy path → narrated with the full three-part narrative", async () => {
     const outcome = await createNarrate({
       resolveModel: () => fakeModel,
-      generate: async () => SUMMARY,
+      generate: async () => NARRATIVE,
     })(ANALYSIS, cfg());
-    expect(outcome).toEqual({ kind: "narrated", narrative: { summary: SUMMARY } });
+    expect(outcome).toEqual({ kind: "narrated", narrative: NARRATIVE });
   });
 
   it("auto + a throwing generate → degraded (fail open, no throw)", async () => {

@@ -11,6 +11,8 @@ const ANALYSIS = {
 
 const NARRATIVE = {
   summary: { headline: "h", overview: "o", keyFindings: ["k1", "k2"] },
+  explanation: { paragraphs: ["p1"] },
+  coaching: { introduction: "i", chapters: [{ theme: "t", steps: ["s"] }], closingSummary: "c" },
 };
 
 describe("ReportSchema", () => {
@@ -46,6 +48,8 @@ describe("ReportSchema", () => {
       analysis: ANALYSIS,
       narrative: {
         summary: NARRATIVE.summary,
+        explanation: NARRATIVE.explanation,
+        coaching: NARRATIVE.coaching,
         explanations: {
           "a-commit-volume": {
             explanation: "e",
@@ -57,6 +61,16 @@ describe("ReportSchema", () => {
       },
     };
     expect(ReportSchema.safeParse(report).success).toBe(true);
+  });
+
+  it("rejects a narrative missing a required part (Explanation/Coaching)", () => {
+    const report = {
+      schemaVersion: SCHEMA_VERSION,
+      degraded: false,
+      analysis: ANALYSIS,
+      narrative: { summary: NARRATIVE.summary },
+    };
+    expect(ReportSchema.safeParse(report).success).toBe(false);
   });
 });
 

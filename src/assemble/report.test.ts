@@ -14,6 +14,8 @@ const ANALYSIS: Analysis = {
 
 const NARRATIVE: Narrative = {
   summary: { headline: "Steady.", overview: "Two commits.", keyFindings: ["Low volume"] },
+  explanation: { paragraphs: ["Low but consistent activity."] },
+  coaching: { introduction: "A short plan.", chapters: [{ theme: "Cadence", steps: ["Commit smaller"] }], closingSummary: "Start with cadence." },
 };
 
 describe("assembleReport", () => {

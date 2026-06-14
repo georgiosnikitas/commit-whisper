@@ -19,14 +19,9 @@
 import type { Analysis } from "../analyze/engine.js";
 import type { AiMode, Provider } from "../config/run-config.js";
 import type { Secret } from "../shared/secret.js";
-import type { Summary } from "./schema.js";
+import type { Narrative } from "./schema.js";
 
-export type { Summary };
-
-/** The AI narrative subtree (minimal in 1.6; Epic 3 adds Explanation/Coaching/per-metric). */
-export interface Narrative {
-  summary: Summary;
-}
+export type { Summary, Explanation, Chapter, Coaching, Narrative } from "./schema.js";
 
 /** The AI-relevant subset of `RunConfig` + the env-only secret key. */
 export interface NarrateConfig {

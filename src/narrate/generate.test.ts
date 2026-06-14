@@ -1,8 +1,8 @@
 import { describe, it, expect, vi } from "vitest";
 import type { generateObject as sdkGenerateObject, LanguageModel } from "ai";
 
-import { generateSummary } from "./generate.js";
-import { SummarySchema } from "./schema.js";
+import { generateNarrative } from "./generate.js";
+import { NarrativeSchema } from "./schema.js";
 import type { Analysis } from "../analyze/engine.js";
 
 const ANALYSIS: Analysis = {
@@ -11,10 +11,18 @@ const ANALYSIS: Analysis = {
   ],
 };
 
-const CANNED_SUMMARY = {
-  headline: "Steady activity.",
-  overview: "Three commits in the window.",
-  keyFindings: ["Low volume", "Single contributor"],
+const CANNED_NARRATIVE = {
+  summary: {
+    headline: "Steady activity.",
+    overview: "Three commits in the window.",
+    keyFindings: ["Low volume", "Single contributor"],
+  },
+  explanation: { paragraphs: ["The cadence is low but consistent."] },
+  coaching: {
+    introduction: "A short plan to grow throughput safely.",
+    chapters: [{ theme: "Cadence", steps: ["Commit in smaller, more frequent increments"] }],
+    closingSummary: "Focus on smaller, frequent commits first.",
+  },
 };
 
 const fakeModel = {} as LanguageModel;
@@ -26,20 +34,20 @@ interface GenerateObjectArgs {
   model: unknown;
 }
 
-describe("generateSummary", () => {
-  it("binds the SummarySchema, pins temperature 0, sends the metrics-only prompt, and returns the object", async () => {
+describe("generateNarrative", () => {
+  it("binds the NarrativeSchema, pins temperature 0, sends the metrics-only prompt, and returns the object", async () => {
     const calls: GenerateObjectArgs[] = [];
     const fakeGenerateObject = vi.fn((opts: GenerateObjectArgs) => {
       calls.push(opts);
-      return Promise.resolve({ object: CANNED_SUMMARY });
+      return Promise.resolve({ object: CANNED_NARRATIVE });
     }) as unknown as typeof sdkGenerateObject;
 
-    const summary = await generateSummary(fakeModel, ANALYSIS, { generateObject: fakeGenerateObject });
+    const narrative = await generateNarrative(fakeModel, ANALYSIS, { generateObject: fakeGenerateObject });
 
-    expect(summary).toEqual(CANNED_SUMMARY);
-    expect(SummarySchema.safeParse(summary).success).toBe(true);
+    expect(narrative).toEqual(CANNED_NARRATIVE);
+    expect(NarrativeSchema.safeParse(narrative).success).toBe(true);
     expect(calls).toHaveLength(1);
-    expect(calls[0].schema).toBe(SummarySchema);
+    expect(calls[0].schema).toBe(NarrativeSchema);
     expect(calls[0].temperature).toBe(0);
     expect(calls[0].prompt).toContain("a-commit-volume"); // metrics-only prompt wired through
   });

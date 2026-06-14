@@ -15,6 +15,8 @@ const EMPTY_HISTORY: RepoHistory = { repoTarget: "/repo", commits: [] };
 
 const NARRATIVE = {
   summary: { headline: "Healthy and steady.", overview: "An overview.", keyFindings: ["A finding"] },
+  explanation: { paragraphs: ["A plain-language interpretation."] },
+  coaching: { introduction: "A short plan.", chapters: [{ theme: "Cadence", steps: ["Commit smaller"] }], closingSummary: "Start with cadence." },
 };
 
 function makeConfig(flags: PartialRunConfig, entitlement?: Entitlement): RunConfig {

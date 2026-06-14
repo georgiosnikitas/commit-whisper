@@ -3,9 +3,10 @@
  *
  * Two render paths off the same Report JSON, selected by the format-agnostic
  * `classifyReport` branch:
- *   - showpiece — narrative bands (headline · overview · key findings) followed
- *     by the metrics table. Its input is a `ShowpieceReport` (narrative
- *     guaranteed), so a substrate report can never be rendered as the showpiece.
+ *   - showpiece — the three labeled narrative parts in order (Summary ·
+ *     Explanation · Coaching) followed by the metrics table. Its input is a
+ *     `ShowpieceReport` (narrative guaranteed), so a substrate report can never
+ *     be rendered as the showpiece.
  *   - substrate — the metrics table preceded by a banner: a loud `⚠` degraded
  *     banner (fail-open, exit 9) or a neutral metrics-only note (`--no-ai`, exit
  *     0). No narrative bands — it cannot masquerade as the showpiece.
@@ -41,16 +42,32 @@ export function renderTerminal(report: Report, opts: TerminalRenderOptions = {})
 }
 
 function renderShowpiece(report: ShowpieceReport, c: Colors): string {
-  const { summary } = report.narrative;
+  const { summary, explanation, coaching } = report.narrative;
   return [
     heading(c),
     "",
+    c.bold("Summary"),
     c.bold(summary.headline),
     "",
     summary.overview,
     "",
     c.bold("Key findings"),
     ...summary.keyFindings.map((finding) => `  ${c.cyan("•")} ${finding}`),
+    "",
+    c.bold("Explanation"),
+    ...explanation.paragraphs.flatMap((paragraph) => [paragraph, ""]),
+    c.bold("Coaching"),
+    coaching.introduction,
+    "",
+    ...coaching.chapters.flatMap((chapter) => [
+      c.bold(chapter.theme),
+      ...chapter.steps.map((step, i) => {
+        const marker = c.cyan(`${i + 1}.`);
+        return `  ${marker} ${step}`;
+      }),
+      "",
+    ]),
+    coaching.closingSummary,
     "",
     metricsTable(report.analysis, c),
   ].join("\n");

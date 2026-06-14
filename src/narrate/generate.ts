@@ -1,10 +1,11 @@
 /**
- * `generateObject` summary generation (Story 1.6).
+ * `generateObject` narrative generation (Story 1.6 Summary → Story 3.1 full).
  *
- * Drives the Vercel AI SDK `generateObject` bound to the `SummarySchema`,
- * producing a structured `Summary` from the metrics-only prompt. `temperature: 0`
- * is pinned internally for the tightest determinism the non-deterministic
- * narrative layer allows; it is not exposed as a user input.
+ * Drives the Vercel AI SDK `generateObject` bound to the `NarrativeSchema`,
+ * producing the structured three-part `Narrative` (Summary · Explanation ·
+ * Coaching) from the metrics-only prompt. `temperature: 0` is pinned internally
+ * for the tightest determinism the non-deterministic narrative layer allows; it
+ * is not exposed as a user input.
  *
  * `generateObject` is injectable (default the real SDK function) so the wrapper's
  * contract — schema binding, temperature pin, metrics-only prompt — is unit-
@@ -19,24 +20,24 @@ import { generateObject as sdkGenerateObject } from "ai";
 import type { LanguageModel } from "ai";
 
 import type { Analysis } from "../analyze/engine.js";
-import { buildSummaryPrompt } from "./prompt.js";
-import { SummarySchema, type Summary } from "./schema.js";
+import { buildNarrativePrompt } from "./prompt.js";
+import { NarrativeSchema, type Narrative } from "./schema.js";
 
-export interface GenerateSummaryDeps {
+export interface GenerateNarrativeDeps {
   generateObject?: typeof sdkGenerateObject;
 }
 
-export async function generateSummary(
+export async function generateNarrative(
   model: LanguageModel,
   analysis: Analysis,
-  deps: GenerateSummaryDeps = {},
-): Promise<Summary> {
+  deps: GenerateNarrativeDeps = {},
+): Promise<Narrative> {
   const generate = deps.generateObject ?? sdkGenerateObject;
   const { object } = await generate({
     model,
-    schema: SummarySchema,
+    schema: NarrativeSchema,
     temperature: 0,
-    prompt: buildSummaryPrompt(analysis),
+    prompt: buildNarrativePrompt(analysis),
   });
   return object;
 }

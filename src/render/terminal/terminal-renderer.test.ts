@@ -20,6 +20,14 @@ const NARRATIVE: ReportNarrative = {
     overview: "Three commits across one month show low but consistent activity.",
     keyFindings: ["Low overall volume", "Single active author"],
   },
+  explanation: {
+    paragraphs: ["The cadence is low but consistent across the window."],
+  },
+  coaching: {
+    introduction: "A short plan to grow throughput safely.",
+    chapters: [{ theme: "Commit-message hygiene", steps: ["Adopt Conventional Commits"] }],
+    closingSummary: "Start with commit-message hygiene this week.",
+  },
 };
 
 function report(over: Partial<Report>): Report {
@@ -34,6 +42,23 @@ describe("renderTerminal — showpiece", () => {
     expect(out).toContain("Three commits across one month");
     expect(out).toContain("Low overall volume");
     expect(out).toContain("Single active author");
+  });
+
+  it("renders exactly three labeled parts in order: Summary, Explanation, Coaching", () => {
+    const iSummary = out.indexOf("Summary");
+    const iExplanation = out.indexOf("Explanation");
+    const iCoaching = out.indexOf("Coaching");
+    expect(iSummary).toBeGreaterThanOrEqual(0);
+    expect(iExplanation).toBeGreaterThan(iSummary);
+    expect(iCoaching).toBeGreaterThan(iExplanation);
+  });
+
+  it("renders the Explanation paragraphs and the structured Coaching report", () => {
+    expect(out).toContain("The cadence is low but consistent across the window.");
+    expect(out).toContain("A short plan to grow throughput safely."); // coaching introduction
+    expect(out).toContain("Commit-message hygiene"); // chapter theme
+    expect(out).toContain("Adopt Conventional Commits"); // a prioritized step
+    expect(out).toContain("Start with commit-message hygiene this week."); // closing summary
   });
 
   it("includes the metrics table alongside the narrative", () => {

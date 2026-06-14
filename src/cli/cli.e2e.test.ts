@@ -42,7 +42,11 @@ const reachable = async (): Promise<PreflightResult> => ({ reachable: true });
 const unreachable = (reason: string) => async (): Promise<PreflightResult> => ({ reachable: false, reason });
 const narrated = async (): Promise<NarrateOutcome> => ({
   kind: "narrated",
-  narrative: { summary: { headline: "NARRATED-HEADLINE", overview: "ov", keyFindings: ["finding"] } },
+  narrative: {
+    summary: { headline: "NARRATED-HEADLINE", overview: "ov", keyFindings: ["finding"] },
+    explanation: { paragraphs: ["A plain-language interpretation."] },
+    coaching: { introduction: "A short plan.", chapters: [{ theme: "Cadence", steps: ["Commit smaller"] }], closingSummary: "Start with cadence." },
+  },
 });
 
 const stripAnsi = (s: string): string => s.replace(/\u001b\[[0-9;]*m/g, "");

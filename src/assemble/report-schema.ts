@@ -16,7 +16,7 @@
 
 import { z } from "zod";
 
-import { SummarySchema } from "../narrate/schema.js";
+import { SummarySchema, ExplanationSchema, CoachingSchema } from "../narrate/schema.js";
 
 export const SCHEMA_VERSION = "1.0.0";
 
@@ -53,11 +53,13 @@ export const AnalysisSchema = z
   .strict();
 
 /**
- * A per-metric explanation (four facets, keyed by metric id under
- * `narrative.explanations`). The SHAPE is pinned at 1.0.0; it is not populated
- * until Epic 3 (Story 3.2), so it is optional everywhere it appears.
+ * A per-metric Metric Explanation (four facets, keyed by metric id under
+ * `narrative.explanations`). DISTINCT from the narrative-level `explanation`
+ * part (`ExplanationSchema` from `narrate/schema.ts`) — this is the §3.2
+ * per-metric assessment. The SHAPE is pinned at 1.0.0; it is not populated until
+ * Epic 3 (Story 3.2), so it is optional everywhere it appears.
  */
-export const ExplanationSchema = z
+export const MetricExplanationSchema = z
   .object({
     explanation: z.string(),
     goodBehaviours: z.array(z.string()),
@@ -66,10 +68,17 @@ export const ExplanationSchema = z
   })
   .strict();
 
+/**
+ * The Report-JSON `narrative` subtree (C1 read-back trust boundary, `.strict()`).
+ * Carries the three REQUIRED narrative parts (Summary · Explanation · Coaching —
+ * Story 3.1) plus the OPTIONAL per-metric Metric Explanation map (Story 3.2).
+ */
 export const NarrativeSchema = z
   .object({
     summary: SummarySchema,
-    explanations: z.record(z.string(), ExplanationSchema).optional(),
+    explanation: ExplanationSchema,
+    coaching: CoachingSchema,
+    explanations: z.record(z.string(), MetricExplanationSchema).optional(),
   })
   .strict();
 
@@ -85,4 +94,4 @@ export const ReportSchema = z
 export type Report = z.infer<typeof ReportSchema>;
 export type ReportAnalysis = z.infer<typeof AnalysisSchema>;
 export type ReportNarrative = z.infer<typeof NarrativeSchema>;
-export type Explanation = z.infer<typeof ExplanationSchema>;
+export type MetricExplanation = z.infer<typeof MetricExplanationSchema>;
