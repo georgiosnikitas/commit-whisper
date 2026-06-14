@@ -98,8 +98,8 @@ development_status:
   # ═══════════════════════════════════════════════════════════════
   # EPIC 5: Remote Repositories & Private Auth
   # ═══════════════════════════════════════════════════════════════
-  epic-5: backlog
-  5-1-remote-https-clone-with-stateless-cleanup: backlog
+  epic-5: in-progress
+  5-1-remote-https-clone-with-stateless-cleanup: done
   5-2-private-remote-token-authentication: backlog
   5-3-graceful-no-retry-failure-handling: backlog
   epic-5-retrospective: optional

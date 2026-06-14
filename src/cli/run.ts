@@ -34,7 +34,7 @@ import type { NarrateConfig, NarrateOutcome, NarratePort } from "../narrate/narr
 import { preflightProvider } from "../narrate/preflight.js";
 import { renderFormat } from "../render/render.js";
 import { planOutputs, type OutputTarget } from "../render/output-plan.js";
-import { createLocalRetrieve } from "../retrieve/local.js";
+import { createRetrieve } from "../retrieve/retrieve.js";
 import type { RetrievePort } from "../retrieve/retrieve.port.js";
 import { NarrationError, RenderError } from "../shared/errors.js";
 import type { Secret } from "../shared/secret.js";
@@ -61,7 +61,7 @@ export interface RunDeps {
 }
 
 export async function runPipeline(config: RunConfig, deps: RunDeps = {}): Promise<number> {
-  const retrieve = deps.retrieve ?? createLocalRetrieve();
+  const retrieve = deps.retrieve ?? createRetrieve();
   const narrate = deps.narrate ?? createNarrate();
   const preflight = deps.preflight ?? preflightProvider;
   const ui = deps.ui ?? defaultUi;
