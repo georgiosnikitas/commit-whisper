@@ -58,7 +58,9 @@ describe("renderHtml — self-containment (AC1)", () => {
   it("inlines all CSS and references no external assets (no CDN/network)", () => {
     expect(out).toContain("<style>");
     expect(out).not.toContain("<link");
-    expect(out).not.toContain("<script");
+    // Story 4.2 adds a tiny INLINE disclosure script — self-containment forbids
+    // external/network refs, not inline JS.
+    expect(out).not.toContain("<script src");
     expect(out).not.toContain("src=\"http");
     expect(out).not.toContain("href=\"http");
     expect(out).not.toContain("@import");
@@ -247,5 +249,58 @@ describe("renderHtml — substrate path (no narrative)", () => {
     expect(out).toContain(HTML_DEGRADED_BANNER);
     expect(out).not.toContain(HTML_METRICS_ONLY_NOTE);
     expect(out).toContain('id="group-a"');
+  });
+});
+
+describe("renderHtml — charts, health bands, disclosure (Story 4.2)", () => {
+  // A fixture with genuinely chartable shapes: a Group-A timeseries, a Group-B
+  // scalar (bus factor 2 → watch), and a not_available metric (→ n/a band).
+  const CHARTABLE: ReportAnalysis = {
+    metrics: [
+      { id: "a-commit-volume", group: "A", title: "Commit volume", status: "computed", value: { perMonth: { "2024-01": 18, "2024-02": 24 } } },
+      { id: "a-commit-cadence", group: "A", title: "Commit cadence", status: "not_available", reason: "Too few commits." },
+      { id: "b-bus-factor", group: "B", title: "Bus factor", status: "computed", value: { busFactor: 2 } },
+    ],
+  };
+  const out = renderHtml(report({ analysis: CHARTABLE, narrative: NARRATIVE }));
+
+  it("renders a group-overview chart-panel before the metric cards in each group", () => {
+    const iPanel = out.indexOf('class="chart-panel"');
+    const iCard = out.indexOf('class="metric-card"');
+    expect(iPanel).toBeGreaterThanOrEqual(0);
+    expect(iCard).toBeGreaterThan(iPanel); // chart first, then the cards
+    expect(out).toContain("<svg"); // an inline-SVG chart (no canvas)
+    expect(out).not.toContain("<canvas"); // ADR: inline SVG, not Chart.js canvas
+  });
+
+  it("renders a health band (glyph + text label, never color alone) on each metric card", () => {
+    expect(out).toContain('class="health health-');
+    expect(out).toContain("health-glyph");
+    expect(out).toMatch(/health-(ok|watch|risk|na)/);
+    expect(out).toContain("watch"); // bus factor 2 → watch
+    expect(out).toContain("n/a"); // the not_available metric
+  });
+
+  it("renders metric cards as <details open> (no-JS = expanded) + the disclosure script", () => {
+    expect(out).toContain('<details class="metric-card"');
+    expect(out).toContain(" open>"); // open by default → no-JS shows everything
+    expect(out).toContain("<script>"); // the inline disclosure script
+    expect(out).toContain('data-health="ok"'); // the script collapses ok cards
+  });
+
+  it("every chart carries an accessible data-table fallback (never a chart alone)", () => {
+    expect(out).toContain('class="data-table"');
+    expect(out).toContain("<table>");
+    expect(out).toContain("Show data table");
+  });
+
+  it("keeps escaping through the new visuals/tables and stays self-contained < 1 MB", () => {
+    const evil: ReportAnalysis = {
+      metrics: [{ id: "e-most-changed", group: "E", title: "Most changed", status: "computed", value: [{ path: "<img onerror=alert(1)>", changes: 9 }] }],
+    };
+    const evilOut = renderHtml(report({ analysis: evil, narrative: NARRATIVE }));
+    expect(evilOut).not.toContain("<img onerror=alert(1)>");
+    expect(evilOut).toContain("&lt;img onerror=alert(1)&gt;"); // escaped in the data table
+    expect(Buffer.byteLength(out, "utf8")).toBeLessThan(1_000_000);
   });
 });

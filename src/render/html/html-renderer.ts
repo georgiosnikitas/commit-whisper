@@ -28,6 +28,11 @@
 import type { Report, ReportAnalysis, ReportNarrative } from "../../assemble/report-schema.js";
 import type { MetricGroup } from "../../analyze/metric.js";
 import { classifyReport, type ShowpieceReport, type SubstrateFraming } from "../render.port.js";
+import { escapeHtml } from "./escape.js";
+import { groupOverviewPanel, metricVisual } from "./charts.js";
+import { classifyHealth, HEALTH_GLYPH, HEALTH_LABEL } from "./health.js";
+
+export { escapeHtml };
 
 type Metric = ReportAnalysis["metrics"][number];
 type Confidence = NonNullable<ReportNarrative["confidence"]>;
@@ -47,16 +52,6 @@ const GROUPS: ReadonlyArray<{ id: MetricGroup; title: string }> = [
 export const HTML_DEGRADED_BANNER = "⚠ Narrative unavailable — showing raw analysis";
 /** Neutral note for an intentional metrics-only (`--no-ai`) substrate render. */
 export const HTML_METRICS_ONLY_NOTE = "Metrics-only run — no AI narrative requested";
-
-/** Escape the five HTML-significant characters so untrusted text cannot inject markup. */
-export function escapeHtml(text: string): string {
-  return text
-    .replaceAll("&", "&amp;")
-    .replaceAll("<", "&lt;")
-    .replaceAll(">", "&gt;")
-    .replaceAll('"', "&quot;")
-    .replaceAll("'", "&#39;");
-}
 
 /** Render the full self-contained HTML document for a Report. */
 export function renderHtml(report: Report): string {
@@ -82,6 +77,7 @@ function document(body: string): string {
 <a class="skip-link" href="#main">Skip to content</a>
 ${body}
 ${footer()}
+<script>${DISCLOSURE_SCRIPT}</script>
 </body>
 </html>`;
 }
@@ -151,7 +147,7 @@ function toc(narrated: boolean, analysis: ReportAnalysis): string {
       ].join("\n")
     : "";
   const groupLinks = presentGroups(analysis)
-    .map((g) => `<li><a href="#group-${g.id.toLowerCase()}">${g.id} — ${escapeHtml(g.title)}</a></li>`)
+    .map((g) => `<li><a href="#group-${g.id.toLowerCase()}">${escapeHtml(g.id)} — ${escapeHtml(g.title)}</a></li>`)
     .join("\n");
   return `<nav class="toc" aria-label="Table of contents">
 <h2>Contents</h2>
@@ -202,13 +198,14 @@ ${chapters}
 </section>`;
 }
 
-/** The metric-groups band: A→F sections, each with its metric cards (omit empty groups). */
+/** The metric-groups band: A→F sections, each with its overview chart + cards (omit empty groups). */
 function metricGroups(analysis: ReportAnalysis, explanations: MetricExplanations | undefined): string {
   const sections = presentGroups(analysis).map((group) => {
     const metrics = analysis.metrics.filter((metric) => metric.group === group.id);
     const cards = metrics.map((metric) => metricCard(metric, explanations)).join("\n");
     return `<section id="group-${group.id.toLowerCase()}" class="metric-group" aria-labelledby="group-${group.id.toLowerCase()}-h">
-<h2 id="group-${group.id.toLowerCase()}-h">${group.id} — ${escapeHtml(group.title)}</h2>
+<h2 id="group-${group.id.toLowerCase()}-h">${escapeHtml(group.id)} — ${escapeHtml(group.title)}</h2>
+${groupOverviewPanel(group.id, metrics)}
 ${cards}
 </section>`;
   });
@@ -217,19 +214,28 @@ ${sections.join("\n")}
 </main>`;
 }
 
-/** One metric card: title · status · value/reason (from analysis) + four facets (from narrative). */
+/**
+ * One metric card. A `<details>` so it can collapse (progressive disclosure); the
+ * `<summary>` carries title · health band · value, the body carries the visual +
+ * four facets + the data-table fallback. Rendered `open` by default (no-JS = all
+ * expanded); the disclosure script collapses `ok` cards when JS is on.
+ */
 function metricCard(metric: Metric, explanations: MetricExplanations | undefined): string {
+  const band = classifyHealth(metric);
+  const bandHtml = `<span class="health health-${band}"><span class="health-glyph" aria-hidden="true">${HEALTH_GLYPH[band]}</span> ${escapeHtml(HEALTH_LABEL[band])}</span>`;
   const detail =
     metric.status === "computed"
       ? `<p class="metric-value"><code>${escapeHtml(formatValue(metric.value))}</code></p>`
       : `<p class="metric-reason">${escapeHtml(metric.reason ?? "Not available.")}</p>`;
   const explanation = explanations?.[metric.id];
-  return `<article class="metric-card" data-status="${escapeHtml(metric.status)}">
-<h3>${escapeHtml(metric.title)}</h3>
-<p class="metric-status">Status: ${escapeHtml(metric.status)}</p>
+  return `<details class="metric-card" data-status="${escapeHtml(metric.status)}" data-health="${band}" open>
+<summary><h3 class="metric-title">${escapeHtml(metric.title)}</h3> ${bandHtml}</summary>
+<div class="metric-body">
+${metricVisual(metric)}
 ${detail}
 ${explanation === undefined ? "" : fourFacets(explanation)}
-</article>`;
+</div>
+</details>`;
 }
 
 /** The four-facet Metric Explanation (Story 3.2), joined to its metric by id. */
@@ -323,12 +329,53 @@ a:focus-visible, :focus-visible { outline: 2px solid var(--accent); outline-offs
 .band, .metric-group { scroll-margin-top: 1rem; }
 :target { outline: 2px solid var(--accent); outline-offset: 4px; border-radius: 4px; }
 .headline { font-size: 1.2rem; font-weight: 600; }
-.metric-card { background: var(--surface); border: 1px solid var(--border); border-radius: 6px; padding: 0.75rem 1rem; margin: 0.75rem 0; }
+.metric-card { background: var(--surface); border: 1px solid var(--border); border-radius: 6px; padding: 0.5rem 1rem; margin: 0.75rem 0; }
+.metric-card > summary { cursor: pointer; list-style-position: inside; display: flex; align-items: baseline; gap: 0.5rem; flex-wrap: wrap; }
+.metric-card[data-health="risk"] { border-left: 4px solid var(--risk); }
+.metric-card[data-health="watch"] { border-left: 4px solid var(--watch); }
+.metric-card[data-status="not_available"] { opacity: 0.7; }
+.metric-title { display: inline; font-size: 1.05rem; margin: 0; font-weight: 600; }
+.metric-body { margin-top: 0.5rem; }
 .metric-status { color: var(--muted); font-size: 0.85rem; margin: 0.25rem 0; }
 .metric-card code { word-break: break-word; }
 .facets ul { margin: 0.25rem 0 0.5rem; }
+.health { font-size: 0.85rem; font-weight: 600; white-space: nowrap; }
+.health-glyph { font-size: 1rem; }
+.health-ok { color: var(--ok); }
+.health-watch { color: var(--watch); }
+.health-risk { color: var(--risk); }
+.health-na { color: var(--muted); }
+.chart-panel { margin: 1rem 0; background: var(--surface); border: 1px solid var(--border); border-radius: 6px; padding: 0.75rem 1rem; }
+.chart-panel figcaption { color: var(--muted); font-size: 0.9rem; margin-bottom: 0.5rem; }
+.chart-source { font-style: italic; }
+.chart-empty { color: var(--muted); }
+.chart-svg { width: 100%; height: 6rem; color: var(--accent); display: block; }
+.chart-svg.chart-sparkline { height: 2rem; }
+.chart-svg .bar { fill: var(--accent); }
+.chart-svg .gauge-track { fill: var(--border); }
+.chart-svg .gauge-fill { fill: var(--accent); }
+.chart-svg .radar-area { fill: var(--accent); fill-opacity: 0.3; stroke: var(--accent); stroke-width: 1; }
+.metric-visual { margin: 0.5rem 0; }
+.metric-visual-range { display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap; }
+.metric-number { font-size: 1.4rem; font-weight: 700; }
+.data-table { margin: 0.5rem 0; }
+.data-table summary { cursor: pointer; color: var(--muted); font-size: 0.85rem; }
+.data-table table { border-collapse: collapse; width: 100%; font-size: 0.85rem; margin-top: 0.5rem; }
+.data-table th, .data-table td { border: 1px solid var(--border); padding: 0.25rem 0.5rem; text-align: left; }
+.data-table caption { text-align: left; color: var(--muted); padding-bottom: 0.25rem; }
 .footer { color: var(--muted); border-top: 1px solid var(--border); margin-top: 3rem; padding-top: 1rem; font-size: 0.85rem; }
 @media (prefers-reduced-motion: reduce) {
   * { animation-duration: 0.001ms !important; transition-duration: 0.001ms !important; scroll-behavior: auto !important; }
 }
+`;
+
+/**
+ * The report's ONLY script (inlined — no external `src`, still self-contained).
+ * It only COLLAPSES on load: `ok` cards and the data-table disclosures, giving the
+ * calm with-JS progressive view. Everything is rendered `<details open>`, so with
+ * JS OFF nothing collapses and all data stays visible (the no-JS / keyboard floor).
+ */
+const DISCLOSURE_SCRIPT = `
+document.querySelectorAll('details.metric-card[data-health="ok"]').forEach(function(d){d.open=false;});
+document.querySelectorAll('details.data-table').forEach(function(d){d.open=false;});
 `;
