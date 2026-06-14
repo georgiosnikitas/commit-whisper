@@ -16,7 +16,7 @@
 
 import { z } from "zod";
 
-import { SummarySchema, ExplanationSchema, CoachingSchema, MetricExplanationSchema } from "../narrate/schema.js";
+import { SummarySchema, ExplanationSchema, CoachingSchema, MetricExplanationSchema, ConfidenceSchema } from "../narrate/schema.js";
 
 export const SCHEMA_VERSION = "1.0.0";
 
@@ -56,11 +56,12 @@ export const AnalysisSchema = z
  * The Report-JSON `narrative` subtree (C1 read-back trust boundary, `.strict()`).
  * Carries the three REQUIRED narrative parts (Summary · Explanation · Coaching —
  * Story 3.1) plus the per-metric Metric Explanation map (Story 3.2) keyed by
- * metric id — OPTIONAL, since a narrated run may carry it but the shape predates
- * its population. The four-facet `MetricExplanationSchema` is the canonical
- * AI-output schema, imported from `narrate/schema.ts` (single source of truth);
- * it is lenient there (model-output coercion) but `.strict()` HERE — the read-back
- * boundary rejects an explanation carrying unknown keys.
+ * metric id and the confidence self-assessment (Story 3.5) — both OPTIONAL, since
+ * a narrated run carries them but the shape predates their population. The
+ * four-facet `MetricExplanationSchema` and `ConfidenceSchema` are the canonical
+ * AI-output schemas, imported from `narrate/schema.ts` (single source of truth);
+ * they are lenient there but `.strict()` HERE — the read-back boundary rejects an
+ * explanation or confidence carrying unknown keys.
  */
 export const NarrativeSchema = z
   .object({
@@ -68,6 +69,11 @@ export const NarrativeSchema = z
     explanation: ExplanationSchema,
     coaching: CoachingSchema,
     explanations: z.record(z.string(), MetricExplanationSchema.strict()).optional(),
+    confidence: ConfidenceSchema.strict()
+      .refine((c) => (c.level === "low") === (c.escalation !== undefined), {
+        message: "escalation must be present exactly when the confidence level is 'low'",
+      })
+      .optional(),
   })
   .strict();
 

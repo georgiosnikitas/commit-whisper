@@ -70,6 +70,38 @@ describe("renderTerminal — showpiece", () => {
     expect(out).not.toContain(DEGRADED_BANNER);
     expect(out).not.toContain(METRICS_ONLY_NOTE);
   });
+
+  it("renders no confidence band when the narrative has no confidence (back-compat)", () => {
+    expect(out).not.toContain("Confidence:");
+  });
+});
+
+describe("renderTerminal — confidence band (Story 3.5)", () => {
+  it("surfaces a high-confidence level and rationale, no escalation", () => {
+    const narrative: ReportNarrative = {
+      ...NARRATIVE,
+      confidence: { level: "high", rationale: "Grounding 100%, explanation coverage 100%, 0% of metrics not available." },
+    };
+    const out = renderTerminal(report({ narrative, degraded: false }), { color: false });
+    expect(out).toContain("Confidence: HIGH");
+    expect(out).toContain("Grounding 100%");
+    expect(out).not.toContain("⚠");
+  });
+
+  it("surfaces a LOW confidence with the escalation prominently (AC3)", () => {
+    const narrative: ReportNarrative = {
+      ...NARRATIVE,
+      confidence: {
+        level: "low",
+        rationale: "Grounding 30%, explanation coverage 40%, 50% of metrics not available.",
+        escalation: "Confidence is low — re-run with a stronger model. Set COMMIT_SAGE_PROVIDER and COMMIT_SAGE_LLM_MODEL (currently gemini/m) to a more capable provider/model.",
+      },
+    };
+    const out = renderTerminal(report({ narrative, degraded: false }), { color: false });
+    expect(out).toContain("Confidence: LOW");
+    expect(out).toContain("⚠ Confidence is low");
+    expect(out).toContain("COMMIT_SAGE_PROVIDER");
+  });
 });
 
 describe("renderTerminal — substrate", () => {

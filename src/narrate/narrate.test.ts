@@ -43,13 +43,37 @@ describe("createNarrate", () => {
     expect(generateExplanations).not.toHaveBeenCalled();
   });
 
-  it("happy path → narrated with the full narrative (three parts + per-metric explanations)", async () => {
+  it("happy path → narrated with the full narrative (three parts + per-metric explanations + confidence)", async () => {
     const outcome = await createNarrate({
       resolveModel: () => fakeModel,
       generate: async () => NARRATIVE,
       generateExplanations: okExplanations,
     })(ANALYSIS, cfg());
-    expect(outcome).toEqual({ kind: "narrated", narrative: { ...NARRATIVE, explanations: EXPLANATIONS } });
+    expect(outcome.kind).toBe("narrated");
+    const narrative = (outcome as { narrative: { confidence?: { level: string; escalation?: string } } }).narrative;
+    // The three parts + explanations are carried (grounding is a no-op on the number-free fixture).
+    expect(narrative).toMatchObject({ ...NARRATIVE, explanations: EXPLANATIONS });
+    // Story 3.5: a confidence self-assessment is computed (all grounded, full coverage → high).
+    expect(narrative.confidence?.level).toBe("high");
+    expect(narrative.confidence?.escalation).toBeUndefined();
+  });
+
+  it("computes a LOW confidence with an escalation when generation fabricates claims (Story 3.5)", async () => {
+    // ANALYSIS's only number is 3; the overview is all-fabricated → grounding empties it
+    // (passRate 0) → low confidence with an escalation naming the config to change.
+    const parts = {
+      summary: { headline: "Healthy.", overview: "There were 999 reverts and 888 merges.", keyFindings: [] },
+      explanation: { paragraphs: ["Steady cadence."] },
+      coaching: { introduction: "A plan.", chapters: [{ theme: "Cadence", steps: ["Commit smaller"] }], closingSummary: "Done." },
+    };
+    const outcome = await createNarrate({
+      resolveModel: () => fakeModel,
+      generate: async () => parts,
+      generateExplanations: okExplanations,
+    })(ANALYSIS, cfg({ provider: "gemini", llmModel: "gemini-2.0-flash" }));
+    const narrative = (outcome as { narrative: { confidence?: { level: string; escalation?: string } } }).narrative;
+    expect(narrative.confidence?.level).toBe("low");
+    expect(narrative.confidence?.escalation).toContain("COMMIT_SAGE_PROVIDER");
   });
 
   it("applies the deterministic grounding pass — a fabricated numeric claim is removed before returning (Story 3.4)", async () => {

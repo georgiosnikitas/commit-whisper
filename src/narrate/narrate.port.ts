@@ -30,6 +30,8 @@ export type {
   NarrativeParts,
   MetricExplanation,
   MetricExplanations,
+  Confidence,
+  ConfidenceLevel,
 } from "./schema.js";
 
 /** The AI-relevant subset of `RunConfig` + the env-only secret key. */

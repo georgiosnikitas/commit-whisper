@@ -80,7 +80,7 @@ development_status:
   3-2-four-facet-per-metric-explanations: done
   3-3-per-group-batched-generation: done
   3-4-deterministic-grounding-verification-pass: done
-  3-5-confidence-self-assessment-and-escalation: backlog
+  3-5-confidence-self-assessment-and-escalation: done
   3-6-full-byok-provider-breadth: backlog
   epic-3-retrospective: optional
 

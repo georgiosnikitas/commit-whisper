@@ -80,6 +80,40 @@ describe("ReportSchema", () => {
     expect(ReportSchema.safeParse(report).success).toBe(false);
   });
 
+  it("accepts a confidence self-assessment under narrative, and rejects a bad level / unknown key (strict)", () => {
+    const base = {
+      schemaVersion: SCHEMA_VERSION,
+      degraded: false,
+      analysis: ANALYSIS,
+      narrative: {
+        summary: NARRATIVE.summary,
+        explanation: NARRATIVE.explanation,
+        coaching: NARRATIVE.coaching,
+        confidence: { level: "low", rationale: "Grounding 30%.", escalation: "Set COMMIT_SAGE_PROVIDER." },
+      },
+    };
+    expect(ReportSchema.safeParse(base).success).toBe(true);
+    const badLevel = { ...base, narrative: { ...base.narrative, confidence: { level: "unsure", rationale: "x" } } };
+    expect(ReportSchema.safeParse(badLevel).success).toBe(false);
+    const unknownKey = { ...base, narrative: { ...base.narrative, confidence: { level: "high", rationale: "x", oops: 1 } } };
+    expect(ReportSchema.safeParse(unknownKey).success).toBe(false);
+  });
+
+  it("enforces the escalation-iff-low invariant on read-back", () => {
+    const wrap = (confidence: unknown) => ({
+      schemaVersion: SCHEMA_VERSION,
+      degraded: false,
+      analysis: ANALYSIS,
+      narrative: { summary: NARRATIVE.summary, explanation: NARRATIVE.explanation, coaching: NARRATIVE.coaching, confidence },
+    });
+    // low WITHOUT escalation → rejected; non-low WITH escalation → rejected.
+    expect(ReportSchema.safeParse(wrap({ level: "low", rationale: "r" })).success).toBe(false);
+    expect(ReportSchema.safeParse(wrap({ level: "high", rationale: "r", escalation: "e" })).success).toBe(false);
+    // low WITH escalation → accepted; high WITHOUT → accepted.
+    expect(ReportSchema.safeParse(wrap({ level: "low", rationale: "r", escalation: "e" })).success).toBe(true);
+    expect(ReportSchema.safeParse(wrap({ level: "high", rationale: "r" })).success).toBe(true);
+  });
+
   it("rejects a narrative missing a required part (Explanation/Coaching)", () => {
     const report = {
       schemaVersion: SCHEMA_VERSION,

@@ -62,6 +62,18 @@ describe("assembleReport", () => {
     expect(reparsed.narrative?.explanations?.["a-commit-cadence"].explanation).toContain("Could not be computed");
   });
 
+  it("carries the confidence self-assessment verbatim and it round-trips read-back (Story 3.5)", () => {
+    const narrative: Narrative = {
+      ...NARRATIVE,
+      confidence: { level: "low", rationale: "Grounding 30%, explanation coverage 40%, 50% of metrics not available.", escalation: "Set COMMIT_SAGE_PROVIDER and COMMIT_SAGE_LLM_MODEL." },
+    };
+    const report = assembleReport({ analysis: ANALYSIS, narrative, degraded: false });
+    expect(report.narrative?.confidence).toEqual(narrative.confidence);
+    const reparsed = parseReport(JSON.stringify(report));
+    expect(reparsed.narrative?.confidence?.level).toBe("low");
+    expect(reparsed.narrative?.confidence?.escalation).toContain("COMMIT_SAGE_PROVIDER");
+  });
+
   it("owns a defensive copy: mutating the caller's input afterward cannot poison the report", () => {
     const analysis = structuredClone(ANALYSIS);
     const narrative = structuredClone(NARRATIVE);

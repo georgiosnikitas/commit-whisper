@@ -150,14 +150,35 @@ export const ExplanationBatchSchema = z.object({
 
 export type ExplanationBatch = z.infer<typeof ExplanationBatchSchema>;
 
+/** The run's self-assessed confidence levels (Story 3.5 — FR-10). */
+export const CONFIDENCE_LEVELS = ["high", "medium", "low"] as const;
+
+export type ConfidenceLevel = (typeof CONFIDENCE_LEVELS)[number];
+
+/**
+ * The deterministic confidence self-assessment (Story 3.5). Computed — never
+ * LLM-generated — from the grounding pass rate, the `not_available` share, and the
+ * explanation coverage. `escalation` is present IFF `level === "low"` (it names
+ * the config to change to re-run with a stronger provider).
+ */
+export const ConfidenceSchema = z.object({
+  level: z.enum(CONFIDENCE_LEVELS),
+  rationale: z.string().min(1),
+  escalation: z.string().min(1).optional(),
+});
+
+export type Confidence = z.infer<typeof ConfidenceSchema>;
+
 /**
  * The full AI Narrative carried in the Report `narrative` subtree: the three
  * generated parts (Story 3.1) plus the OPTIONAL per-metric explanation map
- * (Story 3.2, keyed by metric id). This is the shape that flows through the
- * narrate outcome into the assembled report.
+ * (Story 3.2, keyed by metric id) and the OPTIONAL confidence self-assessment
+ * (Story 3.5). This is the shape that flows through the narrate outcome into the
+ * assembled report.
  */
 export const FullNarrativeSchema = NarrativeSchema.extend({
   explanations: MetricExplanationsSchema.optional(),
+  confidence: ConfidenceSchema.optional(),
 });
 
 export type Narrative = z.infer<typeof FullNarrativeSchema>;

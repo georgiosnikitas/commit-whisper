@@ -20,6 +20,7 @@
 import pc from "picocolors";
 
 import type { Report, ReportAnalysis } from "../../assemble/report-schema.js";
+import type { Confidence } from "../../narrate/narrate.port.js";
 import { classifyReport, type ShowpieceReport, type SubstrateFraming } from "../render.port.js";
 
 type Colors = ReturnType<typeof pc.createColors>;
@@ -42,9 +43,10 @@ export function renderTerminal(report: Report, opts: TerminalRenderOptions = {})
 }
 
 function renderShowpiece(report: ShowpieceReport, c: Colors): string {
-  const { summary, explanation, coaching } = report.narrative;
+  const { summary, explanation, coaching, confidence } = report.narrative;
   return [
     heading(c),
+    ...confidenceBand(confidence, c),
     "",
     c.bold("Summary"),
     c.bold(summary.headline),
@@ -81,6 +83,26 @@ function renderSubstrate(analysis: ReportAnalysis, framing: SubstrateFraming, c:
 
 function heading(c: Colors): string {
   return c.bold("commit-sage");
+}
+
+/**
+ * The confidence band (Story 3.5 — UX-DR9): a labeled, color-coded line surfacing
+ * the run's self-assessed confidence, with the low-confidence escalation on its
+ * own line. Absent confidence ⇒ no band (back-compat). Color is the only
+ * TTY-sensitive surface; the text is identical headless vs TTY.
+ */
+function confidenceBand(confidence: Confidence | undefined, c: Colors): string[] {
+  if (confidence === undefined) {
+    return [];
+  }
+  const paintByLevel = { high: c.green, medium: c.yellow, low: c.red } as const;
+  const paint = paintByLevel[confidence.level];
+  const label = `Confidence: ${paint(c.bold(confidence.level.toUpperCase()))}`;
+  const lines = ["", `${label} — ${c.dim(confidence.rationale)}`];
+  if (confidence.escalation !== undefined) {
+    lines.push(c.bold(c.red(`⚠ ${confidence.escalation}`)));
+  }
+  return lines;
 }
 
 /** Hand-rolled metrics table (id-ordered as the engine emitted them — deterministic). */
