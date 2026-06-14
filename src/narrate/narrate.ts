@@ -42,12 +42,15 @@ export function createNarrate(deps: NarrateDeps = {}): NarratePort {
     }
     try {
       const model = resolve(config);
-      // The repo-level narrative (Story 3.1) and the per-metric explanations
-      // (Story 3.2) are two independent generations, run concurrently and
-      // composed into the full narrative. Either failing degrades/throws the
-      // whole narration (graceful per-group degradation is Story 3.3). The
-      // explanations map may be incomplete if the model omits metrics — that
-      // gap is surfaced by the grounding pass (3.4) / confidence (3.5), not
+      // The repo-level narrative (Story 3.1: Summary + Explanation + Coaching,
+      // the holistic "coaching call") and the per-metric explanations (Story 3.2,
+      // now batched per Metric Group — Story 3.3) are two independent generations,
+      // run concurrently and composed into the full narrative. If the NARRATIVE
+      // call fails the whole narration degrades/throws (the repo-level narrative
+      // is required for the showpiece); a single failing explanation GROUP instead
+      // degrades gracefully INSIDE `generateExplanations` (its metrics are absent
+      // from the map, the rest are carried). An incomplete map (a model omitting
+      // metrics) is surfaced by the grounding pass (3.4) / confidence (3.5), not
       // fabricated here.
       const [parts, explanations] = await Promise.all([
         generate(model, analysis),

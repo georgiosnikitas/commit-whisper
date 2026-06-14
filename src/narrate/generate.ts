@@ -20,6 +20,7 @@ import { generateObject as sdkGenerateObject } from "ai";
 import type { LanguageModel } from "ai";
 
 import type { Analysis } from "../analyze/engine.js";
+import type { MetricGroup } from "../analyze/metric.js";
 import { buildNarrativePrompt, buildExplanationsPrompt } from "./prompt.js";
 import {
   NarrativeSchema,
@@ -29,6 +30,9 @@ import {
   type MetricExplanations,
   type MetricExplanationEntry,
 } from "./schema.js";
+
+/** The Metric Groups, in stable batch order (matches the registry's A→F order). */
+export const METRIC_GROUPS: readonly MetricGroup[] = ["A", "B", "C", "D", "E", "F"];
 
 export interface GenerateNarrativeDeps {
   generateObject?: typeof sdkGenerateObject;
@@ -50,15 +54,57 @@ export async function generateNarrative(
 }
 
 /**
- * Generate the four-facet per-metric explanations (Story 3.2) in ONE batched
- * `generateObject` call (FR-8's "single request"; Story 3.3 splits this into six
- * per-Group batches). The model returns an array of entries each tagged with its
- * `metricId`; `buildExplanationsRecord` maps them to the keyed-by-id record,
- * dropping any ungrounded id. `temperature: 0` is pinned, as for the narrative.
+ * Generate the four-facet per-metric explanations (Story 3.2) batched **per Metric
+ * Group** (Story 3.3): one `generateObject` call per non-empty Group (A–F ⇒ up to
+ * six batches), each over only that group's metrics. This bounds each response so a
+ * modest/local model survives its context window, and the batches are independent
+ * and parallelizable.
+ *
+ * The batches run with `Promise.allSettled`, so a SINGLE failing group degrades
+ * gracefully — its metrics are simply absent from the result while every other
+ * group's explanations are still produced (AC2). Because that handling is internal,
+ * this function does not throw for a single group's failure; the orchestrator only
+ * fails the whole narration if the (separate) repo-level narrative call fails.
+ *
+ * The merge iterates `METRIC_GROUPS` in fixed order (not completion order) and
+ * `buildExplanationsRecord` emits within a group in analysis order, so the merged
+ * map is keyed in stable Group-then-metric order — deterministic regardless of
+ * which batch resolved first (AC3).
  */
 export async function generateExplanations(
   model: LanguageModel,
   analysis: Analysis,
+  deps: GenerateNarrativeDeps = {},
+): Promise<MetricExplanations> {
+  const batches = METRIC_GROUPS.map((group) => ({
+    group,
+    metrics: analysis.metrics.filter((metric) => metric.group === group),
+  })).filter((batch) => batch.metrics.length > 0);
+
+  const settled = await Promise.allSettled(
+    batches.map((batch) => generateGroupExplanations(model, { metrics: batch.metrics }, deps)),
+  );
+
+  // Merge in batch (Group) order — independent of which settled first — so the
+  // result is deterministic. A rejected group is dropped (graceful degradation).
+  const merged: Record<string, MetricExplanation> = {};
+  for (const result of settled) {
+    if (result.status === "fulfilled") {
+      Object.assign(merged, result.value);
+    }
+  }
+  return merged;
+}
+
+/**
+ * One per-Group explanation batch: a single `generateObject` call over a
+ * group-filtered analysis, keyed by id via `buildExplanationsRecord`. Anchoring
+ * holds per batch — `buildExplanationsRecord`'s `validIds` is this group's ids, so
+ * a cross-group hallucinated id is dropped. `temperature: 0` pinned, as elsewhere.
+ */
+export async function generateGroupExplanations(
+  model: LanguageModel,
+  groupAnalysis: Analysis,
   deps: GenerateNarrativeDeps = {},
 ): Promise<MetricExplanations> {
   const generate = deps.generateObject ?? sdkGenerateObject;
@@ -66,9 +112,9 @@ export async function generateExplanations(
     model,
     schema: ExplanationBatchSchema,
     temperature: 0,
-    prompt: buildExplanationsPrompt(analysis),
+    prompt: buildExplanationsPrompt(groupAnalysis),
   });
-  return buildExplanationsRecord(object.explanations, analysis);
+  return buildExplanationsRecord(object.explanations, groupAnalysis);
 }
 
 /**
