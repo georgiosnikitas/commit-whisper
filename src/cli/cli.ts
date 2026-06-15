@@ -17,6 +17,8 @@
  * `readProcessEnv` and injects it.
  */
 
+import { hostname } from "node:os";
+
 import { Command, CommanderError } from "commander";
 
 import { readAiKey, readEnvDiagnostics, readEnvLayer, readGitToken, readLicenseKey, readProcessEnv } from "../config/env.js";
@@ -27,9 +29,25 @@ import type { Entitlement, OutputFormat, PartialRunConfig, Provider, RunConfig }
 import type { NarrateConfig } from "../narrate/narrate.port.js";
 import { preflightProvider } from "../narrate/preflight.js";
 import { resolveEntitlement } from "../license/gate.js";
-import { createLemonSqueezyValidator } from "../license/lemonsqueezy.js";
-import { readActivationInstanceId } from "../license/store.js";
+import {
+  activateLicense,
+  deactivateLicense,
+  type ActivationOutcome,
+  type DeactivationOutcome,
+} from "../license/actions.js";
+import {
+  createLemonSqueezyActivator,
+  createLemonSqueezyDeactivator,
+  createLemonSqueezyValidator,
+} from "../license/lemonsqueezy.js";
+import {
+  clearLicenseCache,
+  readActivationInstanceId,
+  readCachedLicenseKey,
+  writeLicenseCache,
+} from "../license/store.js";
 import { execFileGitRunner, type GitRunner } from "../retrieve/git.js";
+import { defaultOpenBrowser } from "./open-browser.js";
 import { MissingRequiredConfigError, UsageError } from "../shared/errors.js";
 import { createUi, resolveColor, resolveLogLevel, type Ui } from "../shared/ui.js";
 import { exitCodeForError, ExitCode, messageForError } from "./exit-codes.js";
@@ -88,17 +106,44 @@ export interface CliDeps {
   configFile?: PartialRunConfig;
   /** Inject the resolved license entitlement (Story 7.1); defaults to the online Lemon Squeezy gate. */
   resolveEntitlement?: (env: NodeJS.ProcessEnv) => Promise<Entitlement>;
+  /** Inject the launchpad's license-activate action (Story 7.2); defaults to the online activate + cache. */
+  activateLicense?: (env: NodeJS.ProcessEnv, licenseKey: string) => Promise<ActivationOutcome>;
+  /** Inject the launchpad's license-deactivate action (Story 7.2); defaults to the online deactivate + clear. */
+  deactivateLicense?: (env: NodeJS.ProcessEnv) => Promise<DeactivationOutcome>;
+  /** Inject the browser opener for the license hand-offs (Story 7.2); defaults to `defaultOpenBrowser`. */
+  openUrl?: (url: string) => Promise<void>;
 }
 
 /**
- * The default entitlement resolver (Story 7.1): the online Lemon Squeezy gate.
- * No license key ⇒ Free with no network call; a key ⇒ validate + map the tier.
+ * The default entitlement resolver (Story 7.1 · cached-key read Story 7.2): the
+ * online Lemon Squeezy gate. No license key ⇒ Free with no network call; a key
+ * (env, else the cached key from a one-time Activate) ⇒ validate + map the tier.
  */
 async function defaultResolveEntitlement(env: NodeJS.ProcessEnv): Promise<Entitlement> {
   return resolveEntitlement({
-    licenseKey: readLicenseKey(env),
+    licenseKey: readLicenseKey(env) ?? (await readCachedLicenseKey(env)),
     validate: createLemonSqueezyValidator(),
     readInstanceId: () => readActivationInstanceId(env),
+  });
+}
+
+/** Default Activate (Story 7.2): activate online + cache the instance id & key. */
+function defaultActivateLicense(env: NodeJS.ProcessEnv, licenseKey: string): Promise<ActivationOutcome> {
+  return activateLicense({
+    licenseKey,
+    instanceName: hostname(),
+    activate: createLemonSqueezyActivator(),
+    persist: (cache) => writeLicenseCache(env, cache).then(() => undefined),
+  });
+}
+
+/** Default Deactivate (Story 7.2): free the activation online + clear the cache. */
+async function defaultDeactivateLicense(env: NodeJS.ProcessEnv): Promise<DeactivationOutcome> {
+  return deactivateLicense({
+    licenseKey: readLicenseKey(env) ?? (await readCachedLicenseKey(env)),
+    instanceId: await readActivationInstanceId(env),
+    deactivate: createLemonSqueezyDeactivator(),
+    clear: () => clearLicenseCache(env),
   });
 }
 
@@ -407,7 +452,19 @@ async function runZeroArg(ctx: ZeroArgContext): Promise<number> {
     probeReachability,
     loadSettings: () => readSettings(ctx.env),
     saveSettings: (data) => writeSettings(ctx.env, data),
+    // License actions (Story 7.2): the only in-app key entry + the browser hand-offs.
+    activateLicense: (key) => (ctx.deps.activateLicense ?? defaultActivateLicense)(ctx.env, key),
+    deactivateLicense: () => (ctx.deps.deactivateLicense ?? defaultDeactivateLicense)(ctx.env),
+    openUrl: ctx.deps.openUrl ?? defaultOpenBrowser,
+    storeUrl: readUrl(ctx.env.COMMIT_SAGE_STORE_URL),
+    coffeeUrl: readUrl(ctx.env.COMMIT_SAGE_COFFEE_URL),
   });
+}
+
+/** A trimmed non-empty URL override, or `undefined` (the launchpad uses its default). */
+function readUrl(raw: string | undefined): string | undefined {
+  const v = raw?.trim();
+  return v === undefined || v === "" ? undefined : v;
 }
 
 /** Collapse a leading `$HOME` to `~` for a calmer cwd display. Pure; passthrough when unset. */

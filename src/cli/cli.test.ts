@@ -610,5 +610,58 @@ describe("main — license entitlement gate (Story 7.1)", () => {
   });
 });
 
+describe("main — license actions wiring (Story 7.2)", () => {
+  it("the 0-arg launchpad receives activate / deactivate / openUrl + the store/coffee URLs", async () => {
+    const lp = captureLaunchpad();
+    await main([], {
+      ...BASE,
+      stdinIsTTY: true,
+      stdoutIsTTY: true,
+      env: {},
+      resolveEntitlement: async () => ({ tier: "free", commitCap: 100 }),
+      gitRunner: repoRunner,
+      launchpad: lp.launchpad,
+    });
+    expect(typeof lp.calls[0]!.activateLicense).toBe("function");
+    expect(typeof lp.calls[0]!.deactivateLicense).toBe("function");
+    expect(typeof lp.calls[0]!.openUrl).toBe("function");
+  });
+
+  it("the wired activate closure delegates to the injected action", async () => {
+    const lp = captureLaunchpad();
+    const calls: { key: string }[] = [];
+    await main([], {
+      ...BASE,
+      stdinIsTTY: true,
+      stdoutIsTTY: true,
+      env: {},
+      resolveEntitlement: async () => ({ tier: "free", commitCap: 100 }),
+      gitRunner: repoRunner,
+      launchpad: lp.launchpad,
+      activateLicense: async (_env, key) => {
+        calls.push({ key });
+        return { ok: true, tier: "single-device" };
+      },
+    });
+    const outcome = await lp.calls[0]!.activateLicense!("LIC-XYZ");
+    expect(calls).toEqual([{ key: "LIC-XYZ" }]);
+    expect(outcome).toEqual({ ok: true, tier: "single-device" });
+  });
+
+  it("a COMMIT_SAGE_STORE_URL override flows into the launchpad storeUrl", async () => {
+    const lp = captureLaunchpad();
+    await main([], {
+      ...BASE,
+      stdinIsTTY: true,
+      stdoutIsTTY: true,
+      env: { COMMIT_SAGE_STORE_URL: "https://my.store/buy" },
+      resolveEntitlement: async () => ({ tier: "free", commitCap: 100 }),
+      gitRunner: repoRunner,
+      launchpad: lp.launchpad,
+    });
+    expect(lp.calls[0]!.storeUrl).toBe("https://my.store/buy");
+  });
+});
+
 
 

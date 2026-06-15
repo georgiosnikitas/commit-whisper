@@ -30,6 +30,7 @@ import { isCancel, multiselect as clackMultiselect, select as clackSelect, text 
 import type { EnvVarStatus } from "../config/env.js";
 import type { SettingsData } from "../config/config-store.js";
 import type { OutputFormat, PartialRunConfig, Provider, Tier } from "../config/run-config.js";
+import type { ActivationOutcome, DeactivationOutcome } from "../license/actions.js";
 import { ExitCode } from "./exit-codes.js";
 
 /** A launchpad row's stable identity (the value returned by the menu). */
@@ -133,6 +134,16 @@ export interface LaunchpadDeps {
   loadSettings?: () => Promise<SettingsData>;
   /** Persist the Settings (Story 6.5) — returns the saved path; injected by `cli/`. Absent ⇒ Settings is read-only. */
   saveSettings?: (data: SettingsData) => Promise<string>;
+  /** Activate a license key (Story 7.2) — the only in-app key entry; injected by `cli/`. */
+  activateLicense?: (licenseKey: string) => Promise<ActivationOutcome>;
+  /** Deactivate this device's license (Story 7.2) — frees the activation; injected by `cli/`. */
+  deactivateLicense?: () => Promise<DeactivationOutcome>;
+  /** Open a URL in the browser (Story 7.2 Buy/Restore + Coffee); injected by `cli/`. */
+  openUrl?: (url: string) => Promise<void>;
+  /** The store hand-off URL (Buy / Restore); injected by `cli/`. */
+  storeUrl?: string;
+  /** The voluntary Buy-Me-a-Coffee URL; injected by `cli/`. */
+  coffeeUrl?: string;
 }
 
 /** The locked product tagline (brief.md / DESIGN.md). */
@@ -172,17 +183,6 @@ const TIER_LABEL: Record<Tier, string> = {
   free: "Free",
   "single-device": "Single-device",
   unlimited: "Unlimited",
-};
-
-/** Calm placeholders for the rows whose actions land in later stories (Settings 6.5 · license Epic 7). */
-const COMING_SOON: Record<
-  Exclude<LaunchpadAction, "help" | "quit" | "analyze-cwd" | "analyze-remote" | "status" | "settings">,
-  string
-> = {
-  activate: "License activation is coming soon.",
-  "buy-restore": "Buy / Restore is coming soon.",
-  coffee: "Buy Me a Coffee — link coming soon.",
-  deactivate: "Deactivation is coming soon.",
 };
 
 /** The output-format picker rows (the resolver tokens — `markdown`, not the `md` extension). */
@@ -716,6 +716,140 @@ function assembleSettings(input: {
   return data;
 }
 
+// ── License screens (Story 7.2) ─────────────────────────────────────────────
+
+/**
+ * Activate license (AC2) — the ONLY in-app key entry. Prompt for the key (not a
+ * secret — entered in-app), activate online, and report the outcome. A cancel
+ * saves nothing; an action throw degrades to a calm message (never crash the menu).
+ */
+async function runActivate(deps: LaunchpadDeps, output: Writable): Promise<void> {
+  const prompts = deps.prompts ?? clackGuidedPrompts(output);
+  const key = await prompts.text({ message: "License key", placeholder: "from the store or your purchase email" });
+  if (key === null) {
+    return;
+  }
+  if (deps.activateLicense === undefined) {
+    return;
+  }
+  try {
+    const outcome = await deps.activateLicense(key);
+    if (outcome.ok) {
+      writeLine(output, `✓ License activated — ${TIER_LABEL[outcome.tier]} tier. It applies on your next run.`);
+    } else {
+      writeLine(output, `⚠ ${outcome.reason}`);
+    }
+  } catch (err) {
+    writeLine(output, `⚠ Could not activate: ${err instanceof Error ? err.message : "request failed"}`);
+  }
+}
+
+/**
+ * Deactivate license (AC3) — free this device's activation so the license can
+ * move. A confirm guards it; a throw degrades to a calm message.
+ */
+async function runDeactivate(deps: LaunchpadDeps, output: Writable): Promise<void> {
+  const prompts = deps.prompts ?? clackGuidedPrompts(output);
+  const choice = await prompts.selectOne({
+    message: "Deactivate this device's license? It frees the activation so you can move machines.",
+    options: [
+      { value: "deactivate", label: "Deactivate" },
+      { value: "cancel", label: "Cancel" },
+    ],
+    initialValue: "cancel",
+  });
+  if (choice === null || choice === "cancel") {
+    return;
+  }
+  if (deps.deactivateLicense === undefined) {
+    return;
+  }
+  try {
+    const outcome = await deps.deactivateLicense();
+    if (outcome.ok) {
+      writeLine(output, "✓ License deactivated — freed on this device. Re-activate anytime with your key.");
+    } else {
+      writeLine(output, `⚠ ${outcome.reason}`);
+    }
+  } catch (err) {
+    writeLine(output, `⚠ Could not deactivate: ${err instanceof Error ? err.message : "request failed"}`);
+  }
+}
+
+/**
+ * A browser hand-off (Buy/Restore AC1 + Buy-Me-a-Coffee): open a URL, never
+ * collect anything. On any open failure the URL is printed plainly so it stays
+ * copyable (never a dead-end).
+ */
+async function runOpenUrl(deps: LaunchpadDeps, url: string, label: string, note: string, output: Writable): Promise<void> {
+  writeLine(output, `Opening ${label} in your browser…`);
+  if (note !== "") {
+    writeLine(output, note);
+  }
+  if (deps.openUrl === undefined) {
+    writeLine(output, url);
+    return;
+  }
+  try {
+    await deps.openUrl(url);
+  } catch {
+    writeLine(output, `Could not open a browser — visit: ${url}`);
+  }
+}
+
+const BUY_RESTORE_NOTE =
+  "commit-sage never handles payment. Buy a new license or recover a purchase, then return and choose “Activate license”.";
+
+/** Default browser hand-off URLs (deployment-overridable via `cli/` from the environment). */
+export const DEFAULT_STORE_URL = "https://commitsage.lemonsqueezy.com";
+export const DEFAULT_COFFEE_URL = "https://www.buymeacoffee.com/commitsage";
+
+/**
+ * Dispatch one chosen launchpad action. Returns `"quit"` to end the session
+ * (Esc/Quit), or `"continue"` to re-prompt. Each action delegates to its screen;
+ * keeping the switch here (not inline in the loop) holds `runLaunchpad`'s
+ * cognitive complexity within budget.
+ */
+async function dispatchAction(deps: LaunchpadDeps, action: LaunchpadAction, output: Writable): Promise<"quit" | "continue"> {
+  switch (action) {
+    case "quit":
+      writeLine(output, FLAGS_CHEATSHEET);
+      return "quit";
+    case "help":
+      writeLine(output, deps.helpText);
+      return "continue";
+    case "analyze-cwd":
+    case "analyze-remote":
+      await runGuidedAnalyze(deps, action === "analyze-cwd" ? "cwd" : "remote", output);
+      return "continue";
+    case "status":
+      await runStatusDoctor(deps, output);
+      return "continue";
+    case "settings":
+      await runSettings(deps, output);
+      return "continue";
+    case "activate":
+      await runActivate(deps, output);
+      return "continue";
+    case "deactivate":
+      await runDeactivate(deps, output);
+      return "continue";
+    case "buy-restore":
+      await runOpenUrl(deps, deps.storeUrl ?? DEFAULT_STORE_URL, "the store", BUY_RESTORE_NOTE, output);
+      return "continue";
+    case "coffee": // the voluntary support link.
+      await runOpenUrl(deps, deps.coffeeUrl ?? DEFAULT_COFFEE_URL, "Buy Me a Coffee", "", output);
+      return "continue";
+    default:
+      return assertNeverAction(action);
+  }
+}
+
+/** Exhaustiveness guard — a new `LaunchpadAction` without a `dispatchAction` case is a compile error. */
+function assertNeverAction(action: never): never {
+  throw new Error(`Unhandled launchpad action: ${String(action)}`);
+}
+
 /**
  * Render the launchpad and loop until the user quits (AC1, AC4). Returns
  * `ExitCode.Success` on a clean Esc/Quit. The header is written once; the menu
@@ -731,26 +865,8 @@ export async function runLaunchpad(deps: LaunchpadDeps): Promise<number> {
 
   for (;;) {
     const action = (await select({ message: "What would you like to do?", options })) ?? "quit";
-    if (action === "quit") {
-      writeLine(output, FLAGS_CHEATSHEET);
+    if ((await dispatchAction(deps, action, output)) === "quit") {
       return ExitCode.Success;
     }
-    if (action === "help") {
-      writeLine(output, deps.helpText);
-      continue;
-    }
-    if (action === "analyze-cwd" || action === "analyze-remote") {
-      await runGuidedAnalyze(deps, action === "analyze-cwd" ? "cwd" : "remote", output);
-      continue;
-    }
-    if (action === "status") {
-      await runStatusDoctor(deps, output);
-      continue;
-    }
-    if (action === "settings") {
-      await runSettings(deps, output);
-      continue;
-    }
-    writeLine(output, COMING_SOON[action]);
   }
 }

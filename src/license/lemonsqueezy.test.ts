@@ -1,6 +1,10 @@
 import { describe, it, expect } from "vitest";
 
-import { createLemonSqueezyValidator } from "./lemonsqueezy.js";
+import {
+  createLemonSqueezyActivator,
+  createLemonSqueezyDeactivator,
+  createLemonSqueezyValidator,
+} from "./lemonsqueezy.js";
 
 /** A fake `fetch` that records the request and returns a canned JSON response. */
 function fakeFetch(response: { ok: boolean; status?: number; json?: unknown }) {
@@ -78,5 +82,61 @@ describe("createLemonSqueezyValidator", () => {
     const { fetchImpl, calls } = fakeFetch({ ok: true, json: { valid: true } });
     await createLemonSqueezyValidator({ fetchImpl, apiBase: "https://example.test/" })({ licenseKey: "k" });
     expect(calls[0]!.url).toBe("https://example.test/v1/licenses/validate");
+  });
+});
+
+describe("createLemonSqueezyActivator (Story 7.2)", () => {
+  it("POSTs to /v1/licenses/activate with only license_key + instance_name", async () => {
+    const { fetchImpl, calls } = fakeFetch({ ok: true, json: { activated: true, instance: { id: "inst-9" } } });
+    await createLemonSqueezyActivator({ fetchImpl })({ licenseKey: "LIC-KEY", instanceName: "my-laptop" });
+    expect(calls[0]!.url).toBe("https://api.lemonsqueezy.com/v1/licenses/activate");
+    expect(bodyParams(calls[0]!.init)).toEqual({ license_key: "LIC-KEY", instance_name: "my-laptop" });
+  });
+
+  it("maps a successful activation (instance id + variant)", async () => {
+    const { fetchImpl } = fakeFetch({
+      ok: true,
+      json: { activated: true, instance: { id: "inst-9", name: "my-laptop" }, meta: { variant_id: 7, variant_name: "Single Device" } },
+    });
+    const result = await createLemonSqueezyActivator({ fetchImpl })({ licenseKey: "k", instanceName: "d" });
+    expect(result).toEqual({ activated: true, instanceId: "inst-9", variantName: "Single Device", variantId: 7, error: undefined });
+  });
+
+  it("maps an activation-limit refusal (second device, AC3) to activated:false + the server message", async () => {
+    const { fetchImpl } = fakeFetch({ ok: false, status: 400, json: { activated: false, error: "limit reached" } });
+    const result = await createLemonSqueezyActivator({ fetchImpl })({ licenseKey: "k", instanceName: "d" });
+    expect(result.activated).toBe(false);
+    expect(result.error).toContain("HTTP 400");
+  });
+
+  it("maps a thrown fetch to activated:false, scrubbing the key", async () => {
+    const fetchImpl = (async () => {
+      throw new Error("ECONNREFUSED key LIC-SECRET");
+    }) as unknown as typeof fetch;
+    const result = await createLemonSqueezyActivator({ fetchImpl })({ licenseKey: "LIC-SECRET", instanceName: "d" });
+    expect(result.activated).toBe(false);
+    expect(result.error).not.toContain("LIC-SECRET");
+  });
+});
+
+describe("createLemonSqueezyDeactivator (Story 7.2)", () => {
+  it("POSTs to /v1/licenses/deactivate with only license_key + instance_id", async () => {
+    const { fetchImpl, calls } = fakeFetch({ ok: true, json: { deactivated: true } });
+    await createLemonSqueezyDeactivator({ fetchImpl })({ licenseKey: "LIC-KEY", instanceId: "inst-9" });
+    expect(calls[0]!.url).toBe("https://api.lemonsqueezy.com/v1/licenses/deactivate");
+    expect(bodyParams(calls[0]!.init)).toEqual({ license_key: "LIC-KEY", instance_id: "inst-9" });
+  });
+
+  it("maps a successful deactivation", async () => {
+    const { fetchImpl } = fakeFetch({ ok: true, json: { deactivated: true } });
+    const result = await createLemonSqueezyDeactivator({ fetchImpl })({ licenseKey: "k", instanceId: "i" });
+    expect(result).toEqual({ deactivated: true, error: undefined });
+  });
+
+  it("maps a non-ok response to deactivated:false (never throws)", async () => {
+    const { fetchImpl } = fakeFetch({ ok: false, status: 404 });
+    const result = await createLemonSqueezyDeactivator({ fetchImpl })({ licenseKey: "k", instanceId: "i" });
+    expect(result.deactivated).toBe(false);
+    expect(result.error).toContain("HTTP 404");
   });
 });

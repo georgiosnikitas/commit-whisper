@@ -1,11 +1,21 @@
 import { describe, it, expect } from "vitest";
 
-import { entitlementForTier, FREE_ENTITLEMENT, tierForValidation } from "./tiers.js";
+import { entitlementForTier, FREE_ENTITLEMENT, tierForValidation, tierForVariantName } from "./tiers.js";
 import type { LicenseValidation } from "./lemonsqueezy.js";
 
 function valid(variantName?: string): LicenseValidation {
   return { valid: true, status: "active", variantName };
 }
+
+describe("tierForVariantName", () => {
+  it("maps variant names to tiers (unlimited/automation, single/device, else single-device)", () => {
+    expect(tierForVariantName("Unlimited")).toBe("unlimited");
+    expect(tierForVariantName("Automation")).toBe("unlimited");
+    expect(tierForVariantName("Single Device")).toBe("single-device");
+    expect(tierForVariantName("Mystery")).toBe("single-device");
+    expect(tierForVariantName(undefined)).toBe("single-device");
+  });
+});
 
 describe("tierForValidation", () => {
   it("maps an unlimited / automation variant to unlimited", () => {

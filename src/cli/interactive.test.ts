@@ -4,6 +4,8 @@ import { describe, it, expect } from "vitest";
 
 import {
   buildLaunchpadOptions,
+  DEFAULT_COFFEE_URL,
+  DEFAULT_STORE_URL,
   FLAGS_CHEATSHEET,
   formatEquivalentCommand,
   formatReadinessLine,
@@ -164,14 +166,6 @@ describe("runLaunchpad (AC1, AC4)", () => {
     expect(out.text()).toContain("FULL-FLAG-REFERENCE");
     expect(out.text()).toContain(FLAGS_CHEATSHEET);
     expect(sel.calls()).toBe(2); // looped back to the menu after Help
-  });
-
-  it("a not-yet-built action shows a calm placeholder and loops back to the menu", async () => {
-    const out = captureStream();
-    const sel = scriptedSelect(["activate", "quit"]);
-    await runLaunchpad({ state: FREE_CONFIGURED, helpText: "HELP", output: out.stream, select: sel.select });
-    expect(out.text()).toContain("License activation is coming soon.");
-    expect(sel.calls()).toBe(2);
   });
 
   it("the Analyze placeholder teaches the headless command (self-teaching bridge)", async () => {
@@ -733,5 +727,187 @@ describe("runSettings via runLaunchpad (Story 6.5)", () => {
     expect(save.saved).toHaveLength(1); // proceeded despite the load failure
   });
 });
+
+// ── Story 7.2: license screens (activate / deactivate / buy-restore / coffee) ──
+
+const LICENSED: LaunchpadState = { ...FREE_CONFIGURED, tier: "single-device", licensed: true };
+
+describe("runActivate via runLaunchpad (AC2)", () => {
+  it("prompts the key, calls activate once, and reports the activated tier", async () => {
+    const out = captureStream();
+    const sel = scriptedSelect(["activate", "quit"]);
+    const calls: string[] = [];
+    await runLaunchpad({
+      state: FREE_CONFIGURED,
+      helpText: "HELP",
+      output: out.stream,
+      select: sel.select,
+      prompts: scriptedPrompts({ texts: ["LIC-123"] }).prompts,
+      activateLicense: async (key) => {
+        calls.push(key);
+        return { ok: true, tier: "unlimited" };
+      },
+    });
+    expect(calls).toEqual(["LIC-123"]);
+    expect(out.text()).toContain("✓ License activated — Unlimited tier");
+    expect(sel.calls()).toBe(2); // back to the menu
+  });
+
+  it("a refusal (second device) shows the reason and stays unlicensed", async () => {
+    const out = captureStream();
+    const sel = scriptedSelect(["activate", "quit"]);
+    await runLaunchpad({
+      state: FREE_CONFIGURED,
+      helpText: "HELP",
+      output: out.stream,
+      select: sel.select,
+      prompts: scriptedPrompts({ texts: ["LIC-123"] }).prompts,
+      activateLicense: async () => ({ ok: false, reason: "activation limit reached" }),
+    });
+    expect(out.text()).toContain("⚠ activation limit reached");
+  });
+
+  it("a cancelled key prompt does not call activate", async () => {
+    const out = captureStream();
+    const sel = scriptedSelect(["activate", "quit"]);
+    let called = false;
+    await runLaunchpad({
+      state: FREE_CONFIGURED,
+      helpText: "HELP",
+      output: out.stream,
+      select: sel.select,
+      prompts: scriptedPrompts({ texts: [null] }).prompts,
+      activateLicense: async () => {
+        called = true;
+        return { ok: true, tier: "single-device" };
+      },
+    });
+    expect(called).toBe(false);
+  });
+
+  it("a throwing activate degrades to a calm message (never crashes the menu)", async () => {
+    const out = captureStream();
+    const sel = scriptedSelect(["activate", "quit"]);
+    const code = await runLaunchpad({
+      state: FREE_CONFIGURED,
+      helpText: "HELP",
+      output: out.stream,
+      select: sel.select,
+      prompts: scriptedPrompts({ texts: ["LIC"] }).prompts,
+      activateLicense: async () => {
+        throw new Error("network down");
+      },
+    });
+    expect(code).toBe(ExitCode.Success);
+    expect(out.text()).toContain("⚠ Could not activate: network down");
+  });
+});
+
+describe("runDeactivate via runLaunchpad (AC3)", () => {
+  it("a confirmed deactivation calls the action and reports freed", async () => {
+    const out = captureStream();
+    const sel = scriptedSelect(["deactivate", "quit"]);
+    let called = false;
+    await runLaunchpad({
+      state: LICENSED,
+      helpText: "HELP",
+      output: out.stream,
+      select: sel.select,
+      prompts: scriptedPrompts({ selects: ["deactivate"] }).prompts,
+      deactivateLicense: async () => {
+        called = true;
+        return { ok: true };
+      },
+    });
+    expect(called).toBe(true);
+    expect(out.text()).toContain("✓ License deactivated");
+  });
+
+  it("cancelling the confirm does not call the action", async () => {
+    const out = captureStream();
+    const sel = scriptedSelect(["deactivate", "quit"]);
+    let called = false;
+    await runLaunchpad({
+      state: LICENSED,
+      helpText: "HELP",
+      output: out.stream,
+      select: sel.select,
+      prompts: scriptedPrompts({ selects: ["cancel"] }).prompts,
+      deactivateLicense: async () => {
+        called = true;
+        return { ok: true };
+      },
+    });
+    expect(called).toBe(false);
+  });
+});
+
+describe("buy-restore / coffee browser hand-offs (AC1)", () => {
+  it("Buy / Restore opens the store URL with the no-payment note", async () => {
+    const out = captureStream();
+    const sel = scriptedSelect(["buy-restore", "quit"]);
+    const opened: string[] = [];
+    await runLaunchpad({
+      state: FREE_CONFIGURED,
+      helpText: "HELP",
+      output: out.stream,
+      select: sel.select,
+      openUrl: async (url) => {
+        opened.push(url);
+      },
+    });
+    expect(opened).toEqual([DEFAULT_STORE_URL]);
+    expect(out.text()).toContain("commit-sage never handles payment");
+  });
+
+  it("Buy Me a Coffee opens the coffee URL", async () => {
+    const out = captureStream();
+    const sel = scriptedSelect(["coffee", "quit"]);
+    const opened: string[] = [];
+    await runLaunchpad({
+      state: FREE_CONFIGURED,
+      helpText: "HELP",
+      output: out.stream,
+      select: sel.select,
+      openUrl: async (url) => {
+        opened.push(url);
+      },
+    });
+    expect(opened).toEqual([DEFAULT_COFFEE_URL]);
+  });
+
+  it("an injected store/coffee URL overrides the default", async () => {
+    const out = captureStream();
+    const sel = scriptedSelect(["buy-restore", "quit"]);
+    const opened: string[] = [];
+    await runLaunchpad({
+      state: FREE_CONFIGURED,
+      helpText: "HELP",
+      output: out.stream,
+      select: sel.select,
+      storeUrl: "https://custom.store/x",
+      openUrl: async (url) => {
+        opened.push(url);
+      },
+    });
+    expect(opened).toEqual(["https://custom.store/x"]);
+  });
+
+  it("a browser-open failure still prints the URL (copyable — never a dead-end)", async () => {
+    const out = captureStream();
+    const sel = scriptedSelect(["buy-restore", "quit"]);
+    await runLaunchpad({
+      state: FREE_CONFIGURED,
+      helpText: "HELP",
+      output: out.stream,
+      select: sel.select,
+      openUrl: async () => {
+        throw new Error("no browser");
+      },
+    });
+    expect(out.text()).toContain(DEFAULT_STORE_URL);
+  });
+});
+
 
 

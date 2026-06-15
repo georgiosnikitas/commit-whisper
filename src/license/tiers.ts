@@ -17,16 +17,13 @@ import type { LicenseValidation } from "./lemonsqueezy.js";
 export const FREE_ENTITLEMENT: Entitlement = { tier: "free", commitCap: FREE_TIER_COMMIT_CAP };
 
 /**
- * Resolve the tier from a validation. An invalid validation → `free` (defensive;
- * the gate already routes failures to Free). A valid key maps by `variantName`:
- * unlimited/automation → Unlimited, single/device → Single-device, an unknown
- * paid variant → Single-device (a valid key is at least Single-device).
+ * Resolve the tier from a license variant name (shared by validate + activate).
+ * `unlimited`/`automation` → Unlimited; `single`/`device` → Single-device; an
+ * unknown or absent variant on a valid key → Single-device (a valid key is at
+ * least Single-device).
  */
-export function tierForValidation(v: LicenseValidation): Tier {
-  if (!v.valid) {
-    return "free";
-  }
-  const name = (v.variantName ?? "").toLowerCase();
+export function tierForVariantName(variantName?: string): Tier {
+  const name = (variantName ?? "").toLowerCase();
   if (/unlimited|automation/.test(name)) {
     return "unlimited";
   }
@@ -34,6 +31,17 @@ export function tierForValidation(v: LicenseValidation): Tier {
     return "single-device";
   }
   return "single-device";
+}
+
+/**
+ * Resolve the tier from a validation. An invalid validation → `free` (defensive;
+ * the gate already routes failures to Free). A valid key maps by `variantName`.
+ */
+export function tierForValidation(v: LicenseValidation): Tier {
+  if (!v.valid) {
+    return "free";
+  }
+  return tierForVariantName(v.variantName);
 }
 
 /** The entitlement for a tier — Free carries the 100-commit cap; paid tiers are uncapped. A fresh object per call. */
