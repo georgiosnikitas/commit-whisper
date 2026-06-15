@@ -194,7 +194,7 @@ jobs:
         run: npm run build
 
       # GitHub Packages requires a scoped name owned by the org/user. Rename only
-      # the in-CI package.json (npm keeps the unscoped `commitwhisper` name) before publishing.
+      # the in-CI package.json (npm keeps the unscoped `commit-whisper` name) before publishing.
       - name: Scope the package for GitHub Packages
         run: npm pkg set name="@georgiosnikitas/commit-whisper"
 

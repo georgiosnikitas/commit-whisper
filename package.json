@@ -1,12 +1,11 @@
 {
-  "name": "commitwhisper",
+  "name": "commit-whisper",
   "version": "1.0.1",
   "description": "Deterministic git history analysis with a grounded, BYOK AI narrative — terminal-native CLI.",
   "type": "module",
   "main": "dist/index.js",
   "bin": {
-    "commit-whisper": "dist/index.js",
-    "commitwhisper": "dist/index.js"
+    "commit-whisper": "dist/index.js"
   },
   "files": [
     "dist/index.js"
