@@ -54,9 +54,9 @@ describe("FIELD_SPECS / CONFIG_FIELD_KEYS", () => {
     expect(CONFIG_FIELD_KEYS).toHaveLength(Object.keys(FIELD_SPECS).length);
   });
 
-  it("maps every field to a COMMIT_SAGE_* env var", () => {
+  it("maps every field to a COMMIT_WHISPER_* env var", () => {
     for (const key of CONFIG_FIELD_KEYS) {
-      expect(FIELD_SPECS[key].envVar.startsWith("COMMIT_SAGE_")).toBe(true);
+      expect(FIELD_SPECS[key].envVar.startsWith("COMMIT_WHISPER_")).toBe(true);
     }
   });
 });

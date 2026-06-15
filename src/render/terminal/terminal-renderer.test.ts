@@ -94,13 +94,13 @@ describe("renderTerminal — confidence band (Story 3.5)", () => {
       confidence: {
         level: "low",
         rationale: "Grounding 30%, explanation coverage 40%, 50% of metrics not available.",
-        escalation: "Confidence is low — re-run with a stronger model. Set COMMIT_SAGE_PROVIDER and COMMIT_SAGE_LLM_MODEL (currently gemini/m) to a more capable provider/model.",
+        escalation: "Confidence is low — re-run with a stronger model. Set COMMIT_WHISPER_PROVIDER and COMMIT_WHISPER_LLM_MODEL (currently gemini/m) to a more capable provider/model.",
       },
     };
     const out = renderTerminal(report({ narrative, degraded: false }), { color: false });
     expect(out).toContain("Confidence: LOW");
     expect(out).toContain("⚠ Confidence is low");
-    expect(out).toContain("COMMIT_SAGE_PROVIDER");
+    expect(out).toContain("COMMIT_WHISPER_PROVIDER");
   });
 });
 

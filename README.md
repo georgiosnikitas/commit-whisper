@@ -1,17 +1,17 @@
-# commit-sage
+# commit-whisper
 
-[![Quality Gate Status](https://sonarcloud.io/api/project_badges/measure?project=georgiosnikitas_commit-sage&metric=alert_status)](https://sonarcloud.io/summary/overall?id=georgiosnikitas_commit-sage)
-[![CI](https://github.com/georgiosnikitas/commit-sage/actions/workflows/ci.yml/badge.svg)](https://github.com/georgiosnikitas/commit-sage/actions/workflows/ci.yml)
-[![Release](https://github.com/georgiosnikitas/commit-sage/actions/workflows/release.yml/badge.svg?event=push)](https://github.com/georgiosnikitas/commit-sage/actions/workflows/release.yml)
-[![npm](https://img.shields.io/npm/v/commitsage)](https://www.npmjs.com/package/commitsage)
+[![Quality Gate Status](https://sonarcloud.io/api/project_badges/measure?project=georgiosnikitas_commit-whisper&metric=alert_status)](https://sonarcloud.io/summary/overall?id=georgiosnikitas_commit-whisper)
+[![CI](https://github.com/georgiosnikitas/commit-whisper/actions/workflows/ci.yml/badge.svg)](https://github.com/georgiosnikitas/commit-whisper/actions/workflows/ci.yml)
+[![Release](https://github.com/georgiosnikitas/commit-whisper/actions/workflows/release.yml/badge.svg?event=push)](https://github.com/georgiosnikitas/commit-whisper/actions/workflows/release.yml)
+[![npm](https://img.shields.io/npm/v/commitwhisper)](https://www.npmjs.com/package/commitwhisper)
 [![TypeScript](https://img.shields.io/badge/TypeScript-6.x-blue?logo=typescript)](https://www.typescriptlang.org/)
-[![License](https://img.shields.io/github/license/georgiosnikitas/commit-sage)](LICENSE)
+[![License](https://img.shields.io/github/license/georgiosnikitas/commit-whisper)](LICENSE)
 [![Buy Me a Coffee](https://img.shields.io/badge/Buy%20Me%20a%20Coffee-ffdd00?style=flat&logo=buy-me-a-coffee&logoColor=black)](https://buymeacoffee.com/georgiosnikitas)
 
 Deterministic git history analysis with a grounded, bring-your-own-key AI narrative — a
 terminal-native CLI.
 
-commit-sage analyzes a local or remote git repository, computes a catalog of deterministic
+commit-whisper analyzes a local or remote git repository, computes a catalog of deterministic
 metrics (no AI), and — when a provider is configured — adds a grounded AI narrative and
 coaching report. It renders to HTML, Markdown, terminal, and JSON from a single canonical
 Report JSON.
@@ -31,26 +31,26 @@ Report JSON.
 ### 🍺 Homebrew (macOS)
 
 ```bash
-brew tap georgiosnikitas/commit-sage
-brew install commit-sage
+brew tap georgiosnikitas/commit-whisper
+brew install commit-whisper
 ```
 
 ### 📦 From npm
 
 ```bash
-npm install -g commitsage
+npm install -g commitwhisper
 ```
 
 Or run it once without installing:
 
 ```bash
-npx commitsage .
+npx commitwhisper .
 ```
 
 ### 📦 From GitHub Packages
 
 ```bash
-npm install -g @georgiosnikitas/commit-sage --registry=https://npm.pkg.github.com
+npm install -g @georgiosnikitas/commit-whisper --registry=https://npm.pkg.github.com
 ```
 
 > **Note:** GitHub Packages requires authentication even for public packages. Add a
@@ -64,20 +64,20 @@ npm install -g @georgiosnikitas/commit-sage --registry=https://npm.pkg.github.co
 ### 💾 Prebuilt binaries (no Node.js required)
 
 Self-contained executables for macOS, Linux, and Windows are attached to each
-[GitHub Release](https://github.com/georgiosnikitas/commit-sage/releases).
+[GitHub Release](https://github.com/georgiosnikitas/commit-whisper/releases).
 
 After installing via Homebrew, npm, GitHub Packages, or a prebuilt binary, run it from
 anywhere:
 
 ```bash
-commit-sage .
+commit-whisper .
 ```
 
 ### 🛠️ From source
 
 ```bash
-git clone https://github.com/georgiosnikitas/commit-sage.git
-cd commit-sage
+git clone https://github.com/georgiosnikitas/commit-whisper.git
+cd commit-whisper
 npm install
 npm run build
 node dist/index.js .

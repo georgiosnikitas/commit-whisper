@@ -82,7 +82,7 @@ function renderSubstrate(analysis: ReportAnalysis, framing: SubstrateFraming, c:
 }
 
 function heading(c: Colors): string {
-  return c.bold("commit-sage");
+  return c.bold("commit-whisper");
 }
 
 /**

@@ -48,7 +48,7 @@ describe("resolveRunConfig — end to end", () => {
   it("honors full precedence defaults -> configFile -> env -> flags", () => {
     const cfg = resolveRunConfig(
       headless({
-        env: { COMMIT_SAGE_TZ: "America/New_York", COMMIT_SAGE_AUTHOR: "env-alice" },
+        env: { COMMIT_WHISPER_TZ: "America/New_York", COMMIT_WHISPER_AUTHOR: "env-alice" },
         configFile: { timezone: "Europe/Athens", authorFilter: "cfg-bob", maxCommits: 10 },
         flags: { timezone: "Asia/Tokyo" },
       }),
@@ -74,11 +74,11 @@ describe("resolveRunConfig — end to end", () => {
   });
 
   it("throws a typed exit-3 error when AI is requested headless without a provider", () => {
-    expect(() => resolveRunConfig(headless({ env: { COMMIT_SAGE_AI_MODE: "required" } }))).toThrow(
+    expect(() => resolveRunConfig(headless({ env: { COMMIT_WHISPER_AI_MODE: "required" } }))).toThrow(
       MissingRequiredConfigError,
     );
     try {
-      resolveRunConfig(headless({ env: { COMMIT_SAGE_AI_MODE: "required" } }));
+      resolveRunConfig(headless({ env: { COMMIT_WHISPER_AI_MODE: "required" } }));
       expect.unreachable();
     } catch (e) {
       expect((e as MissingRequiredConfigError).exitCode).toBe(3);
@@ -87,7 +87,7 @@ describe("resolveRunConfig — end to end", () => {
   });
 
   it("lenient mode skips the gap check — resolves with the required field left undefined (Story 6.4)", () => {
-    const cfg = resolveRunConfig(headless({ env: { COMMIT_SAGE_AI_MODE: "required" }, lenient: true }));
+    const cfg = resolveRunConfig(headless({ env: { COMMIT_WHISPER_AI_MODE: "required" }, lenient: true }));
     expect(cfg.aiMode).toBe("required");
     expect(cfg.provider).toBeUndefined(); // not thrown — `--show-config` can still dump it
   });
@@ -97,8 +97,8 @@ describe("resolveRunConfig — end to end", () => {
     expect(cfg.entitlement).toEqual({ tier: "unlimited" });
   });
 
-  it("reads the env layer (a COMMIT_SAGE_* var lands with env provenance)", () => {
-    const cfg = resolveRunConfig(headless({ env: { COMMIT_SAGE_MAX_COMMITS: "42" } }));
+  it("reads the env layer (a COMMIT_WHISPER_* var lands with env provenance)", () => {
+    const cfg = resolveRunConfig(headless({ env: { COMMIT_WHISPER_MAX_COMMITS: "42" } }));
     expect(cfg.maxCommits).toBe(42);
     expect(cfg.provenance.maxCommits).toBe("env");
   });

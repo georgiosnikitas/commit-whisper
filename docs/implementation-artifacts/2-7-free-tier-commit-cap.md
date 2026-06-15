@@ -132,7 +132,7 @@ Let `N = total` (post-filter, pre-cap count), `userCap = maxCommits` (real ⇒ d
 
 - [Source: docs/planning-artifacts/epics.md#Story 2.7: Free-tier 100-commit cap and truncation notice] (the ACs)
 - [Source: docs/planning-artifacts/architecture.md#Date × Free-Cap ordering] (date-first, cap to 100, **stderr** "showing 100 of N", never reshape the window) · [Source: …#RunConfig contract] (`entitlement: { tier; commitCap? }`, pipeline sees the resolved cap)
-- [Source: docs/planning-artifacts/prds/prd-commit-sage-2026-06-06/prd.md#FR-3] (capped retrieval is reported) · [Source: …#FR-16] (license tiers — Epic 7)
+- [Source: docs/planning-artifacts/prds/prd-commit-whisper-2026-06-06/prd.md#FR-3] (capped retrieval is reported) · [Source: …#FR-16] (license tiers — Epic 7)
 - [Source: src/analyze/select.ts] (the 2.6 stage to extend) · [Source: src/config/resolve-run-config.ts] (the entitlement default) · [Source: src/cli/run.ts] (the shell that emits chrome) · [Source: src/shared/ui.ts] (the stderr surface)
 
 ### Completion Notes

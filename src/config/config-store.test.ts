@@ -49,13 +49,13 @@ function memoryIo(seed: Record<string, string> = {}) {
 }
 
 describe("configHome / configFilePath", () => {
-  it("uses <HOME>/.commit-sage by default", () => {
-    expect(configHome({ HOME: "/home/alice" })).toBe("/home/alice/.commit-sage");
-    expect(configFilePath({ HOME: "/home/alice" })).toBe("/home/alice/.commit-sage/config.json");
+  it("uses <HOME>/.commit-whisper by default", () => {
+    expect(configHome({ HOME: "/home/alice" })).toBe("/home/alice/.commit-whisper");
+    expect(configFilePath({ HOME: "/home/alice" })).toBe("/home/alice/.commit-whisper/config.json");
   });
 
-  it("honors a COMMIT_SAGE_CONFIG home override", () => {
-    expect(configHome({ COMMIT_SAGE_CONFIG: "/custom/dir", HOME: "/home/alice" })).toBe("/custom/dir");
+  it("honors a COMMIT_WHISPER_CONFIG home override", () => {
+    expect(configHome({ COMMIT_WHISPER_CONFIG: "/custom/dir", HOME: "/home/alice" })).toBe("/custom/dir");
   });
 
   it("falls back to USERPROFILE (Windows) when HOME is unset", () => {
@@ -143,10 +143,10 @@ describe("writeSettings — atomic temp + rename", () => {
   it("mkdir → writes a same-dir .tmp → renames it onto config.json (in order)", async () => {
     const { io, calls, files } = memoryIo();
     const path = await writeSettings({ HOME: "/home/alice" }, { provider: "ollama" }, io);
-    expect(path).toBe("/home/alice/.commit-sage/config.json");
-    expect(calls[0]).toBe("mkdir /home/alice/.commit-sage");
-    expect(calls[1]).toMatch(/^write \/home\/alice\/\.commit-sage\/config\.json\.[a-z0-9]+\.tmp$/);
-    expect(calls[2]).toMatch(/^rename .+\.tmp \/home\/alice\/\.commit-sage\/config\.json$/);
+    expect(path).toBe("/home/alice/.commit-whisper/config.json");
+    expect(calls[0]).toBe("mkdir /home/alice/.commit-whisper");
+    expect(calls[1]).toMatch(/^write \/home\/alice\/\.commit-whisper\/config\.json\.[a-z0-9]+\.tmp$/);
+    expect(calls[2]).toMatch(/^rename .+\.tmp \/home\/alice\/\.commit-whisper\/config\.json$/);
     expect(files.get(path)).toContain('"provider": "ollama"');
   });
 
@@ -154,7 +154,7 @@ describe("writeSettings — atomic temp + rename", () => {
     const { io, calls } = memoryIo();
     await writeSettings({ HOME: "/home/alice" }, { provider: "openai" }, io);
     const writeCall = calls.find((c) => c.startsWith("write "))!;
-    expect(writeCall).toContain("/home/alice/.commit-sage/");
+    expect(writeCall).toContain("/home/alice/.commit-whisper/");
   });
 
   it("persists nothing secret even if a secret-shaped extra is forced in", async () => {
@@ -184,7 +184,7 @@ describe("writeSettings — atomic temp + rename", () => {
 
 describe("readSettings", () => {
   it("reads + parses a present config file", async () => {
-    const path = "/home/alice/.commit-sage/config.json";
+    const path = "/home/alice/.commit-whisper/config.json";
     const { io } = memoryIo({ [path]: JSON.stringify({ provider: "gemini" }) });
     expect(await readSettings({ HOME: "/home/alice" }, io)).toEqual({ provider: "gemini" });
   });

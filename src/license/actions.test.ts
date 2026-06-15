@@ -109,7 +109,7 @@ describe("activateLicense (Story 7.2)", () => {
     if (!outcome.ok) {
       expect(outcome.reason).toContain("Activated online");
       expect(outcome.reason).toContain("ENOSPC");
-      expect(outcome.reason).toContain("COMMIT_SAGE_LICENSE_KEY");
+      expect(outcome.reason).toContain("COMMIT_WHISPER_LICENSE_KEY");
     }
   });
 });
@@ -140,7 +140,7 @@ describe("deactivateLicense (Story 7.2)", () => {
     });
     expect(outcome.ok).toBe(false);
     if (!outcome.ok) {
-      expect(outcome.reason).toContain("COMMIT_SAGE_LICENSE_KEY");
+      expect(outcome.reason).toContain("COMMIT_WHISPER_LICENSE_KEY");
     }
     expect(deact.calls).toHaveLength(0);
   });

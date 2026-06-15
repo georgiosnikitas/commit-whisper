@@ -61,7 +61,7 @@ describe("e2e — the four terminal outcomes", () => {
     const out = h.stdout.join("");
     expect(out).toContain(METRICS_ONLY_NOTE);
     expect(out).not.toContain(DEGRADED_BANNER);
-    expect(out).toContain("commit-sage");
+    expect(out).toContain("commit-whisper");
   });
 
   it("full narrated showpiece (--ai, reachable): exit 0, narrative on stdout", async () => {
@@ -82,7 +82,7 @@ describe("e2e — the four terminal outcomes", () => {
     const runDeps: RunDeps = { retrieve: retrieveSynthetic, preflight: unreachable("Ollama is not running.") };
     const code = await main([".", "--provider", "gemini", "--model", "m"], {
       ...h.base,
-      env: { COMMIT_SAGE_AI_MODE: "auto" },
+      env: { COMMIT_WHISPER_AI_MODE: "auto" },
       runDeps,
     });
     expect(code).toBe(ExitCode.Degraded);
@@ -159,7 +159,7 @@ describe("e2e — multi-format output (Story 4.4)", () => {
     };
     const code = await main([".", "--no-ai", "--format", "html"], { ...h.base, stdinIsTTY: true, stdoutIsTTY: true, runDeps });
     expect(code).toBe(ExitCode.Success);
-    expect(files.map((f) => f.path)).toEqual(["commit-sage-report.html"]); // written
+    expect(files.map((f) => f.path)).toEqual(["commit-whisper-report.html"]); // written
     expect(opened).toHaveLength(0); // but not opened — strict single-shot is non-interactive
   });
 });

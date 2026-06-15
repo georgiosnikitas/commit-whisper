@@ -33,9 +33,9 @@ describe("execFileGitRunner", () => {
 
   it("merges extraEnv over the inherited env when given (the git-auth channel, Story 5.2)", async () => {
     execFileMock.mockClear();
-    await execFileGitRunner(["clone"], { cwd: "/repo", extraEnv: { GIT_TERMINAL_PROMPT: "0", COMMIT_SAGE_GIT_PAT: "tok" } });
+    await execFileGitRunner(["clone"], { cwd: "/repo", extraEnv: { GIT_TERMINAL_PROMPT: "0", COMMIT_WHISPER_GIT_PAT: "tok" } });
     const opts = execFileMock.mock.calls[0][2] as { env?: Record<string, string> };
-    expect(opts.env).toMatchObject({ GIT_TERMINAL_PROMPT: "0", COMMIT_SAGE_GIT_PAT: "tok" });
+    expect(opts.env).toMatchObject({ GIT_TERMINAL_PROMPT: "0", COMMIT_WHISPER_GIT_PAT: "tok" });
     // The inherited base env is merged in too (more than just the two extras present).
     expect(Object.keys(opts.env ?? {}).length).toBeGreaterThan(2);
   });

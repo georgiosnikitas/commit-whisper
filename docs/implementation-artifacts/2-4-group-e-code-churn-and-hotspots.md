@@ -65,12 +65,12 @@ This is the **fourth Epic 2 metrics story** — Group E, the **churn & hotspots*
 - A documented per-file aggregation helper (`aggregateFiles`) + the binary-handling and HEAD-presence-approximation documentation (AC2).
 
 **Out of scope / deferred (do NOT build here):**
-- **Group F** — Story 2.5. Group F's hygiene score weights "Churn Stability 10%"; it will *consume* the computed Group E values, not re-aggregate files. [Source: docs/planning-artifacts/prds/prd-commit-sage-2026-06-06/prd.md#Group F]
+- **Group F** — Story 2.5. Group F's hygiene score weights "Churn Stability 10%"; it will *consume* the computed Group E values, not re-aggregate files. [Source: docs/planning-artifacts/prds/prd-commit-whisper-2026-06-06/prd.md#Group F]
 - **Precise "present in HEAD" filtering for file-age** — needs a retrieval enhancement (`git ls-tree HEAD`, or rename/delete tracking). `git log --numstat` does **not** distinguish a file deletion from a large removal, and the HEAD-only retrieval carries no tree listing, so this story **approximates** "present in HEAD" by "seen in the analyzed history" and documents it. Precise filtering is a later retrieval/Epic-5 concern. [Source: src/retrieve/git-log.ts]
 - **Changing the retrieval (`git log`) flags / capturing rename history** — do NOT add `--follow`/`-M`/`--cc`; rename resolution is already best-effort in the 1.4 parser (`resolveNumstatPath`), and changing flags would alter A/B/C/D values. [Source: src/retrieve/git-log.ts]
 - **Commit-selection inputs** (author/max/no-merges/dates/timezone narrowing the set) — **Story 2.6**. Group E computes over the model's existing commit set. [Source: docs/planning-artifacts/epics.md#Story 2.6]
 - **Free-tier 100-commit cap** — **Story 2.7**.
-- **AI Metric Explanations** (Epic 3); **health bands** (render-time, Epic 4); the **Group E overview chart** (hotspots horizontal bar + churn trend line — Epic 4 consumes this data). [Source: docs/planning-artifacts/prds/prd-commit-sage-2026-06-06/prd.md#FR-6]
+- **AI Metric Explanations** (Epic 3); **health bands** (render-time, Epic 4); the **Group E overview chart** (hotspots horizontal bar + churn trend line — Epic 4 consumes this data). [Source: docs/planning-artifacts/prds/prd-commit-whisper-2026-06-06/prd.md#FR-6]
 
 ### The changed-file data reality — read before coding (AC2)
 
@@ -88,7 +88,7 @@ This is the **fourth Epic 2 metrics story** — Group E, the **churn & hotspots*
 | `e-file-age` | File survival / age | median file age = days between first-seen and latest-seen commit timestamps for files currently present in HEAD `[ASSUMPTION]` |
 | `e-large-change-events` | Large-change events | commits/merges with outsized diffs, flagged with dates and context |
 
-[Source: docs/planning-artifacts/prds/prd-commit-sage-2026-06-06/prd.md#4.2 Group E] — IDs follow the kebab convention; titles verbatim. The PRD addendum tags file-survival/age `[ASSUMPTION]` pending exactly the HEAD-presence computability pass this story documents.
+[Source: docs/planning-artifacts/prds/prd-commit-whisper-2026-06-06/prd.md#4.2 Group E] — IDs follow the kebab convention; titles verbatim. The PRD addendum tags file-survival/age `[ASSUMPTION]` pending exactly the HEAD-presence computability pass this story documents.
 
 ### NFR-8 reminder (large-change events)
 
@@ -128,8 +128,8 @@ Group E is mostly change-level (files/churn), but **large-change events** could 
 ### References
 
 - [Source: docs/planning-artifacts/epics.md#Story 2.4: Group E — Code Churn & Hotspots]
-- [Source: docs/planning-artifacts/prds/prd-commit-sage-2026-06-06/prd.md#4.2 History Analysis — Metrics Catalog (Group E)] · [Source: …#FR-4] · [Source: …#FR-5]
-- [Source: docs/planning-artifacts/prds/prd-commit-sage-2026-06-06/addendum.md#Metrics catalog — feasibility notes] (file survival/age `[ASSUMPTION]`)
+- [Source: docs/planning-artifacts/prds/prd-commit-whisper-2026-06-06/prd.md#4.2 History Analysis — Metrics Catalog (Group E)] · [Source: …#FR-4] · [Source: …#FR-5]
+- [Source: docs/planning-artifacts/prds/prd-commit-whisper-2026-06-06/addendum.md#Metrics catalog — feasibility notes] (file survival/age `[ASSUMPTION]`)
 - [Source: docs/planning-artifacts/architecture.md#C2 — Metrics Engine Architecture]
 - [Source: src/analyze/model.ts] (`files`, binary exclusion) · [Source: src/analyze/time.ts] (`monthBucket`) · [Source: src/analyze/groups/b-contribution.ts] (`topAreas`/`directoryOf` pattern, NFR-8 guard) · [Source: src/retrieve/git-log.ts] (numstat binary `null`, merge omission) · [Source: src/analyze/metric.ts] · [Source: src/analyze/stats.ts] · [Source: src/analyze/registry.ts] · [Source: tests/determinism/analysis-determinism.test.ts]
 

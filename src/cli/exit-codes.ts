@@ -14,7 +14,7 @@
  * provides the pure mapping pieces it will use.
  */
 
-import { CommitSageError, GENERIC_INTERNAL_MESSAGE } from "../shared/errors.js";
+import { CommitWhisperError, GENERIC_INTERNAL_MESSAGE } from "../shared/errors.js";
 
 export const ExitCode = {
   Success: 0,
@@ -32,21 +32,21 @@ export const ExitCode = {
 export type ExitCode = (typeof ExitCode)[keyof typeof ExitCode];
 
 /**
- * Resolve the exit code for any thrown value: a `CommitSageError` yields its own
+ * Resolve the exit code for any thrown value: a `CommitWhisperError` yields its own
  * `exitCode` (1-8); anything else is an unexpected internal failure (1).
  */
 export function exitCodeForError(err: unknown): number {
-  return err instanceof CommitSageError ? err.exitCode : ExitCode.Internal;
+  return err instanceof CommitWhisperError ? err.exitCode : ExitCode.Internal;
 }
 
 /**
- * Resolve the human message for any thrown value. A `CommitSageError` carries an
+ * Resolve the human message for any thrown value. A `CommitWhisperError` carries an
  * actionable message; an unknown throwable (or a typed error with a blank
  * message) is reported generically so a raw stack / internal detail never
  * reaches the user surface and the shell never prints a blank line.
  */
 export function messageForError(err: unknown): string {
-  if (err instanceof CommitSageError && err.message.trim() !== "") {
+  if (err instanceof CommitWhisperError && err.message.trim() !== "") {
     return err.message;
   }
   return GENERIC_INTERNAL_MESSAGE;

@@ -7,7 +7,7 @@
  * states the architecture reserves for the shell:
  *   - clean completion (narrated showpiece OR intentional metrics-only) → 0
  *   - substrate fallback (fail-open, narrative lost in `auto`)          → 9
- * Stage failures throw a typed `CommitSageError` (retrieve 4 · metrics 5 ·
+ * Stage failures throw a typed `CommitWhisperError` (retrieve 4 · metrics 5 ·
  * narration-required 6 · render 7) and are mapped to an exit code at the CLI
  * shell (`cli.ts`).
  *

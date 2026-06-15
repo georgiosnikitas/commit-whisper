@@ -25,20 +25,20 @@ export interface FieldSpec {
 
 /** Per-field source/requiredness inventory (non-secret config-data only). */
 export const FIELD_SPECS: Record<keyof ConfigData, FieldSpec> = {
-  repoTarget: { envVar: "COMMIT_SAGE_REPO", requiredness: { kind: "always" } },
-  branch: { envVar: "COMMIT_SAGE_BRANCH", requiredness: { kind: "optional" } },
-  startDate: { envVar: "COMMIT_SAGE_START_DATE", requiredness: { kind: "optional" } },
-  endDate: { envVar: "COMMIT_SAGE_END_DATE", requiredness: { kind: "optional" } },
-  timezone: { envVar: "COMMIT_SAGE_TZ", requiredness: { kind: "optional" } },
-  authorFilter: { envVar: "COMMIT_SAGE_AUTHOR", requiredness: { kind: "optional" } },
-  maxCommits: { envVar: "COMMIT_SAGE_MAX_COMMITS", requiredness: { kind: "optional" } },
-  noMerges: { envVar: "COMMIT_SAGE_NO_MERGES", requiredness: { kind: "optional" } },
-  outputFormats: { envVar: "COMMIT_SAGE_FORMAT", requiredness: { kind: "optional" } },
-  outputPath: { envVar: "COMMIT_SAGE_OUT", requiredness: { kind: "optional" } },
-  aiMode: { envVar: "COMMIT_SAGE_AI_MODE", requiredness: { kind: "optional" } },
-  provider: { envVar: "COMMIT_SAGE_PROVIDER", requiredness: { kind: "whenAi" } },
-  llmBaseUrl: { envVar: "COMMIT_SAGE_LLM_BASE_URL", requiredness: { kind: "whenAiBaseUrl" } },
-  llmModel: { envVar: "COMMIT_SAGE_LLM_MODEL", requiredness: { kind: "whenAi" } },
+  repoTarget: { envVar: "COMMIT_WHISPER_REPO", requiredness: { kind: "always" } },
+  branch: { envVar: "COMMIT_WHISPER_BRANCH", requiredness: { kind: "optional" } },
+  startDate: { envVar: "COMMIT_WHISPER_START_DATE", requiredness: { kind: "optional" } },
+  endDate: { envVar: "COMMIT_WHISPER_END_DATE", requiredness: { kind: "optional" } },
+  timezone: { envVar: "COMMIT_WHISPER_TZ", requiredness: { kind: "optional" } },
+  authorFilter: { envVar: "COMMIT_WHISPER_AUTHOR", requiredness: { kind: "optional" } },
+  maxCommits: { envVar: "COMMIT_WHISPER_MAX_COMMITS", requiredness: { kind: "optional" } },
+  noMerges: { envVar: "COMMIT_WHISPER_NO_MERGES", requiredness: { kind: "optional" } },
+  outputFormats: { envVar: "COMMIT_WHISPER_FORMAT", requiredness: { kind: "optional" } },
+  outputPath: { envVar: "COMMIT_WHISPER_OUT", requiredness: { kind: "optional" } },
+  aiMode: { envVar: "COMMIT_WHISPER_AI_MODE", requiredness: { kind: "optional" } },
+  provider: { envVar: "COMMIT_WHISPER_PROVIDER", requiredness: { kind: "whenAi" } },
+  llmBaseUrl: { envVar: "COMMIT_WHISPER_LLM_BASE_URL", requiredness: { kind: "whenAiBaseUrl" } },
+  llmModel: { envVar: "COMMIT_WHISPER_LLM_MODEL", requiredness: { kind: "whenAi" } },
 };
 
 /** Stable, exhaustive field-key order for deterministic merge iteration. */

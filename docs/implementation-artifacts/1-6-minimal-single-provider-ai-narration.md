@@ -20,7 +20,7 @@ so that every run yields explanation, not just numbers (AI is required).
 
 2. **(AC2 — `aiMode`-aware reachability preflight)** Given a configured provider whose endpoint is unreachable (Ollama not running, or a missing/invalid cloud key), when a run starts, then a cheap reachability **preflight** (Ollama endpoint ping / cloud auth-connectivity check, **never a paid inference**) runs in the pre-pipeline gate band **before** retrieve/analyze — and its consequence depends on `aiMode`: `required` (`--ai`) **hard-fails** with the narration/LLM exit code (6); `auto` flags fail-open and the run proceeds; `off` (`--no-ai`) **skips** the preflight entirely — **and** "configured" (provider/model set) is distinguished from "reachable" (probe passed).
 
-3. **(AC3 — Fail-open in `auto`)** Given `aiMode: auto` and a narration / grounding / provider failure mid-run, when the failure occurs after the deterministic analysis is computed, then commit-sage **fails open** — it surfaces the deterministic `analysis` substrate rather than discarding computed work, marks the output **degraded**, and the run ultimately exits **9** (completed-degraded), never silently substituting, **and** the narrated **showpiece** is impossible to produce without the `narrative` subtree (no AI, no showpiece) — so the report still requires AI by construction.
+3. **(AC3 — Fail-open in `auto`)** Given `aiMode: auto` and a narration / grounding / provider failure mid-run, when the failure occurs after the deterministic analysis is computed, then commit-whisper **fails open** — it surfaces the deterministic `analysis` substrate rather than discarding computed work, marks the output **degraded**, and the run ultimately exits **9** (completed-degraded), never silently substituting, **and** the narrated **showpiece** is impossible to produce without the `narrative` subtree (no AI, no showpiece) — so the report still requires AI by construction.
 
 4. **(AC4 — `aiMode: off` clean, no provider hard-fails)** Given `aiMode: off` (`--no-ai`, headless/CI default), when a run executes, then it produces the clean `analysis` substrate with **no LLM call** and exits 0 (intentional, not degraded). **And** given no provider configured with AI **required**, when a run is attempted, then it fails with the narration/LLM exit code (6) — reconciled with the 2026-06-13 fail-open ruling: in `auto` a missing/unreachable provider **degrades** (exit 9) rather than hard-blocking.
 
@@ -127,7 +127,7 @@ so that every run yields explanation, not just numbers (AI is required).
 
 ### Privacy boundary (AC1 — "never tokens, never raw diffs")
 
-The narrate stage's **only** input is the deterministic `Analysis` (metric envelopes). It never receives `RepoHistory`, so commit messages, file paths, raw diffs, and the API key are **structurally absent** from anything sent to the LLM — privacy is enforced by the call signature, not by filtering. `prompt.ts` serializes only `{id, group, title, status, value, reason}`. The `aiKey` is revealed only inside `provider.ts` (to construct the client) and `preflight.ts` (the auth probe) — never in a prompt, log, or serialized output (`Secret` redacts everywhere else). [Source: docs/planning-artifacts/prds/prd-commit-sage-2026-06-06/prd.md#FR-2] [Source: architecture#Secrets]
+The narrate stage's **only** input is the deterministic `Analysis` (metric envelopes). It never receives `RepoHistory`, so commit messages, file paths, raw diffs, and the API key are **structurally absent** from anything sent to the LLM — privacy is enforced by the call signature, not by filtering. `prompt.ts` serializes only `{id, group, title, status, value, reason}`. The `aiKey` is revealed only inside `provider.ts` (to construct the client) and `preflight.ts` (the auth probe) — never in a prompt, log, or serialized output (`Secret` redacts everywhere else). [Source: docs/planning-artifacts/prds/prd-commit-whisper-2026-06-06/prd.md#FR-2] [Source: architecture#Secrets]
 
 ### Env-var resolution (AC1)
 
@@ -177,7 +177,7 @@ The narrate stage's **only** input is the deterministic `Analysis` (metric envel
 - [Source: docs/planning-artifacts/architecture.md#Secrets]
 - [Source: docs/planning-artifacts/architecture.md#Key Architecture Rulings] (fail-open / aiMode)
 - [Source: docs/planning-artifacts/architecture.md#Complete Project Directory Structure]
-- [Source: docs/planning-artifacts/prds/prd-commit-sage-2026-06-06/prd.md#FR-8] (narrative) [Source: …#FR-11] (BYOK) [Source: …#FR-2] (secrets)
+- [Source: docs/planning-artifacts/prds/prd-commit-whisper-2026-06-06/prd.md#FR-8] (narrative) [Source: …#FR-11] (BYOK) [Source: …#FR-2] (secrets)
 - [Source: src/analyze/engine.ts] · [Source: src/shared/errors.ts] · [Source: src/shared/secret.ts] · [Source: src/config/run-config.ts] · [Source: src/config/env.ts] · [Source: eslint.config.js]
 
 ## Dev Agent Record

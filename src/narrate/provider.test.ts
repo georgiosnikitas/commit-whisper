@@ -47,14 +47,14 @@ describe("resolveModel — every provider resolves to a LanguageModel (no networ
 
 describe("resolveModel — missing model is an error for every provider", () => {
   for (const provider of ["gemini", "openai", "anthropic", "openai-compatible", "ollama"] as const) {
-    it(`${provider}: missing model → NarrationError (exit 6) naming COMMIT_SAGE_LLM_MODEL`, () => {
+    it(`${provider}: missing model → NarrationError (exit 6) naming COMMIT_WHISPER_LLM_MODEL`, () => {
       try {
         resolveModel(cfg({ provider, llmModel: undefined, llmBaseUrl: "https://x.test/v1" }));
         expect.unreachable();
       } catch (e) {
         expect(e).toBeInstanceOf(NarrationError);
         expect((e as NarrationError).exitCode).toBe(6);
-        expect((e as NarrationError).message).toContain("COMMIT_SAGE_LLM_MODEL");
+        expect((e as NarrationError).message).toContain("COMMIT_WHISPER_LLM_MODEL");
       }
     });
   }
@@ -81,13 +81,13 @@ describe("resolveModel — key required for hosted providers, naming the native 
 });
 
 describe("resolveModel — base URL rules", () => {
-  it("openai-compatible with no base URL → NarrationError naming COMMIT_SAGE_LLM_BASE_URL", () => {
+  it("openai-compatible with no base URL → NarrationError naming COMMIT_WHISPER_LLM_BASE_URL", () => {
     try {
       resolveModel(cfg({ provider: "openai-compatible", llmModel: "m", llmBaseUrl: undefined, aiKey: undefined }));
       expect.unreachable();
     } catch (e) {
       expect(e).toBeInstanceOf(NarrationError);
-      expect((e as NarrationError).message).toContain("COMMIT_SAGE_LLM_BASE_URL");
+      expect((e as NarrationError).message).toContain("COMMIT_WHISPER_LLM_BASE_URL");
     }
   });
 
@@ -117,13 +117,13 @@ describe("resolveModel — base URL rules", () => {
 });
 
 describe("resolveModel — no provider configured", () => {
-  it("undefined provider → NarrationError naming COMMIT_SAGE_PROVIDER", () => {
+  it("undefined provider → NarrationError naming COMMIT_WHISPER_PROVIDER", () => {
     try {
       resolveModel(cfg({ provider: undefined }));
       expect.unreachable();
     } catch (e) {
       expect(e).toBeInstanceOf(NarrationError);
-      expect((e as NarrationError).message).toContain("COMMIT_SAGE_PROVIDER");
+      expect((e as NarrationError).message).toContain("COMMIT_WHISPER_PROVIDER");
     }
   });
 });

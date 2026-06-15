@@ -1,7 +1,7 @@
 import { describe, it, expect } from "vitest";
 
 import {
-  CommitSageError,
+  CommitWhisperError,
   InternalError,
   LicenseError,
   MetricsError,
@@ -12,22 +12,22 @@ import {
   UsageError,
 } from "./errors.js";
 
-describe("CommitSageError", () => {
+describe("CommitWhisperError", () => {
   it("carries a machine code and exit code, and sets the subclass name", () => {
-    const err = new CommitSageError("boom", "SOME_CODE", 7);
+    const err = new CommitWhisperError("boom", "SOME_CODE", 7);
     expect(err).toBeInstanceOf(Error);
     expect(err.message).toBe("boom");
     expect(err.code).toBe("SOME_CODE");
     expect(err.exitCode).toBe(7);
-    expect(err.name).toBe("CommitSageError");
+    expect(err.name).toBe("CommitWhisperError");
   });
 });
 
 describe("MissingRequiredConfigError", () => {
-  it("is a CommitSageError with exit code 3 and a stable code", () => {
+  it("is a CommitWhisperError with exit code 3 and a stable code", () => {
     const err = new MissingRequiredConfigError("provider");
     expect(err).toBeInstanceOf(Error);
-    expect(err).toBeInstanceOf(CommitSageError);
+    expect(err).toBeInstanceOf(CommitWhisperError);
     expect(err).toBeInstanceOf(MissingRequiredConfigError);
     expect(err.exitCode).toBe(3);
     expect(err.code).toBe("CONFIG_REQUIRED_MISSING");
@@ -41,8 +41,8 @@ describe("MissingRequiredConfigError", () => {
   });
 
   it("names the env var when supplied", () => {
-    const err = new MissingRequiredConfigError("provider", "COMMIT_SAGE_PROVIDER");
-    expect(err.message).toContain("COMMIT_SAGE_PROVIDER");
+    const err = new MissingRequiredConfigError("provider", "COMMIT_WHISPER_PROVIDER");
+    expect(err.message).toContain("COMMIT_WHISPER_PROVIDER");
   });
 });
 
@@ -60,7 +60,7 @@ describe("stage error hierarchy", () => {
     it(`${Cls.name} carries exit ${exitCode} / code ${code} and preserves its message`, () => {
       const err = new Cls("something failed");
       expect(err).toBeInstanceOf(Error);
-      expect(err).toBeInstanceOf(CommitSageError);
+      expect(err).toBeInstanceOf(CommitWhisperError);
       expect(err).toBeInstanceOf(Cls);
       expect(err.exitCode).toBe(exitCode);
       expect(err.code).toBe(code);
@@ -71,7 +71,7 @@ describe("stage error hierarchy", () => {
 
   it("InternalError is exit 1 / code INTERNAL with a default message", () => {
     const err = new InternalError();
-    expect(err).toBeInstanceOf(CommitSageError);
+    expect(err).toBeInstanceOf(CommitWhisperError);
     expect(err.exitCode).toBe(1);
     expect(err.code).toBe("INTERNAL");
     expect(err.name).toBe("InternalError");
@@ -104,7 +104,7 @@ describe("error cause chaining", () => {
     expect(err.cause).toBe(inner);
   });
 
-  it("a CommitSageError without options has an undefined cause", () => {
-    expect(new CommitSageError("m", "C", 1).cause).toBeUndefined();
+  it("a CommitWhisperError without options has an undefined cause", () => {
+    expect(new CommitWhisperError("m", "C", 1).cause).toBeUndefined();
   });
 });

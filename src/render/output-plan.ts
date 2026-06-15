@@ -7,7 +7,7 @@
  *   - a file format (`html`/`markdown`/`json`) goes to `-` ⇒ stdout, an explicit
  *     path ⇒ that file (only when EXACTLY ONE file format is selected — a single
  *     `--output` cannot address several files), or otherwise its default
- *     `./commit-sage-report.{ext}`.
+ *     `./commit-whisper-report.{ext}`.
  * Pure + deterministic (targets in the de-duped format order); the ambiguous
  * "one path, many files" misuse is a typed `UsageError` (exit 2), never a silent
  * guess. `render/` may import `shared/errors` (correct layering).
@@ -42,7 +42,7 @@ function dedupe(formats: readonly OutputFormat[]): OutputFormat[] {
   return out;
 }
 
-/** The default artifact path for a file format (`./commit-sage-report.{ext}`). */
+/** The default artifact path for a file format (`./commit-whisper-report.{ext}`). */
 function defaultPath(format: "html" | "markdown" | "json"): string {
   return `${DEFAULT_OUTPUT_BASENAME}.${FILE_EXTENSION[format]}`;
 }
@@ -59,7 +59,7 @@ export function planOutputs(formats: readonly OutputFormat[], outputPath?: strin
   if (hasExplicitPath && fileFormatCount > 1) {
     throw new UsageError(
       `--output cannot be used with multiple file formats (${ordered.filter((f) => FILE_FORMATS.has(f)).join(", ")}). ` +
-        "Omit it to use the default ./commit-sage-report.{html,md,json} paths, or select a single file format.",
+        "Omit it to use the default ./commit-whisper-report.{html,md,json} paths, or select a single file format.",
     );
   }
   return ordered.map((format) => ({ format, destination: resolveDestination(format, outputPath) }));

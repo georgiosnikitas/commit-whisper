@@ -72,7 +72,7 @@ so that my history is explained and turned into a prioritized plan.
 
 ### What the three parts ARE (canonical definitions — do not re-derive)
 
-The PRD fixes these exactly. [Source: docs/planning-artifacts/prds/prd-commit-sage-2026-06-06/prd.md#§3 Glossary + FR-8]
+The PRD fixes these exactly. [Source: docs/planning-artifacts/prds/prd-commit-whisper-2026-06-06/prd.md#§3 Glossary + FR-8]
 
 - **AI Narrative** — the LLM-generated text, in **three parts: Summary, Explanation, Coaching**.
 - **Summary** — a short **TL;DR** of the repo's story and headline findings, for skimming. *(Already built in 1.6: `{ headline, overview, keyFindings }`.)*
@@ -132,9 +132,9 @@ This keeps the new logic small and the guarantees strong: schemas + one generati
 ### References
 
 - [Source: docs/planning-artifacts/epics.md#Story 3.1: Full three-part Narrative] (the ACs)
-- [Source: docs/planning-artifacts/prds/prd-commit-sage-2026-06-06/prd.md#FR-8] (the three parts + Coaching structure + plain-language) · [Source: …#FR-9] (grounding via prompt constraints + a later verification pass — 3.4) · [Source: …§3 Glossary] (Summary / Explanation / Coaching definitions)
+- [Source: docs/planning-artifacts/prds/prd-commit-whisper-2026-06-06/prd.md#FR-8] (the three parts + Coaching structure + plain-language) · [Source: …#FR-9] (grounding via prompt constraints + a later verification pass — 3.4) · [Source: …§3 Glossary] (Summary / Explanation / Coaching definitions)
 - [Source: docs/planning-artifacts/architecture.md#Canonical Report JSON] (narrative subtree = Summary/Explanation/Coaching + per-metric explanations) · [Source: …#Three validation checkpoints] (LLM-output + Report-JSON-in)
-- [Source: docs/planning-artifacts/ux-designs/ux-commit-sage-2026-06-11/EXPERIENCE.md] (Coaching = introduction, themed chapters of prioritized steps, closing summary; team-level, never per-developer ranking)
+- [Source: docs/planning-artifacts/ux-designs/ux-commit-whisper-2026-06-11/EXPERIENCE.md] (Coaching = introduction, themed chapters of prioritized steps, closing summary; team-level, never per-developer ranking)
 - [Source: src/narrate/schema.ts · prompt.ts · generate.ts · narrate.ts · narrate.port.ts] (the 1.6 stack to extend) · [Source: src/assemble/report-schema.ts] (the narrative subtree) · [Source: src/render/terminal/terminal-renderer.ts] (the showpiece render)
 
 ### Completion Notes

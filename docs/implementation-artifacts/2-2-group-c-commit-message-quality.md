@@ -72,9 +72,9 @@ This is the **second Epic 2 metrics story** — it adds **Group C** to the catal
 - **Groups D, E, F** — Stories 2.3–2.5. (Group F's hygiene score weights "Commit Message Quality 35%"; it will *consume the computed Group C values*, not re-parse messages — Story 2.5.)
 - **Commit-selection inputs** (author filter / max-commits / no-merges / dates / timezone narrowing the set) — **Story 2.6**. Group C computes over whatever commit set the model holds; in particular it does **not** exclude merge commits (a `Merge branch …` subject is just a normal subject here) — `--no-merges` is a 2.6 selection input. [Source: docs/planning-artifacts/epics.md#Story 2.6]
 - **Free-tier 100-commit cap** — **Story 2.7**.
-- **AI Metric Explanations** (the four-facet per-metric LLM text) — **Epic 3, Story 3.2**. Group C emits only the deterministic envelope. [Source: docs/planning-artifacts/prds/prd-commit-sage-2026-06-06/prd.md#4.2]
-- **Health bands** (`ok`/`watch`/`risk`/`n/a`) — render-time classifier (Epic 4), **not** stored in the envelope. [Source: docs/planning-artifacts/prds/prd-commit-sage-2026-06-06/prd.md#Metric health bands]
-- **The Group C overview chart** (stacked bar of message-quality categories) — Epic 4 render; 2.2 produces the *data* it consumes. [Source: docs/planning-artifacts/prds/prd-commit-sage-2026-06-06/prd.md#FR-6]
+- **AI Metric Explanations** (the four-facet per-metric LLM text) — **Epic 3, Story 3.2**. Group C emits only the deterministic envelope. [Source: docs/planning-artifacts/prds/prd-commit-whisper-2026-06-06/prd.md#4.2]
+- **Health bands** (`ok`/`watch`/`risk`/`n/a`) — render-time classifier (Epic 4), **not** stored in the envelope. [Source: docs/planning-artifacts/prds/prd-commit-whisper-2026-06-06/prd.md#Metric health bands]
+- **The Group C overview chart** (stacked bar of message-quality categories) — Epic 4 render; 2.2 produces the *data* it consumes. [Source: docs/planning-artifacts/prds/prd-commit-whisper-2026-06-06/prd.md#FR-6]
 
 ### PRD §4.2 Group C catalog — the authoritative metric definitions
 
@@ -87,7 +87,7 @@ This is the **second Epic 2 metrics story** — it adds **Group C** to the catal
 | `c-issue-reference-rate` | Issue/ticket reference rate | share of messages linking an issue/ticket ID `[ASSUMPTION]` |
 | `c-revert-fixup-signal` | Revert / fixup / amend signal | frequency of reverts and `fixup!`/`squash!`-style messages; churn-of-intent indicator |
 
-[Source: docs/planning-artifacts/prds/prd-commit-sage-2026-06-06/prd.md#4.2 Group C] — IDs follow the `a-…`/`b-…` kebab convention; titles are verbatim. The static one-line description is **not** stored in the envelope (it surfaces via the catalog / Epic 3 explanations).
+[Source: docs/planning-artifacts/prds/prd-commit-whisper-2026-06-06/prd.md#4.2 Group C] — IDs follow the `a-…`/`b-…` kebab convention; titles are verbatim. The static one-line description is **not** stored in the envelope (it surfaces via the catalog / Epic 3 explanations).
 
 ### AC2 — "document the heuristic" is a hard requirement (what the reviewer will check)
 
@@ -134,7 +134,7 @@ The epics AC explicitly requires heuristic metrics to **document their rule** an
 ### References
 
 - [Source: docs/planning-artifacts/epics.md#Story 2.2: Group C — Commit Message Quality]
-- [Source: docs/planning-artifacts/prds/prd-commit-sage-2026-06-06/prd.md#4.2 History Analysis — Metrics Catalog (Group C)] · [Source: …#FR-4 Compute the metrics catalog] · [Source: …#FR-5]
+- [Source: docs/planning-artifacts/prds/prd-commit-whisper-2026-06-06/prd.md#4.2 History Analysis — Metrics Catalog (Group C)] · [Source: …#FR-4 Compute the metrics catalog] · [Source: …#FR-5]
 - [Source: docs/planning-artifacts/architecture.md#C2 — Metrics Engine Architecture] (hybrid topology, determinism rules, uniform envelope)
 - [Source: src/analyze/groups/a-cadence.ts] · [Source: src/analyze/groups/b-contribution.ts] (the patterns) · [Source: src/analyze/model.ts] · [Source: src/analyze/metric.ts] · [Source: src/analyze/stats.ts] · [Source: src/analyze/registry.ts] · [Source: tests/determinism/analysis-determinism.test.ts]
 

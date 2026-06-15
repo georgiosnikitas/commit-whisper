@@ -48,15 +48,15 @@ function memoryIo(seed: Record<string, string> = {}) {
 }
 
 describe("readActivationInstanceId", () => {
-  it("reads the cached instanceId from ~/.commit-sage/license.json", async () => {
+  it("reads the cached instanceId from ~/.commit-whisper/license.json", async () => {
     const path = licenseFilePath({ HOME: "/home/alice" });
     const { io } = memoryIo({ [path]: JSON.stringify({ instanceId: "inst-42" }) });
     expect(await readActivationInstanceId({ HOME: "/home/alice" }, io)).toBe("inst-42");
   });
 
-  it("a COMMIT_SAGE_LICENSE_INSTANCE env override wins (no file read needed)", async () => {
+  it("a COMMIT_WHISPER_LICENSE_INSTANCE env override wins (no file read needed)", async () => {
     const id = await readActivationInstanceId(
-      { HOME: "/home/alice", COMMIT_SAGE_LICENSE_INSTANCE: "ci-instance" },
+      { HOME: "/home/alice", COMMIT_WHISPER_LICENSE_INSTANCE: "ci-instance" },
       memoryIo().io,
     );
     expect(id).toBe("ci-instance");
@@ -98,10 +98,10 @@ describe("writeLicenseCache (Story 7.2)", () => {
   it("atomically writes only the allow-listed fields (mkdir → same-dir .tmp → rename)", async () => {
     const { io, calls, files } = memoryIo();
     const path = await writeLicenseCache({ HOME: "/home/alice" }, { instanceId: "i-1", licenseKey: "LIC" }, io);
-    expect(path).toBe("/home/alice/.commit-sage/license.json");
-    expect(calls[0]).toBe("mkdir /home/alice/.commit-sage");
-    expect(calls[1]).toMatch(/^write \/home\/alice\/\.commit-sage\/license\.json\.[a-z0-9]+\.tmp$/);
-    expect(calls[2]).toMatch(/^rename .+\.tmp \/home\/alice\/\.commit-sage\/license\.json$/);
+    expect(path).toBe("/home/alice/.commit-whisper/license.json");
+    expect(calls[0]).toBe("mkdir /home/alice/.commit-whisper");
+    expect(calls[1]).toMatch(/^write \/home\/alice\/\.commit-whisper\/license\.json\.[a-z0-9]+\.tmp$/);
+    expect(calls[2]).toMatch(/^rename .+\.tmp \/home\/alice\/\.commit-whisper\/license\.json$/);
     expect(JSON.parse(files.get(path)!)).toEqual({ instanceId: "i-1", licenseKey: "LIC" });
   });
 

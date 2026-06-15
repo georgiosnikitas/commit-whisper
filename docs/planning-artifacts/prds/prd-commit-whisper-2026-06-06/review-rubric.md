@@ -1,6 +1,6 @@
-# PRD Quality Review — commit-sage
+# PRD Quality Review — commit-whisper
 
-*Reviewer: Mary (Business Analyst). Date: 2026-06-06. Stakes: high (commercial, paid product). Source reconciled against [brief.md](../../briefs/brief-commit-sage-2026-06-06/brief.md).*
+*Reviewer: Mary (Business Analyst). Date: 2026-06-06. Stakes: high (commercial, paid product). Source reconciled against [brief.md](../../briefs/brief-commit-whisper-2026-06-06/brief.md).*
 
 ## Overall verdict
 
@@ -16,7 +16,7 @@ Most decisions are stated as decisions (JSON-canonical output, three providers, 
 
 ## 2. Substance over theater — strong
 
-No furniture. Three UJs (Dana/Marco/Sofia), each drives FRs — under the four-persona line, none decorative. The "first mover" claim is earned by the brief's competitive addendum and carries an honest caveat ("the barrier is execution, not secret technology"). Vision (§1) is commit-sage-specific and could not swap into another PRD. NFRs (§7) are mostly product-specific (determinism, offline-first, grounding) rather than boilerplate. No findings.
+No furniture. Three UJs (Dana/Marco/Sofia), each drives FRs — under the four-persona line, none decorative. The "first mover" claim is earned by the brief's competitive addendum and carries an honest caveat ("the barrier is execution, not secret technology"). Vision (§1) is commit-whisper-specific and could not swap into another PRD. NFRs (§7) are mostly product-specific (determinism, offline-first, grounding) rather than boilerplate. No findings.
 
 ## 3. Strategic coherence — adequate
 
@@ -54,7 +54,7 @@ Correct shape: a prosumer developer tool with meaningful report/visual UX → UJ
 
 ## Mechanical notes
 
-- **Stale title qualifier** — line 9 `*Working title — confirm.*` under the H1, but "commit-sage" is the confirmed product name in the finalized brief. Remove the false uncertainty.
+- **Stale title qualifier** — line 9 `*Working title — confirm.*` under the H1, but "commit-whisper" is the confirmed product name in the finalized brief. Remove the false uncertainty.
 - **Markdown lint** — MD025 (frontmatter title + H1 — template-inherent, acceptable), MD032 (lists need surrounding blank lines — pervasive, cosmetic), MD036 (§11 `**Primary**`/`**Secondary**`/`**Counter-metrics**` bolded-as-heading — promote to `####` or accept). Clean in the Polish step of finalize.
 - **Assumptions Index roundtrip** — §13 indexes by section rather than by FR-ID; all inline tags are covered, but by-ID would be more precise for downstream extraction. Low priority.
 - **Glossary** — "Confidence self-assessment" defined; lowercase "confidence" used in prose (FR-10). Acceptable drift.

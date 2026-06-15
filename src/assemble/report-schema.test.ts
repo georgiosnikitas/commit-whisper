@@ -89,7 +89,7 @@ describe("ReportSchema", () => {
         summary: NARRATIVE.summary,
         explanation: NARRATIVE.explanation,
         coaching: NARRATIVE.coaching,
-        confidence: { level: "low", rationale: "Grounding 30%.", escalation: "Set COMMIT_SAGE_PROVIDER." },
+        confidence: { level: "low", rationale: "Grounding 30%.", escalation: "Set COMMIT_WHISPER_PROVIDER." },
       },
     };
     expect(ReportSchema.safeParse(base).success).toBe(true);

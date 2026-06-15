@@ -329,9 +329,9 @@ describe("runPipeline — multi-format output dispatch (Story 4.4)", () => {
     });
     expect(r.stdout.join("")).toBe(""); // machine-clean: nothing on stdout
     expect(r.files).toHaveLength(1);
-    expect(r.files[0].path).toBe("commit-sage-report.json");
+    expect(r.files[0].path).toBe("commit-whisper-report.json");
     expect(parseReport(r.files[0].content).analysis).toBeDefined();
-    expect(r.infos.join("\n")).toContain("Wrote json → commit-sage-report.json");
+    expect(r.infos.join("\n")).toContain("Wrote json → commit-whisper-report.json");
   });
 
   it("--format terminal,html writes terminal to stdout AND the html file", async () => {
@@ -344,7 +344,7 @@ describe("runPipeline — multi-format output dispatch (Story 4.4)", () => {
     });
     expect(r.stdout.join("")).toContain(METRICS_ONLY_NOTE); // terminal on stdout
     expect(r.files).toHaveLength(1);
-    expect(r.files[0].path).toBe("commit-sage-report.html");
+    expect(r.files[0].path).toBe("commit-whisper-report.html");
     expect(r.files[0].content).toContain("<!doctype html>");
   });
 
@@ -363,7 +363,7 @@ describe("runPipeline — multi-format output dispatch (Story 4.4)", () => {
       writeFile: r.writeFile,
     });
     expect(narrateCalls).toBe(1); // one narration feeds every format
-    expect(r.files.map((f) => f.path)).toEqual(["commit-sage-report.html", "commit-sage-report.md", "commit-sage-report.json"]);
+    expect(r.files.map((f) => f.path)).toEqual(["commit-whisper-report.html", "commit-whisper-report.md", "commit-whisper-report.json"]);
   });
 
   it("a writeFile failure surfaces as RenderError (exit 7) naming the path", async () => {
@@ -403,8 +403,8 @@ describe("runPipeline — HTML auto-open (Story 4.5)", () => {
       autoOpen: true,
     });
     expect(code).toBe(ExitCode.Success);
-    expect(r.opened).toEqual(["commit-sage-report.html"]);
-    expect(r.infos.join("\n")).toContain("Opened commit-sage-report.html in your browser");
+    expect(r.opened).toEqual(["commit-whisper-report.html"]);
+    expect(r.infos.join("\n")).toContain("Opened commit-whisper-report.html in your browser");
   });
 
   it("autoOpen defaults off — html is written but never opened", async () => {
@@ -462,7 +462,7 @@ describe("runPipeline — HTML auto-open (Story 4.5)", () => {
     });
     expect(code).toBe(ExitCode.Success); // browser failure never fails the run
     expect(r.files).toHaveLength(1); // the artifact is on disk
-    expect(r.warnings.join("\n")).toContain("Could not open a browser automatically — open commit-sage-report.html manually");
+    expect(r.warnings.join("\n")).toContain("Could not open a browser automatically — open commit-whisper-report.html manually");
   });
 
   it("auto-open never fires when a write fails first (exit 7 pre-empts it)", async () => {

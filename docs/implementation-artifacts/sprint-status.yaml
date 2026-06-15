@@ -1,10 +1,10 @@
 # Sprint Status Tracking
 # Generated: 2026-06-13
 # Last Updated: 2026-06-13
-# Project: commit-sage
+# Project: commit-whisper
 # Project Key: NOKEY
 # Tracking System: file-system
-# Story Location: /Users/georgiosnikitas/Workspace/commit-sage/docs/implementation-artifacts
+# Story Location: /Users/georgiosnikitas/Workspace/commit-whisper/docs/implementation-artifacts
 
 # STATUS DEFINITIONS:
 # ==================
@@ -37,12 +37,12 @@
 
 generated: 2026-06-13
 last_updated: 2026-06-13
-project: commit-sage
+project: commit-whisper
 
 
 project_key: NOKEY
 tracking_system: file-system
-story_location: /Users/georgiosnikitas/Workspace/commit-sage/docs/implementation-artifacts
+story_location: /Users/georgiosnikitas/Workspace/commit-whisper/docs/implementation-artifacts
 
 development_status:
   # ═══════════════════════════════════════════════════════════════

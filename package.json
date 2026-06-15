@@ -1,12 +1,12 @@
 {
-  "name": "commitsage",
+  "name": "commitwhisper",
   "version": "1.0.0",
   "description": "Deterministic git history analysis with a grounded, BYOK AI narrative — terminal-native CLI.",
   "type": "module",
   "main": "dist/index.js",
   "bin": {
-    "commit-sage": "dist/index.js",
-    "commitsage": "dist/index.js"
+    "commit-whisper": "dist/index.js",
+    "commitwhisper": "dist/index.js"
   },
   "files": [
     "dist/index.js"
@@ -29,7 +29,7 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/georgiosnikitas/commit-sage.git"
+    "url": "git+https://github.com/georgiosnikitas/commit-whisper.git"
   },
   "keywords": [
     "git",
@@ -41,9 +41,9 @@
   "author": "Georgios Nikitas <georgiosnikitas@gmail.com>",
   "license": "MIT",
   "bugs": {
-    "url": "https://github.com/georgiosnikitas/commit-sage/issues"
+    "url": "https://github.com/georgiosnikitas/commit-whisper/issues"
   },
-  "homepage": "https://github.com/georgiosnikitas/commit-sage#readme",
+  "homepage": "https://github.com/georgiosnikitas/commit-whisper#readme",
   "dependencies": {
     "@ai-sdk/anthropic": "3.0.84",
     "@ai-sdk/google": "3.0.82",

@@ -8,9 +8,9 @@
  *   2. resolves the frozen `RunConfig` (the one real clock read happens here and
  *      is injected, keeping the pipeline pure) and reads the env-only LLM key,
  *   3. drives `runPipeline` and returns its exit code,
- *   4. maps any thrown `CommitSageError` to its exit code + a stderr message —
+ *   4. maps any thrown `CommitWhisperError` to its exit code + a stderr message —
  *      and, for a missing-required-input failure, appends the redirect to bare
- *      `commit-sage` for guided setup (AC4) so a hard fail is never a dead end.
+ *      `commit-whisper` for guided setup (AC4) so a hard fail is never a dead end.
  *
  * The shell may touch argv / TTY / cwd, but NOT `process.env` directly (the
  * hexagonal lint boundary) — it captures the environment via `config`'s
@@ -103,7 +103,7 @@ export interface CliDeps {
   launchpad?: typeof runLaunchpad;
   /** Inject a fake provider preflight for the Status/doctor probe; defaults to the real `preflightProvider`. */
   preflight?: typeof preflightProvider;
-  /** Inject the persisted config-file layer (Story 6.5); defaults to reading `~/.commit-sage`. */
+  /** Inject the persisted config-file layer (Story 6.5); defaults to reading `~/.commit-whisper`. */
   configFile?: PartialRunConfig;
   /** Inject the resolved license outcome (Story 7.1/7.3); defaults to the online Lemon Squeezy gate. */
   resolveEntitlement?: (env: NodeJS.ProcessEnv) => Promise<EntitlementResolution>;
@@ -139,8 +139,8 @@ async function defaultResolveEntitlement(env: NodeJS.ProcessEnv): Promise<Entitl
 function licenseFailClosedMessage(reason: string): string {
   return (
     `License validation failed: ${reason} ` +
-    "commit-sage did not run because it could not confirm your license. " +
-    "Set a valid COMMIT_SAGE_LICENSE_KEY — in CI the key is validated via the " +
+    "commit-whisper did not run because it could not confirm your license. " +
+    "Set a valid COMMIT_WHISPER_LICENSE_KEY — in CI the key is validated via the " +
     "environment variable and never consumes a device activation."
   );
 }
@@ -190,7 +190,7 @@ export async function main(argv: string[], deps: CliDeps = {}): Promise<number> 
   const stdoutIsTTY = deps.stdoutIsTTY ?? process.stdout.isTTY;
   const stderrIsTTY = deps.stderrIsTTY ?? process.stderr.isTTY;
   // The bootstrap `ui` honours env-only chrome policy (NO_COLOR/FORCE_COLOR,
-  // COMMIT_SAGE_LOG_LEVEL) — used for the 0-arg launchpad and any pre-parse
+  // COMMIT_WHISPER_LOG_LEVEL) — used for the 0-arg launchpad and any pre-parse
   // error. The single-shot run rebuilds a flag-aware `ui` after parsing.
   const ui =
     deps.ui ??
@@ -291,7 +291,7 @@ export async function main(argv: string[], deps: CliDeps = {}): Promise<number> 
     ui.error(messageForError(err));
     if (err instanceof MissingRequiredConfigError) {
       // AC4 — name the gap (above) AND redirect to the guided path, never a cliff.
-      ui.error("Run `commit-sage` with no arguments for guided setup.");
+      ui.error("Run `commit-whisper` with no arguments for guided setup.");
     }
     return exitCodeForError(err);
   }
@@ -416,8 +416,8 @@ async function runZeroArg(ctx: ZeroArgContext): Promise<number> {
   });
   if (!interactive) {
     ctx.ui.error(
-      "commit-sage needs a repository argument when it is not run in an interactive terminal — " +
-        "e.g. `commit-sage . --no-ai`, or `commit-sage --help` for all options.",
+      "commit-whisper needs a repository argument when it is not run in an interactive terminal — " +
+        "e.g. `commit-whisper . --no-ai`, or `commit-whisper --help` for all options.",
     );
     return ExitCode.Usage;
   }
@@ -509,9 +509,9 @@ async function runZeroArg(ctx: ZeroArgContext): Promise<number> {
     activateLicense: (key) => (ctx.deps.activateLicense ?? defaultActivateLicense)(ctx.env, key),
     deactivateLicense: () => (ctx.deps.deactivateLicense ?? defaultDeactivateLicense)(ctx.env),
     openUrl: ctx.deps.openUrl ?? defaultOpenBrowser,
-    storeUrl: readUrl(ctx.env.COMMIT_SAGE_STORE_URL),
-    restoreUrl: readUrl(ctx.env.COMMIT_SAGE_RESTORE_URL),
-    coffeeUrl: readUrl(ctx.env.COMMIT_SAGE_COFFEE_URL),
+    storeUrl: readUrl(ctx.env.COMMIT_WHISPER_STORE_URL),
+    restoreUrl: readUrl(ctx.env.COMMIT_WHISPER_RESTORE_URL),
+    coffeeUrl: readUrl(ctx.env.COMMIT_WHISPER_COFFEE_URL),
   });
 }
 
@@ -532,7 +532,7 @@ function collapseHome(cwd: string, home: string | undefined): string {
 function buildProgram(): Command {
   const program = new Command();
   program
-    .name("commit-sage")
+    .name("commit-whisper")
     .description("Deterministic git history analysis with a grounded, BYOK AI narrative.")
     .argument("[repoTarget]", "local repo path or remote URL (defaults to the current directory)")
     .option("--ai", "require AI narration (fail hard if the provider is unavailable)")

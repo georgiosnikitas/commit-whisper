@@ -22,7 +22,7 @@ export const MACHO_SEGMENT = "NODE_SEA";
  * @returns {string}
  */
 export function binaryNameFor(platform) {
-  return platform === "win32" ? "commit-sage.exe" : "commit-sage";
+  return platform === "win32" ? "commit-whisper.exe" : "commit-whisper";
 }
 
 /**

@@ -8,7 +8,7 @@
  * (`git@…` / `ssh://`) and private-auth are Story 5.2 — out of scope here.
  */
 
-/** A URL with an http(s) scheme — the remote forms commit-sage clones. */
+/** A URL with an http(s) scheme — the remote forms commit-whisper clones. */
 const REMOTE_SCHEME = /^https?:\/\//i;
 
 /** True iff `target` is a remote HTTP(S) URL; false for a local filesystem path. */

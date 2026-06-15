@@ -115,7 +115,7 @@ The authoritative design is explicit: **"Batching: per-group × 6 + a coaching c
 
 - [Source: docs/planning-artifacts/epics.md#Story 3.3: Per-group batched generation] (the ACs)
 - [Source: docs/planning-artifacts/architecture.md#Narration — Batching: per-group × 6 + a coaching call] (six batches; coaching its own call; parallelizable; single failed group degrades gracefully)
-- [Source: docs/planning-artifacts/prds/prd-commit-sage-2026-06-06/prd.md#FR-8 NOTE] (batching to bound cost/latency on the BYOK budget) · [Source: …#FR-11] (fail-open)
+- [Source: docs/planning-artifacts/prds/prd-commit-whisper-2026-06-06/prd.md#FR-8 NOTE] (batching to bound cost/latency on the BYOK budget) · [Source: …#FR-11] (fail-open)
 - [Source: src/narrate/generate.ts] (the `generateExplanations` seam + `buildExplanationsRecord`) · [Source: src/narrate/narrate.ts] (the orchestrator) · [Source: src/analyze/metric.ts] (`MetricGroup`) · [Source: src/analyze/registry.ts] (A→F order)
 
 ### Completion Notes

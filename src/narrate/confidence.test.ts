@@ -107,8 +107,8 @@ describe("assessConfidence — edge cases + determinism", () => {
 describe("buildEscalation (AC2)", () => {
   it("names the config to change and the current provider/model", () => {
     const msg = buildEscalation("gemini", "gemini-2.0-flash");
-    expect(msg).toContain("COMMIT_SAGE_PROVIDER");
-    expect(msg).toContain("COMMIT_SAGE_LLM_MODEL");
+    expect(msg).toContain("COMMIT_WHISPER_PROVIDER");
+    expect(msg).toContain("COMMIT_WHISPER_LLM_MODEL");
     expect(msg).toContain("gemini/gemini-2.0-flash");
     expect(msg.toLowerCase()).toContain("stronger");
   });

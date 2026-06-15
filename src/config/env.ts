@@ -1,14 +1,14 @@
 /**
  * The single reader of `process.env` (Story 1.2; AI key added Story 1.6).
  *
- * `readEnvLayer` parses the NON-SECRET `COMMIT_SAGE_*` variables into the `env`
+ * `readEnvLayer` parses the NON-SECRET `COMMIT_WHISPER_*` variables into the `env`
  * resolver layer. `readAiKey` reads the SECRET LLM key (env-only, wrapped in
  * `Secret`, bypassing the merge). `env` is injected (defaulting to `process.env`)
  * so parsing stays pure and table-testable. Per the hexagonal boundary, this is
  * the only place `process.env` is read.
  *
  * Remaining SECRET env vars are still deferred: the git PAT
- * (`COMMIT_SAGE_GIT_TOKEN` / host fallbacks) lands in Epic 5. The LLM key now
+ * (`COMMIT_WHISPER_GIT_TOKEN` / host fallbacks) lands in Epic 5. The LLM key now
  * reads every provider's native variable (Story 3.6).
  */
 
@@ -72,12 +72,12 @@ function parseProvider(raw: string | undefined): Provider | undefined {
   return v !== undefined && PROVIDERS.has(v) ? (v as Provider) : undefined;
 }
 
-/** `COMMIT_SAGE_NO_AI` (truthy) wins as `off`; else a valid `COMMIT_SAGE_AI_MODE`. */
+/** `COMMIT_WHISPER_NO_AI` (truthy) wins as `off`; else a valid `COMMIT_WHISPER_AI_MODE`. */
 function parseAiMode(env: NodeJS.ProcessEnv): AiMode | undefined {
-  if (parseBoolean(env.COMMIT_SAGE_NO_AI) === true) {
+  if (parseBoolean(env.COMMIT_WHISPER_NO_AI) === true) {
     return "off";
   }
-  const mode = str(env.COMMIT_SAGE_AI_MODE);
+  const mode = str(env.COMMIT_WHISPER_AI_MODE);
   return mode !== undefined && AI_MODES.has(mode) ? (mode as AiMode) : undefined;
 }
 
@@ -94,20 +94,20 @@ function pruneUndefined(candidates: PartialRunConfig): PartialRunConfig {
 
 export function readEnvLayer(env: NodeJS.ProcessEnv = process.env): PartialRunConfig {
   return pruneUndefined({
-    repoTarget: str(env.COMMIT_SAGE_REPO),
-    branch: parseBranch(env.COMMIT_SAGE_BRANCH),
-    startDate: str(env.COMMIT_SAGE_START_DATE),
-    endDate: str(env.COMMIT_SAGE_END_DATE),
-    timezone: str(env.COMMIT_SAGE_TZ),
-    authorFilter: str(env.COMMIT_SAGE_AUTHOR),
-    maxCommits: parsePositiveInt(env.COMMIT_SAGE_MAX_COMMITS),
-    noMerges: parseBoolean(env.COMMIT_SAGE_NO_MERGES),
-    outputFormats: parseFormats(env.COMMIT_SAGE_FORMAT),
-    outputPath: str(env.COMMIT_SAGE_OUT),
+    repoTarget: str(env.COMMIT_WHISPER_REPO),
+    branch: parseBranch(env.COMMIT_WHISPER_BRANCH),
+    startDate: str(env.COMMIT_WHISPER_START_DATE),
+    endDate: str(env.COMMIT_WHISPER_END_DATE),
+    timezone: str(env.COMMIT_WHISPER_TZ),
+    authorFilter: str(env.COMMIT_WHISPER_AUTHOR),
+    maxCommits: parsePositiveInt(env.COMMIT_WHISPER_MAX_COMMITS),
+    noMerges: parseBoolean(env.COMMIT_WHISPER_NO_MERGES),
+    outputFormats: parseFormats(env.COMMIT_WHISPER_FORMAT),
+    outputPath: str(env.COMMIT_WHISPER_OUT),
     aiMode: parseAiMode(env),
-    provider: parseProvider(env.COMMIT_SAGE_PROVIDER),
-    llmBaseUrl: str(env.COMMIT_SAGE_LLM_BASE_URL),
-    llmModel: str(env.COMMIT_SAGE_LLM_MODEL),
+    provider: parseProvider(env.COMMIT_WHISPER_PROVIDER),
+    llmBaseUrl: str(env.COMMIT_WHISPER_LLM_BASE_URL),
+    llmModel: str(env.COMMIT_WHISPER_LLM_MODEL),
   });
 }
 
@@ -148,17 +148,17 @@ function wrapKey(key: string | undefined): Secret<string> | undefined {
 
 /**
  * Read the git PAT for a private remote from the environment (env-only, like the
- * LLM key). `COMMIT_SAGE_GIT_TOKEN` takes precedence over the host-specific
+ * LLM key). `COMMIT_WHISPER_GIT_TOKEN` takes precedence over the host-specific
  * `GITHUB_TOKEN` / `GITLAB_TOKEN` / `BITBUCKET_TOKEN` fallbacks, then wraps the
  * value in `Secret` (so it redacts to `***` everywhere). `undefined` when none is
  * set — a local path or public remote needs no token (its absence is never an
  * error). Note the GitHub-Actions footgun: the auto-injected `GITHUB_TOKEN` is
  * scoped to the workflow's OWN repo, so analyzing a different private repo from
- * Actions needs an explicit `COMMIT_SAGE_GIT_TOKEN` (which takes precedence).
+ * Actions needs an explicit `COMMIT_WHISPER_GIT_TOKEN` (which takes precedence).
  */
 export function readGitToken(env: NodeJS.ProcessEnv): Secret<string> | undefined {
   const token =
-    str(env.COMMIT_SAGE_GIT_TOKEN) ??
+    str(env.COMMIT_WHISPER_GIT_TOKEN) ??
     str(env.GITHUB_TOKEN) ??
     str(env.GITLAB_TOKEN) ??
     str(env.BITBUCKET_TOKEN);
@@ -173,7 +173,7 @@ export function readGitToken(env: NodeJS.ProcessEnv): Secret<string> | undefined
  * `entitlement` crosses the hexagonal boundary. `undefined` ⇒ the Free tier.
  */
 export function readLicenseKey(env: NodeJS.ProcessEnv): string | undefined {
-  return str(env.COMMIT_SAGE_LICENSE_KEY);
+  return str(env.COMMIT_WHISPER_LICENSE_KEY);
 }
 
 /** One environment variable's diagnostic status — NAME + presence only, never the value. */
@@ -215,7 +215,7 @@ export function readEnvDiagnostics(env: NodeJS.ProcessEnv, provider: Provider | 
     diagnostics.push({ name: keyVar, set: readAiKey(env, provider ?? "openai") !== undefined });
   }
   diagnostics.push({
-    name: "COMMIT_SAGE_GIT_TOKEN",
+    name: "COMMIT_WHISPER_GIT_TOKEN",
     set: readGitToken(env) !== undefined,
     note: "only needed for private remotes",
   });

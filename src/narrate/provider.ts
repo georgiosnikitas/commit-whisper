@@ -56,7 +56,7 @@ export function resolveModel(config: NarrateConfig): LanguageModel {
     }
     case undefined:
       throw new NarrationError(
-        "No LLM provider configured. Set the provider (e.g. via COMMIT_SAGE_PROVIDER).",
+        "No LLM provider configured. Set the provider (e.g. via COMMIT_WHISPER_PROVIDER).",
       );
     default:
       return assertNeverProvider(config.provider);
@@ -66,7 +66,7 @@ export function resolveModel(config: NarrateConfig): LanguageModel {
 /** The configured model id, or a typed error naming how to set it. */
 function requireModel(config: NarrateConfig): string {
   if (config.llmModel === undefined) {
-    throw new NarrationError("No LLM model configured. Set the model (e.g. via COMMIT_SAGE_LLM_MODEL).");
+    throw new NarrationError("No LLM model configured. Set the model (e.g. via COMMIT_WHISPER_LLM_MODEL).");
   }
   return config.llmModel;
 }
@@ -84,7 +84,7 @@ function requireBaseUrl(config: NarrateConfig): string {
   const baseUrl = cleanBaseUrl(config.llmBaseUrl);
   if (baseUrl === undefined) {
     throw new NarrationError(
-      'No base URL configured for the "openai-compatible" provider. Set the COMMIT_SAGE_LLM_BASE_URL environment variable.',
+      'No base URL configured for the "openai-compatible" provider. Set the COMMIT_WHISPER_LLM_BASE_URL environment variable.',
     );
   }
   return baseUrl;

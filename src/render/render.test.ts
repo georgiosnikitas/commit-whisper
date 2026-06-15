@@ -51,7 +51,7 @@ describe("renderFormat", () => {
   const showpiece = report({ narrative: NARRATIVE });
 
   it("routes terminal → the terminal report text", () => {
-    expect(renderFormat(showpiece, "terminal")).toContain("commit-sage");
+    expect(renderFormat(showpiece, "terminal")).toContain("commit-whisper");
   });
 
   it("routes html → a self-contained HTML document", () => {
@@ -60,7 +60,7 @@ describe("renderFormat", () => {
 
   it("routes markdown → the Markdown document", () => {
     const out = renderFormat(showpiece, "markdown");
-    expect(out.startsWith("# commit-sage")).toBe(true);
+    expect(out.startsWith("# commit-whisper")).toBe(true);
     expect(out).toContain("## Summary");
   });
 
@@ -72,16 +72,16 @@ describe("renderFormat", () => {
 
   it("renders a substrate report in every format without a narrative", () => {
     const substrate = report({ degraded: true });
-    expect(renderFormat(substrate, "terminal")).toContain("commit-sage");
+    expect(renderFormat(substrate, "terminal")).toContain("commit-whisper");
     expect(renderFormat(substrate, "html")).toContain("<!doctype html>");
-    expect(renderFormat(substrate, "markdown")).toContain("# commit-sage");
+    expect(renderFormat(substrate, "markdown")).toContain("# commit-whisper");
     expect(renderFormat(substrate, "json")).toContain('"degraded": true');
   });
 });
 
 describe("default-path building blocks", () => {
   it("exposes the basename + per-format extensions", () => {
-    expect(DEFAULT_OUTPUT_BASENAME).toBe("commit-sage-report");
+    expect(DEFAULT_OUTPUT_BASENAME).toBe("commit-whisper-report");
     expect(FILE_EXTENSION.html).toBe("html");
     expect(FILE_EXTENSION.markdown).toBe("md");
     expect(FILE_EXTENSION.json).toBe("json");

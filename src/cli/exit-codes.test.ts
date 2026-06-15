@@ -2,7 +2,7 @@ import { describe, it, expect } from "vitest";
 
 import { ExitCode, exitCodeForError, messageForError } from "./exit-codes.js";
 import {
-  CommitSageError,
+  CommitWhisperError,
   InternalError,
   LicenseError,
   MetricsError,
@@ -31,13 +31,13 @@ describe("ExitCode enum", () => {
 });
 
 describe("exitCodeForError", () => {
-  it("returns a CommitSageError's own exit code", () => {
+  it("returns a CommitWhisperError's own exit code", () => {
     expect(exitCodeForError(new UsageError("bad flag"))).toBe(2);
     expect(exitCodeForError(new RetrieveError("no repo"))).toBe(4);
     expect(exitCodeForError(new MissingRequiredConfigError("provider"))).toBe(3);
   });
 
-  it("maps any non-CommitSageError throwable to Internal (1)", () => {
+  it("maps any non-CommitWhisperError throwable to Internal (1)", () => {
     expect(exitCodeForError(new Error("plain"))).toBe(ExitCode.Internal);
     expect(exitCodeForError("a string")).toBe(1);
     expect(exitCodeForError(undefined)).toBe(1);
@@ -63,7 +63,7 @@ describe("messageForError", () => {
 });
 
 describe("error exit-code ↔ enum consistency", () => {
-  const pairs: { err: CommitSageError; expected: number }[] = [
+  const pairs: { err: CommitWhisperError; expected: number }[] = [
     { err: new InternalError(), expected: ExitCode.Internal },
     { err: new UsageError("x"), expected: ExitCode.Usage },
     { err: new MissingRequiredConfigError("x"), expected: ExitCode.MissingInput },

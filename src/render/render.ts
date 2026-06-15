@@ -17,7 +17,7 @@ import { renderHtml } from "./html/html-renderer.js";
 import { renderMarkdown } from "./markdown/markdown-renderer.js";
 
 /** The default basename for a written report artifact (no extension). */
-export const DEFAULT_OUTPUT_BASENAME = "commit-sage-report";
+export const DEFAULT_OUTPUT_BASENAME = "commit-whisper-report";
 
 /** The file extension per file-format (terminal is stdout-native, never a file). */
 export const FILE_EXTENSION: Record<"html" | "markdown" | "json", string> = {

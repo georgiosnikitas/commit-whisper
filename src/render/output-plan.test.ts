@@ -14,10 +14,10 @@ describe("planOutputs", () => {
     expect(planOutputs(["terminal"])).toEqual([{ format: "terminal", destination: { kind: "stdout" } }]);
   });
 
-  it("a single file format with no path → its default ./commit-sage-report.{ext}", () => {
-    expect(dest(planOutputs(["html"]), "html")).toEqual({ kind: "file", path: "commit-sage-report.html" });
-    expect(dest(planOutputs(["markdown"]), "markdown")).toEqual({ kind: "file", path: "commit-sage-report.md" });
-    expect(dest(planOutputs(["json"]), "json")).toEqual({ kind: "file", path: "commit-sage-report.json" });
+  it("a single file format with no path → its default ./commit-whisper-report.{ext}", () => {
+    expect(dest(planOutputs(["html"]), "html")).toEqual({ kind: "file", path: "commit-whisper-report.html" });
+    expect(dest(planOutputs(["markdown"]), "markdown")).toEqual({ kind: "file", path: "commit-whisper-report.md" });
+    expect(dest(planOutputs(["json"]), "json")).toEqual({ kind: "file", path: "commit-whisper-report.json" });
   });
 
   it("'-' means stdout for a file format", () => {
@@ -41,9 +41,9 @@ describe("planOutputs", () => {
   it("--format html,markdown,json (no path) → three default-named file targets", () => {
     const targets = planOutputs(["html", "markdown", "json"]);
     expect(targets.map((t) => t.destination)).toEqual([
-      { kind: "file", path: "commit-sage-report.html" },
-      { kind: "file", path: "commit-sage-report.md" },
-      { kind: "file", path: "commit-sage-report.json" },
+      { kind: "file", path: "commit-whisper-report.html" },
+      { kind: "file", path: "commit-whisper-report.md" },
+      { kind: "file", path: "commit-whisper-report.json" },
     ]);
   });
 

@@ -53,7 +53,7 @@ so that all outputs derive from one source of truth and trends diff cleanly.
 
 **Defer (tracked in deferred-work.md, not actioned now):**
 
-- [x] [Review][Defer] Typed-error wrapping for `parseReport` — `JSON.parse` throws a raw `SyntaxError` and `ReportSchema.parse` a raw `ZodError`; wrap both in a typed `CommitSageError` (likely `RenderError`/a new assembly code) so a malformed read-back is scriptable [src/assemble/report.ts] — deferred: the story Task 3 explicitly leaves error mapping to the CLI/json-renderer story (1.8), which owns how a bad report surfaces.
+- [x] [Review][Defer] Typed-error wrapping for `parseReport` — `JSON.parse` throws a raw `SyntaxError` and `ReportSchema.parse` a raw `ZodError`; wrap both in a typed `CommitWhisperError` (likely `RenderError`/a new assembly code) so a malformed read-back is scriptable [src/assemble/report.ts] — deferred: the story Task 3 explicitly leaves error mapping to the CLI/json-renderer story (1.8), which owns how a bad report surfaces.
 - [x] [Review][Defer] Validate on the **write** path too (`ReportSchema.parse` the assembler output, or in a dev/test assertion) so a malformed `Analysis` (bad group, non-finite value) is caught at emit, not only at a downstream read-back [src/assemble/report.ts] — deferred: the engine output is internally typed (C1 says no runtime cost on the way out); add a belt-and-suspenders emit-time check if a non-engine producer ever appears.
 - [x] [Review][Defer] `schemaVersion` migration path — `z.literal("1.0.0")` hard-fails any other version; a trend-diff tool reading historical reports will eventually need a version branch / typed `MigrationError` [src/assemble/report-schema.ts] — deferred: 1.0.0 is the only version that exists; design the migration seam when the second version is introduced (Rule of Three).
 - [x] [Review][Defer] `z.record(z.string(), …)` admits prototype-pollution keys (`__proto__`/`constructor`) in `value` and `explanations`; add a key guard/allow-list on the read-back path [src/assemble/report-schema.ts] — deferred: the producer is our own engine (keys are metric ids / known fields); harden when arbitrary external reports are ingested (the trend-diff read story).
@@ -134,7 +134,7 @@ This story realizes **C1 checkpoint 3 — Report-JSON-in:** validate on re-rende
 - [Source: docs/planning-artifacts/architecture.md#C1 — Data Contracts & Runtime Validation]
 - [Source: docs/planning-artifacts/architecture.md#C2 — Metrics Engine Architecture] (envelope not welded)
 - [Source: docs/planning-artifacts/architecture.md#Complete Project Directory Structure] (assemble/)
-- [Source: docs/planning-artifacts/prds/prd-commit-sage-2026-06-06/prd.md#FR-12: Compute the canonical Report JSON]
+- [Source: docs/planning-artifacts/prds/prd-commit-whisper-2026-06-06/prd.md#FR-12: Compute the canonical Report JSON]
 - [Source: src/analyze/engine.ts] · [Source: src/analyze/metric.ts] · [Source: src/narrate/narrate.port.ts] · [Source: src/narrate/schema.ts] · [Source: tests/determinism/harness.ts] · [Source: eslint.config.js]
 
 ## Dev Agent Record

@@ -2,30 +2,30 @@
 stepsCompleted: [1, 2, 3, 4, 5, 6]
 status: complete
 date: 2026-06-13
-project: commit-sage
+project: commit-whisper
 documentsAssessed:
-  prd: docs/planning-artifacts/prds/prd-commit-sage-2026-06-06/prd.md
+  prd: docs/planning-artifacts/prds/prd-commit-whisper-2026-06-06/prd.md
   architecture: docs/planning-artifacts/architecture.md
   epics: docs/planning-artifacts/epics.md
   ux:
-    - docs/planning-artifacts/ux-designs/ux-commit-sage-2026-06-11/EXPERIENCE.md
-    - docs/planning-artifacts/ux-designs/ux-commit-sage-2026-06-11/DESIGN.md
-    - docs/planning-artifacts/ux-designs/ux-commit-sage-2026-06-11/MENUS.md
-    - docs/planning-artifacts/ux-designs/ux-commit-sage-2026-06-11/TEMPLATE-HTML.md
-    - docs/planning-artifacts/ux-designs/ux-commit-sage-2026-06-11/TEMPLATE-MARKDOWN.md
+    - docs/planning-artifacts/ux-designs/ux-commit-whisper-2026-06-11/EXPERIENCE.md
+    - docs/planning-artifacts/ux-designs/ux-commit-whisper-2026-06-11/DESIGN.md
+    - docs/planning-artifacts/ux-designs/ux-commit-whisper-2026-06-11/MENUS.md
+    - docs/planning-artifacts/ux-designs/ux-commit-whisper-2026-06-11/TEMPLATE-HTML.md
+    - docs/planning-artifacts/ux-designs/ux-commit-whisper-2026-06-11/TEMPLATE-MARKDOWN.md
 ---
 
 # Implementation Readiness Assessment Report
 
 **Date:** 2026-06-13
-**Project:** commit-sage
+**Project:** commit-whisper
 
 ## Step 1 — Document Discovery
 
 ### Documents inventoried
 
 **PRD** (whole — no sharded version)
-- `docs/planning-artifacts/prds/prd-commit-sage-2026-06-06/prd.md` — primary
+- `docs/planning-artifacts/prds/prd-commit-whisper-2026-06-06/prd.md` — primary
 - Supporting (context, not assessed as primary): `addendum.md`, `review-rubric.md`, `reconcile-brief.md`, `.decision-log.md`
 
 **Architecture** (whole — no sharded version)
@@ -35,15 +35,15 @@ documentsAssessed:
 - `docs/planning-artifacts/epics.md` — 7 epics, 38 stories
 
 **UX Design** (multi-file spec — not sharded with index)
-- `ux-designs/ux-commit-sage-2026-06-11/EXPERIENCE.md` — interaction rules
-- `ux-designs/ux-commit-sage-2026-06-11/DESIGN.md` — visual language
-- `ux-designs/ux-commit-sage-2026-06-11/MENUS.md` — interactive screen composition
-- `ux-designs/ux-commit-sage-2026-06-11/TEMPLATE-HTML.md` — HTML report template
-- `ux-designs/ux-commit-sage-2026-06-11/TEMPLATE-MARKDOWN.md` — Markdown report template
+- `ux-designs/ux-commit-whisper-2026-06-11/EXPERIENCE.md` — interaction rules
+- `ux-designs/ux-commit-whisper-2026-06-11/DESIGN.md` — visual language
+- `ux-designs/ux-commit-whisper-2026-06-11/MENUS.md` — interactive screen composition
+- `ux-designs/ux-commit-whisper-2026-06-11/TEMPLATE-HTML.md` — HTML report template
+- `ux-designs/ux-commit-whisper-2026-06-11/TEMPLATE-MARKDOWN.md` — Markdown report template
 - Supporting: `.decision-log.md`
 
 **Brief** (upstream context, not a primary IR artifact)
-- `briefs/brief-commit-sage-2026-06-06/brief.md` + `addendum.md` + `.decision-log.md`
+- `briefs/brief-commit-whisper-2026-06-06/brief.md` + `addendum.md` + `.decision-log.md`
 
 ### Issues found
 
@@ -57,12 +57,12 @@ No conflicts to resolve. Proceeding with the documents listed above.
 
 ## Step 2 — PRD Analysis
 
-Source: [prd.md](prds/prd-commit-sage-2026-06-06/prd.md), read in full (incl. §3 Glossary, §4 Features/FRs, §5 Non-Goals, §7 Cross-Cutting NFRs, §8 Constraints & Guardrails, §9 Monetization, §12 Decision Log #1–#19).
+Source: [prd.md](prds/prd-commit-whisper-2026-06-06/prd.md), read in full (incl. §3 Glossary, §4 Features/FRs, §5 Non-Goals, §7 Cross-Cutting NFRs, §8 Constraints & Guardrails, §9 Monetization, §12 Decision Log #1–#19).
 
 ### Functional Requirements (16)
 
 - **FR-1 — Target a local or remote repository:** local path or remote HTTPS (GitHub/GitLab/Bitbucket); cwd default in interactive; all-branches-by-default or single branch; commit-selection inputs (author, max-commits, no-merges); optional start/end dates (UTC tz); read-only.
-- **FR-2 — Authenticate to private repositories:** PAT conditional (private remote only), env-var-only (`COMMIT_SAGE_GIT_TOKEN` primary + host fallbacks), never flag/config/prompt; scope errors actionable; never in output.
+- **FR-2 — Authenticate to private repositories:** PAT conditional (private remote only), env-var-only (`COMMIT_WHISPER_GIT_TOKEN` primary + host fallbacks), never flag/config/prompt; scope errors actionable; never in output.
 - **FR-3 — Handle retrieval limits and failures gracefully:** distinguish network/auth/not-found; no retry on transient/rate-limit; Free-cap truncation stated.
 - **FR-4 — Compute the metrics catalog:** Groups A–F deterministically, no AI; every metric computed or `not_available` with reason; identical history ⇒ identical values; metric values live under the `analysis` subtree.
 - **FR-5 — Group and describe metrics:** stable Group/Metric structure + keys; titles + one-line descriptions; under `analysis`.
@@ -75,7 +75,7 @@ Source: [prd.md](prds/prd-commit-sage-2026-06-06/prd.md), read in full (incl. §
 - **FR-12 — Compute the canonical Report JSON:** always assembled in memory (`schemaVersion 1.0.0`, pre-impl); two subtrees `analysis` (deterministic) + `narrative` (AI, optional); emitted only when `json` selected.
 - **FR-13 — Emit and render the selected output formats:** multi-select JSON/HTML/Markdown/Terminal; default filenames + `-`=stdout; HTML auto-open + `--no-open`; showpiece vs substrate render.
 - **FR-14 — Interactive execution:** bare zero-arg TTY = the only interactive entry (launchpad menu + guided prompts, escapable, self-teaching); full menu action set incl. Settings, Status/doctor, Activate, Buy/Restore (browser), Deactivate; secrets named never collected; self-contained executable.
-- **FR-15 — Headless / CI execution:** any ≥1-arg = strict single-shot, never prompts; missing input hard-fails (typed error + exit code); headless defaults to metrics-only (`aiMode: off`); ops flags (`--ai`/`--no-ai`, `--show-config`, `--non-interactive`, `--config`, `--no-open`, `--verbose`/`--quiet`, `--version`, `NO_COLOR`/`FORCE_COLOR`); config home `~/.commit-sage`.
+- **FR-15 — Headless / CI execution:** any ≥1-arg = strict single-shot, never prompts; missing input hard-fails (typed error + exit code); headless defaults to metrics-only (`aiMode: off`); ops flags (`--ai`/`--no-ai`, `--show-config`, `--non-interactive`, `--config`, `--no-open`, `--verbose`/`--quiet`, `--version`, `NO_COLOR`/`FORCE_COLOR`); config home `~/.commit-whisper`.
 - **FR-16 — Enforce license tiers:** online Lemon Squeezy validation at startup; Free (100-commit cap, no call, keeps the narrative) / Single-device $10 (activation-instance device binding; deactivate-to-move) / Unlimited $100 (many activations incl. CI validate-not-activate); interactive degrades to Free cap on validation failure, headless fails closed (exit 8); never transmits repo data.
 
 ### Non-Functional Requirements (8)
@@ -153,7 +153,7 @@ Source: [epics.md](epics.md) — 7 epics, 38 stories, with an explicit FR Covera
 
 ### UX Document Status
 
-**Found** — a five-file UX spec: [EXPERIENCE.md](ux-designs/ux-commit-sage-2026-06-11/EXPERIENCE.md) (interaction rules + state patterns), [DESIGN.md](ux-designs/ux-commit-sage-2026-06-11/DESIGN.md) (visual language + components), [MENUS.md](ux-designs/ux-commit-sage-2026-06-11/MENUS.md) (interactive screen composition), [TEMPLATE-HTML.md](ux-designs/ux-commit-sage-2026-06-11/TEMPLATE-HTML.md) and [TEMPLATE-MARKDOWN.md](ux-designs/ux-commit-sage-2026-06-11/TEMPLATE-MARKDOWN.md) (report templates). UX is clearly required — the product is a user-facing terminal application with a rendered HTML/Markdown report surface.
+**Found** — a five-file UX spec: [EXPERIENCE.md](ux-designs/ux-commit-whisper-2026-06-11/EXPERIENCE.md) (interaction rules + state patterns), [DESIGN.md](ux-designs/ux-commit-whisper-2026-06-11/DESIGN.md) (visual language + components), [MENUS.md](ux-designs/ux-commit-whisper-2026-06-11/MENUS.md) (interactive screen composition), [TEMPLATE-HTML.md](ux-designs/ux-commit-whisper-2026-06-11/TEMPLATE-HTML.md) and [TEMPLATE-MARKDOWN.md](ux-designs/ux-commit-whisper-2026-06-11/TEMPLATE-MARKDOWN.md) (report templates). UX is clearly required — the product is a user-facing terminal application with a rendered HTML/Markdown report surface.
 
 ### UX ↔ PRD Alignment
 
@@ -193,7 +193,7 @@ Every epic is framed around a user outcome, not a technical layer:
 
 | Epic | User outcome | Verdict |
 |------|--------------|---------|
-| 1 Foundation & Walking Skeleton | run commit-sage locally and get a real narrated terminal report (thin end-to-end slice) | ✓ value (not a tech-layer epic) |
+| 1 Foundation & Walking Skeleton | run commit-whisper locally and get a real narrated terminal report (thin end-to-end slice) | ✓ value (not a tech-layer epic) |
 | 2 Complete Metrics Catalog | full deterministic analysis | ✓ |
 | 3 Grounded AI Narrative & Coaching | the differentiator — trustworthy narrative + coaching | ✓ |
 | 4 Rich Rendered Reports | shareable HTML/Markdown/JSON reports | ✓ |
@@ -236,7 +236,7 @@ Architecture specifies a scaffold; **Story 1.1 "Project scaffold and toolchain"*
 **🟠 Major issues:** none.
 
 **🟡 Minor concerns:**
-1. **Walking-skeleton cross-epic deepening (accepted, with rationale).** Because commit-sage is a single linear pipeline, `analyze/`, `narrate/`, and `render/` are touched thinly in Epic 1 then deepened in Epics 2–4. This is a deliberate, recorded trade-off (early end-to-end integration over churn-avoidance); later stories *extend* rather than rewrite (new metric-group files, new renderer files). Not a defect — flagged for visibility.
+1. **Walking-skeleton cross-epic deepening (accepted, with rationale).** Because commit-whisper is a single linear pipeline, `analyze/`, `narrate/`, and `render/` are touched thinly in Epic 1 then deepened in Epics 2–4. This is a deliberate, recorded trade-off (early end-to-end integration over churn-avoidance); later stories *extend* rather than rewrite (new metric-group files, new renderer files). Not a defect — flagged for visibility.
 2. **House-style markdown lint** across epics.md (compact tables, emphasis style) — cosmetic, consistent with the doc set, no impact on buildability.
 3. **Per-metric "shape" source** (which drives the visual-by-shape model) is not tagged in the §4.2 catalog — the renderer infers it from each metric's value type, or it can be tagged at implementation. Minor, implementation-phase detail; doesn't block Story 4.2.
 
@@ -256,7 +256,7 @@ The planning set is complete, internally consistent, and traceable end-to-end. P
 
 1. **Proceed to Sprint Planning** (`bmad-sprint-planning`) — sequence the 38 stories for implementation, beginning with Epic 1, Story 1.1 (project scaffold).
 2. **Front-load the two highest-risk spikes** during Epic 1 rather than discovering them late: (a) the **Node SEA** packaging spike across macOS/Linux/Windows (raw-mode stdin / ANSI from the packaged binary), and (b) the **50k-commit memory** validation of the fully-resident model against the 2.5 GB RSS budget, with the streaming/fold fallback held in reserve.
-3. **Confirm the implementation-phase detail items** as they arise (none blocking): per-metric "shape" source (infer vs. §4.2 tag); the `degraded: boolean` Report JSON field naming for JSON consumers; the five §4.2 metric-calibration `[ASSUMPTION]` thresholds; Windows config-home convention (`%APPDATA%` vs `~/.commit-sage`).
+3. **Confirm the implementation-phase detail items** as they arise (none blocking): per-metric "shape" source (infer vs. §4.2 tag); the `degraded: boolean` Report JSON field naming for JSON consumers; the five §4.2 metric-calibration `[ASSUMPTION]` thresholds; Windows config-home convention (`%APPDATA%` vs `~/.commit-whisper`).
 4. **Treat the strategic questions as product decisions, not planning gaps** — the buyer focus (unfamiliar-repo / audit niche), the free-tier cap vs. virality, and whether this is a business or a calling card were surfaced in review and are George's calls; they do not affect build-readiness.
 
 ### Final Note

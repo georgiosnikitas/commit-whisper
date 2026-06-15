@@ -6,7 +6,7 @@
 # Why this works on CI without the local Homebrew workaround: `actions/setup-node`
 # installs an OFFICIAL Node.js build (from nodejs.org), which embeds the SEA fuse
 # sentinel — so `scripts/build-sea.mjs` uses `process.execPath` directly (no
-# COMMIT_SAGE_SEA_NODE override needed).
+# COMMIT_WHISPER_SEA_NODE override needed).
 name: release-binaries
 
 on:
@@ -71,8 +71,8 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          BIN="dist-sea/commit-sage"
-          [ "$RUNNER_OS" = "Windows" ] && BIN="dist-sea/commit-sage.exe"
+          BIN="dist-sea/commit-whisper"
+          [ "$RUNNER_OS" = "Windows" ] && BIN="dist-sea/commit-whisper.exe"
           echo "--- version ---"
           "./$BIN" --version
           echo "--- help (ANSI / commander) ---"
@@ -99,8 +99,8 @@ jobs:
           ARCH="$(echo "$RUNNER_ARCH" | tr '[:upper:]' '[:lower:]')" # x64 | arm64
           EXT=""
           [ "$RUNNER_OS" = "Windows" ] && EXT=".exe"
-          ASSET="commit-sage-${OS}-${ARCH}${EXT}"
-          cp "dist-sea/commit-sage${EXT}" "$ASSET"
+          ASSET="commit-whisper-${OS}-${ARCH}${EXT}"
+          cp "dist-sea/commit-whisper${EXT}" "$ASSET"
           echo "asset=$ASSET" >> "$GITHUB_OUTPUT"
 
       - name: Upload the binary artifact
@@ -194,9 +194,9 @@ jobs:
         run: npm run build
 
       # GitHub Packages requires a scoped name owned by the org/user. Rename only
-      # the in-CI package.json (npm keeps the unscoped `commitsage` name) before publishing.
+      # the in-CI package.json (npm keeps the unscoped `commitwhisper` name) before publishing.
       - name: Scope the package for GitHub Packages
-        run: npm pkg set name="@georgiosnikitas/commit-sage"
+        run: npm pkg set name="@georgiosnikitas/commit-whisper"
 
       - name: Publish to GitHub Packages
         run: npm publish --access public

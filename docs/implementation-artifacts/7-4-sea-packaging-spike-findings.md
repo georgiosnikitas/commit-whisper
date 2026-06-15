@@ -8,7 +8,7 @@
 
 ## TL;DR
 
-A Node SEA (Single Executable Application) binary for commit-sage **works**: from the packaged binary on macOS/arm64, the deterministic analysis runs over the **system `git` shell-out** (no native bindings), **ANSI** renders, and the **interactive @clack launchpad + raw-mode stdin** open in a TTY. The recipe is one self-contained CommonJS bundle (all pure-JS deps inlined) injected into an **official** Node runtime via `postject`.
+A Node SEA (Single Executable Application) binary for commit-whisper **works**: from the packaged binary on macOS/arm64, the deterministic analysis runs over the **system `git` shell-out** (no native bindings), **ANSI** renders, and the **interactive @clack launchpad + raw-mode stdin** open in a TTY. The recipe is one self-contained CommonJS bundle (all pure-JS deps inlined) injected into an **official** Node runtime via `postject`.
 
 Two non-obvious gotchas were found and handled (both below): the base `node` **must be an official build** (Homebrew omits the SEA fuse), and the bundle **must avoid a static `node:` import that the bundler's esbuild can't yet externalize** — moot now that argv handling is plain `slice(2)`.
 
@@ -31,9 +31,9 @@ Build artifacts (`dist-sea/`) are gitignored. Run:
 npm run build:sea
 
 # When the running node lacks the SEA fuse (e.g. Homebrew), point at an official one:
-COMMIT_SAGE_SEA_NODE=/path/to/official/bin/node npm run build:sea
+COMMIT_WHISPER_SEA_NODE=/path/to/official/bin/node npm run build:sea
 
-./dist-sea/commit-sage --version
+./dist-sea/commit-whisper --version
 ```
 
 ---
@@ -42,10 +42,10 @@ COMMIT_SAGE_SEA_NODE=/path/to/official/bin/node npm run build:sea
 
 | Acceptance check | Result | Evidence |
 |---|---|---|
-| Binary is produced + boots | ✅ | `./dist-sea/commit-sage --version` → `1.0.0` |
+| Binary is produced + boots | ✅ | `./dist-sea/commit-whisper --version` → `1.0.0` |
 | **ANSI rendering** (AC1) | ✅ | `FORCE_COLOR=1 … --format terminal -o -` → 35 ANSI escape sequences in the output |
 | **Interactive prompts + raw-mode stdin** (AC1) | ✅ | Under a PTY (`script`) the launchpad renders its tagline + readiness line and accepts the ESC cancel — `@clack` raw-mode works from the binary |
-| **Git retrieval via system `git` shell-out, no native bindings** (AC2) | ✅ | `./dist-sea/commit-sage . --no-ai --format json -o -` → a full, correct Report JSON (32-metric `analysis`, `schemaVersion 1.0.0`), exit 0 — the `execFile("git", …)` shell-out runs from the binary |
+| **Git retrieval via system `git` shell-out, no native bindings** (AC2) | ✅ | `./dist-sea/commit-whisper . --no-ai --format json -o -` → a full, correct Report JSON (32-metric `analysis`, `schemaVersion 1.0.0`), exit 0 — the `execFile("git", …)` shell-out runs from the binary |
 | Capability gate (non-TTY headless) | ✅ | piped 0-arg run returns the usage error (exit 2), not a hang — TTY detection works from the binary |
 
 **Binary size:** ~105 MB (≈110 MB on disk) — almost entirely the embedded Node runtime; the app bundle is **2.01 MB**. Shrinking (a slimmer runtime / compression) is out of scope.
@@ -58,17 +58,17 @@ COMMIT_SAGE_SEA_NODE=/path/to/official/bin/node npm run build:sea
 |---|---|---|
 | **macOS** (darwin/arm64) | ✅ **Verified locally** + CI matrix | Requires `codesign --remove-signature` before inject and an ad-hoc `codesign --sign -` after (else Gatekeeper kills it). postject needs `--macho-segment-name NODE_SEA`. |
 | **Linux** (x64) | 🤖 Built by the release CI matrix | Simplest case: copy node → postject (no segment name, no signing) → `chmod +x`. No code-signing step. git is the system `git`, all deps are pure JS. |
-| **Windows** (x64) | 🤖 Built by the release CI matrix | Output `commit-sage.exe`; postject with no macho segment; optional Authenticode `signtool` (Defender SmartScreen may warn for an unsigned binary). The build script branches on `process.platform` and uses a shell so `npx.cmd` resolves. |
+| **Windows** (x64) | 🤖 Built by the release CI matrix | Output `commit-whisper.exe`; postject with no macho segment; optional Authenticode `signtool` (Defender SmartScreen may warn for an unsigned binary). The build script branches on `process.platform` and uses a shell so `npx.cmd` resolves. |
 
-The script is platform-aware (`process.platform` → binary name, mac signing, mac segment), so the SAME `npm run build:sea` is the per-OS command. The release matrix at [.github/workflows/release.yml](../../.github/workflows/release.yml) builds + smoke-tests + uploads all three binaries (and, on a `v*` tag, attaches them to the GitHub Release). On GitHub-hosted runners `actions/setup-node` provides an OFFICIAL Node build (with the SEA fuse), so no `COMMIT_SAGE_SEA_NODE` override is needed there. The per-platform branching is unit-tested in [tests/sea-plan.test.ts](../../tests/sea-plan.test.ts).
+The script is platform-aware (`process.platform` → binary name, mac signing, mac segment), so the SAME `npm run build:sea` is the per-OS command. The release matrix at [.github/workflows/release.yml](../../.github/workflows/release.yml) builds + smoke-tests + uploads all three binaries (and, on a `v*` tag, attaches them to the GitHub Release). On GitHub-hosted runners `actions/setup-node` provides an OFFICIAL Node build (with the SEA fuse), so no `COMMIT_WHISPER_SEA_NODE` override is needed there. The per-platform branching is unit-tested in [tests/sea-plan.test.ts](../../tests/sea-plan.test.ts).
 
 ---
 
 ## Gotchas found (and how they're handled)
 
-1. **The base `node` must be an OFFICIAL build (has the SEA fuse).** The host's Homebrew `node` (26.3.0) contains **no** `NODE_SEA_FUSE` sentinel, so postject fails with *"Could not find the sentinel … in the binary."* Official nodejs.org builds embed it. The build script **pre-checks** the base binary for the fuse and fails fast with guidance + the `COMMIT_SAGE_SEA_NODE` override. (Some `nvm`/distro builds may also omit it.)
+1. **The base `node` must be an OFFICIAL build (has the SEA fuse).** The host's Homebrew `node` (26.3.0) contains **no** `NODE_SEA_FUSE` sentinel, so postject fails with *"Could not find the sentinel … in the binary."* Official nodejs.org builds embed it. The build script **pre-checks** the base binary for the fuse and fails fast with guidance + the `COMMIT_WHISPER_SEA_NODE` override. (Some `nvm`/distro builds may also omit it.)
 2. **The copied node is read-only.** Homebrew ships `node` `r-x`; `copyFileSync` preserves that, so postject can't open it for writing. The script `chmod`s the copy to `0755` immediately after copying.
-3. **Blob/runtime version must match.** The SEA blob is generated with the **same** node that becomes the base (`COMMIT_SAGE_SEA_NODE`), not the running node, to avoid a format mismatch at launch.
+3. **Blob/runtime version must match.** The SEA blob is generated with the **same** node that becomes the base (`COMMIT_WHISPER_SEA_NODE`), not the running node, to avoid a format mismatch at launch.
 4. **CJS + no top-level await.** SEA's `main` is CommonJS and esbuild forbids top-level await in `cjs` output, so `src/sea-entry.ts` uses `.then(...)` (the ESM `src/index.ts` is unchanged).
 5. **argv in modern SEA = `[execPath, execPath, …args]`.** Node ≥ 20 normalized a SEA binary's argv so `process.argv.slice(2)` is correct — identical to normal node. (Early/pre-20 SEA omitted `argv[1]`; an initial `node:sea`-based `slice(1)` was therefore wrong and was removed. We target Node 22.) This also sidestepped a bundler issue where tsup's esbuild strips the `node:` prefix off the newer `node:sea` builtin (→ a broken bare `require("sea")`).
 6. **`postject` is invoked via `npx --yes`** (a build-time tool) so the project adds **no committed dependency**. CI/reproducible builds may pin `postject` as a devDependency.

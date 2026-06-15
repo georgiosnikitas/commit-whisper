@@ -10,7 +10,7 @@ Status: done
 
 ## Story
 
-As a developer building commit-sage,
+As a developer building commit-whisper,
 I want a strict, ESM-first TypeScript project scaffold with the locked toolchain,
 so that every later story is written against a consistent, type-safe, testable foundation.
 
@@ -149,7 +149,7 @@ The epic does not pin ESLint's own version — use the current stable `eslint` +
 The full project tree is documented in the architecture. **This story creates only the root config files, the 9 `src/` feature folders (with `.gitkeep`), `src/index.ts`, and the test config** — not the inner `.ts` modules shown below (those are later stories). Reproduced here so the dev agent places everything correctly and never invents alternate paths:
 
 ```
-commit-sage/
+commit-whisper/
 ├── package.json
 ├── tsconfig.json
 ├── tsup.config.ts
@@ -182,7 +182,7 @@ Only `cli/` and `config/` may ever touch `argv`/`env`/prompts; every stage from 
 
 ### Project Structure Notes
 
-- **Greenfield:** the repository currently contains only `_bmad/`, `docs/`, `.agents/`, and `README.txt` — no `package.json` or `src/`. This matches the epic's "Given an empty repository." Initialize at the repo root (`/Users/georgiosnikitas/Workspace/commit-sage`).
+- **Greenfield:** the repository currently contains only `_bmad/`, `docs/`, `.agents/`, and `README.txt` — no `package.json` or `src/`. This matches the epic's "Given an empty repository." Initialize at the repo root (`/Users/georgiosnikitas/Workspace/commit-whisper`).
 - **`README.txt` already exists.** The architecture tree expects `README.md`. Add `README.md` but **do not delete or overwrite `README.txt`** — it may be in-progress content. Leave it untouched.
 - **Empty folders + git:** git does not track empty directories. Use a `.gitkeep` (or a placeholder) in each feature folder so the structure is committed and visible.
 - **`src/index.ts` must exist** for tsup to have an entry and for the build AC to pass; keep it a minimal, `console`-free, named-export placeholder.
@@ -224,7 +224,7 @@ All commands run from repo root on Node v26.3.0 / npm 11.16.0:
 - **All 6 acceptance criteria satisfied.** Empty scaffold builds, tests, type-checks, and lints clean; the three architecture guardrails (P2 named-exports-only, P5 no-console-in-pipeline, env-isolation) are enforced as ESLint errors and were proven to fail the build via a probe file.
 - **Locked versions all exist and were installed exactly** (pinned via `.npmrc` `save-exact=true`): `commander@15.0.0`, `@clack/prompts@1.5.1`, `typescript@6.0.3`, `tsup@8.5.1`, `vitest@4.1.8`, `@types/node@22.19.21`. ESLint toolchain (not pinned by the epic) resolved to `eslint@10.5.0` + `typescript-eslint@8.61.0`.
 - **TS 6.0.3 toolchain risk (🟡) cleared:** TypeScript 6.0.3 builds and tests cleanly with tsup 8.5.1 (esbuild 0.27.7) and vitest 4.1.8. The pre-approved TS 5.9 fallback was **not** needed.
-- **⚠ Security — accepted dev-only advisory (needs awareness):** `npm audit` reports 2 high-severity advisories in `esbuild@0.27.7` (transitive via `tsup@8.5.1`): GHSA-gv7w-rqvm-qjhr (esbuild **Deno** module integrity — we do not use Deno) and GHSA-g7r4-m6w7-qqqr (esbuild **dev server** arbitrary file read on Windows — tsup uses esbuild as a bundler, never its dev server). Neither attack vector is used by commit-sage, and esbuild is a build-time devDependency (not shipped in the runtime/SEA surface). npm's `audit fix --force` would **downgrade tsup to 6.5.0**, violating the locked architecture decision, so it was deliberately not applied. Recommend revisiting when tsup ships an esbuild bump.
+- **⚠ Security — accepted dev-only advisory (needs awareness):** `npm audit` reports 2 high-severity advisories in `esbuild@0.27.7` (transitive via `tsup@8.5.1`): GHSA-gv7w-rqvm-qjhr (esbuild **Deno** module integrity — we do not use Deno) and GHSA-g7r4-m6w7-qqqr (esbuild **dev server** arbitrary file read on Windows — tsup uses esbuild as a bundler, never its dev server). Neither attack vector is used by commit-whisper, and esbuild is a build-time devDependency (not shipped in the runtime/SEA surface). npm's `audit fix --force` would **downgrade tsup to 6.5.0**, violating the locked architecture decision, so it was deliberately not applied. Recommend revisiting when tsup ships an esbuild bump.
 - **`.gitignore` already existed** and is comprehensive (ignores `node_modules/`, `dist/`, `coverage/`, etc.) — left unchanged.
 - **`README.txt` left untouched**; added `README.md` alongside it per the architecture tree.
 - **CI workflow deferred:** `.github/workflows/ci.yml` is optional in this story and was deferred to keep scope tight (`.github/` currently holds only BMAD agent files). The `lint · typecheck · test · build` scripts are all wired and ready for a future CI story.

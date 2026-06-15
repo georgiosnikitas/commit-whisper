@@ -11,12 +11,12 @@ Status: done
 ## Story
 
 As a developer in a git repository,
-I want commit-sage to read my local history via the system `git`,
+I want commit-whisper to read my local history via the system `git`,
 so that analysis can run with no network and no clone.
 
 ## Acceptance Criteria
 
-1. **(AC1 — Read local history via system git)** Given the current working directory is a git repository, when retrieval runs with no target argument, then commit-sage defaults the target to cwd and reads, per commit, the hash, author and committer identity, author and commit timestamps, message, parent hashes, and changed-file metadata via a **shell-out to the system `git`** (no native bindings).
+1. **(AC1 — Read local history via system git)** Given the current working directory is a git repository, when retrieval runs with no target argument, then commit-whisper defaults the target to cwd and reads, per commit, the hash, author and committer identity, author and commit timestamps, message, parent hashes, and changed-file metadata via a **shell-out to the system `git`** (no native bindings).
 
 2. **(AC2 — Not a git repo → typed failure)** Given a directory that is not a git repository, when retrieval runs, then it fails with the **git/retrieve exit code (4)** and an actionable message.
 
@@ -46,9 +46,9 @@ so that analysis can run with no network and no clone.
   - [x] **Read-only by construction:** the adapter only ever invokes read subcommands (`rev-parse`, `log`). Do not pass any writing subcommand.
   - [x] Co-locate `local.test.ts` (injected fake runner — deterministic): (a) AC1 happy path — a fake returning canned `is-inside-work-tree`=`true` + canned log ⇒ a populated `RepoHistory`; (b) AC2 — fake throwing on `rev-parse` (or returning non-`true`) ⇒ `RetrieveError` with `exitCode === 4` and an actionable message; (c) AC3 — assert a **recording** fake runner was only ever called with read-only subcommands (`args[0] ∈ { "rev-parse", "log" }`); (d) empty repo ⇒ `commits: []`.
 - [x] **Task 5 — Add error `cause` chaining (`src/shared/errors.ts`) (AC: 2) — the 1.3 deferred item, now consumer-driven**
-  - [x] Extend the `CommitSageError` base constructor to accept an optional `options?: { cause?: unknown }` and pass it to `super(message, options)` (ES2022 `Error` `cause`; target is es2023, so native). Keep the existing `(message, code, exitCode)` positional shape — add `options` as a 4th optional param so **all existing subclasses/tests are unaffected**.
+  - [x] Extend the `CommitWhisperError` base constructor to accept an optional `options?: { cause?: unknown }` and pass it to `super(message, options)` (ES2022 `Error` `cause`; target is es2023, so native). Keep the existing `(message, code, exitCode)` positional shape — add `options` as a 4th optional param so **all existing subclasses/tests are unaffected**.
   - [x] Wire `cause` into `RetrieveError` (the real 1.4 consumer): `constructor(message: string, options?: { cause?: unknown })` ⇒ `super(message, "RETRIEVE", 4, options)`. Leave the other stage subclasses as-is (they gain `cause` when their wrapping call sites appear — disciplined, consumer-driven, per the 1.3 deferral).
-  - [x] Extend `errors.test.ts`: `new RetrieveError("x", { cause: inner }).cause === inner`; the existing `RetrieveError` exit-4/code-`"RETRIEVE"` cases still pass; a `CommitSageError` with no options still has `cause === undefined`.
+  - [x] Extend `errors.test.ts`: `new RetrieveError("x", { cause: inner }).cause === inner`; the existing `RetrieveError` exit-4/code-`"RETRIEVE"` cases still pass; a `CommitWhisperError` with no options still has `cause === undefined`.
 - [x] **Task 6 — End-to-end integration test against real git (`src/retrieve/local.integration.test.ts`) (AC: 1, 3)**
   - [x] Create a **throwaway temp git repo** (`node:fs` `mkdtemp` in `os.tmpdir()`), `git init`, configure a local deterministic identity (`git -c user.name=… -c user.email=…`), and make 2–3 commits including one multi-file commit. Always clean up in `afterEach` (rm the temp dir). — **identity via `-c` flags (no `process.env` access — keeps the env-isolation lint rule satisfied in `src/`); timestamps asserted by ISO shape, not pinned values**
   - [x] Run the **real** `createLocalRetrieve()` (default `execFileGitRunner`) against the temp repo and assert the parsed `RepoHistory` matches the commits made (sha presence, identities, parents, message, changed files).
@@ -78,7 +78,7 @@ so that analysis can run with no network and no clone.
 - [x] [Review][Defer] Surface git's stderr / preserve the real failure detail — the runner returns only stdout and the adapter flattens every failure into one message, so a maxBuffer overflow, a permission denial, and a genuine repo error are indistinguishable [src/retrieve/git.ts, src/retrieve/local.ts] — deferred: `cause` already preserves the underlying error object; richer stderr surfacing belongs with the `ui`/verbose-logging work (Epic 6) and the 1.8 shell.
 - [x] [Review][Defer] Harden `resolveNumstatPath` — the greedy `^(.*)\{(.*) => (.*)\}(.*)$` regex + blanket `//`→`/` collapse can misfire on paths that legitimately contain braces, `//`, or a literal ` => `; gate rename resolution on git's actual rename status rather than substring-matching [src/retrieve/git-log.ts] — deferred: handles the common brace/plain forms (already noted as a simplification); exotic paths are rare and non-blocking for the slice.
 
-**Dismissed (6):** "`RetrieveError`/`CommitSageError` never set `name`" + "ES2022 `instanceof` not guaranteed" (false positives — the base sets `this.name = new.target.name`, target is es2023/node22, and `errors.test.ts` proves `instanceof` + `name` across the hierarchy); "missing `RunConfig` import in `retrieve.port.ts`" (false positive — `import type { RunConfig }` is present; typecheck is green); "non-ASCII paths stored quoted" (addressed by the `core.quotePath=false` Patch above — not a separate item); "`Number()` on a numstat count exceeds `MAX_SAFE_INTEGER`" (a single commit touching >9 quadrillion lines is not a real input); "git writes warnings to stderr on exit 0 are dropped" (by design for the slice — stdout is the data channel; stderr verbosity is Epic 6).
+**Dismissed (6):** "`RetrieveError`/`CommitWhisperError` never set `name`" + "ES2022 `instanceof` not guaranteed" (false positives — the base sets `this.name = new.target.name`, target is es2023/node22, and `errors.test.ts` proves `instanceof` + `name` across the hierarchy); "missing `RunConfig` import in `retrieve.port.ts`" (false positive — `import type { RunConfig }` is present; typecheck is green); "non-ASCII paths stored quoted" (addressed by the `core.quotePath=false` Patch above — not a separate item); "`Number()` on a numstat count exceeds `MAX_SAFE_INTEGER`" (a single commit touching >9 quadrillion lines is not a real input); "git writes warnings to stderr on exit 0 are dropped" (by design for the slice — stdout is the data channel; stderr verbosity is Epic 6).
 
 ## Dev Notes
 
@@ -89,7 +89,7 @@ so that analysis can run with no network and no clone.
 - The **git shell-out primitive** (`git.ts`, injectable `GitRunner`).
 - The **`git log` builder + pure parser** (`git-log.ts`).
 - The **local adapter** (`local.ts`) — repo check, read, read-only.
-- **Error `cause` chaining** added to `CommitSageError`/`RetrieveError` (the 1.3 deferral, now that 1.4 is the first wrapping consumer).
+- **Error `cause` chaining** added to `CommitWhisperError`/`RetrieveError` (the 1.3 deferral, now that 1.4 is the first wrapping consumer).
 
 **Out of scope / deferred (do NOT build here):**
 - **Remote HTTPS clone + `temp-workspace.ts` (stateless temp clone with guaranteed cleanup) + `gitPat` auth** — Epic 5 (Stories 5.1–5.3). This story is **local cwd only**; `temp-workspace.ts` is not created. [Source: docs/planning-artifacts/epics.md#Epic 5: Remote Repositories & Private Auth]
@@ -127,7 +127,7 @@ A directory can be a valid git work tree with **no commits** (fresh `git init`).
 
 ### Error `cause` chaining (the 1.3 deferral, landing now)
 
-The 1.3 review deferred adding `{ cause }` "until the first wrapping call site lands (Story 1.4)". 1.4 is that site: `RetrieveError` wraps the underlying `execFile`/git failure so diagnostics keep the root cause. Add an optional `options?: { cause?: unknown }` 4th param to the `CommitSageError` base (passed to `super(message, options)` — native ES2022 on es2023), and wire it into `RetrieveError`. **Keep the change minimal and backward-compatible** — the positional `(message, code, exitCode)` shape is unchanged, so every existing subclass and 1.2/1.3 test still compiles and passes. Other subclasses gain `cause` when their own wrapping sites appear (don't add speculatively). [Source: docs/implementation-artifacts/deferred-work.md#Deferred from: code review of 1-3]
+The 1.3 review deferred adding `{ cause }` "until the first wrapping call site lands (Story 1.4)". 1.4 is that site: `RetrieveError` wraps the underlying `execFile`/git failure so diagnostics keep the root cause. Add an optional `options?: { cause?: unknown }` 4th param to the `CommitWhisperError` base (passed to `super(message, options)` — native ES2022 on es2023), and wire it into `RetrieveError`. **Keep the change minimal and backward-compatible** — the positional `(message, code, exitCode)` shape is unchanged, so every existing subclass and 1.2/1.3 test still compiles and passes. Other subclasses gain `cause` when their own wrapping sites appear (don't add speculatively). [Source: docs/implementation-artifacts/deferred-work.md#Deferred from: code review of 1-3]
 
 ### Branch scope
 
@@ -192,7 +192,7 @@ All commands run from repo root (git 2.54.0 present):
 
 - **All 3 ACs satisfied.** AC1: `git log --numstat` (control-char-delimited format) read via an `execFile` shell-out to the system `git` (no native bindings), parsed into raw `RawCommit` records carrying sha, author + committer identity, author + commit ISO-8601 timestamps, full message, parents, and changed-file metadata — proven by the pure parser suite **and** the real-git integration test. AC2: a non-git directory throws `RetrieveError` (exit 4) with an actionable message — proven by both a faked-runner unit test and a real temp-dir integration test. AC3: read-only by construction (`execFile`, args array, no shell; only `rev-parse`/`log` subcommands) — proven by a recording-fake assertion **and** a real before/after `git status --porcelain` + HEAD-sha snapshot.
 - **Naming split vs the architecture map (review-relevant):** the architecture lists `retrieve/git-clone.ts` ("shell-out to system git"). For the **local** slice this is split into `git.ts` (the `execFile` runner primitive) + `git-log.ts` (the `git log` builder + pure parser). `git-clone.ts` and `temp-workspace.ts` arrive with **remote clone in Epic 5**. `retrieve/errors.ts` (architecture-listed) was **not** created — `RetrieveError` (1.3, `shared/errors.ts`) is sufficient; a retrieve-local error module isn't warranted yet.
-- **Error `cause` chaining landed here (the 1.3 deferral, consumer-driven).** Added an optional `options?: { cause?: unknown }` 4th param to the `CommitSageError` base (`super(message, options)`, native ES2022 on es2023) and wired it into `RetrieveError` — the first real wrapping site. Backward-compatible: the positional `(message, code, exitCode)` shape is unchanged, so every 1.2/1.3 subclass and test still compiles/passes. Other stage subclasses gain `cause` when their own wrapping sites appear (not added speculatively).
+- **Error `cause` chaining landed here (the 1.3 deferral, consumer-driven).** Added an optional `options?: { cause?: unknown }` 4th param to the `CommitWhisperError` base (`super(message, options)`, native ES2022 on es2023) and wired it into `RetrieveError` — the first real wrapping site. Backward-compatible: the positional `(message, code, exitCode)` shape is unchanged, so every 1.2/1.3 subclass and test still compiles/passes. Other stage subclasses gain `cause` when their own wrapping sites appear (not added speculatively).
 - **Control-char parse format** (`\x1e` records, `\x1f` fields, `%B` bracketed by `\x1f`) is the crux that makes a multi-line commit body + trailing `--numstat` block unambiguously separable — covered by a dedicated multi-line-message test. Rename paths (brace + plain `old => new` forms) are resolved to the new path. `%aI`/`%cI` give strict ISO-8601 timestamps.
 - **Empty-repo boundary handled:** a freshly `git init`-ed repo (no HEAD) is a **successful empty read** (`commits: []`), not an error — detected via `git rev-parse --verify --quiet HEAD` and proven by an integration test.
 - **Scope deferrals honored:** no remote clone / `temp-workspace.ts` / `gitPat` (Epic 5); no commit-selection filters — `authorFilter`/`maxCommits`/`noMerges`/dates (Story 2.6) or the Free cap (2.7) — 1.4 reads full raw HEAD history; no normalized model / `.mailmap` canonicalization / determinism ordering (Story 1.5, `analyze/`); no named/all-branch selection (HEAD only); nothing calls the retriever yet (pipeline wiring is 1.8). No new dependencies.
@@ -212,7 +212,7 @@ All commands run from repo root (git 2.54.0 present):
 - `src/retrieve/git-log.test.ts` (pure parser), `src/retrieve/local.test.ts` (faked runner: AC1/AC2/AC3/empty), `src/retrieve/git.test.ts` (runner pass-through via mocked `execFile`), `src/retrieve/local.integration.test.ts` (real git, guarded)
 
 **Modified (source):**
-- `src/shared/errors.ts` — `CommitSageError` base gains optional `cause`; `RetrieveError` wires it
+- `src/shared/errors.ts` — `CommitWhisperError` base gains optional `cause`; `RetrieveError` wires it
 - `src/shared/errors.test.ts` — added cause-chaining cases
 
 **Removed:**

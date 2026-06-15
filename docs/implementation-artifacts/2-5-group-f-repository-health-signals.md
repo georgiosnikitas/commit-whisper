@@ -98,7 +98,7 @@ The §8 positioning guardrail binds Group F as hard as Group B. The **bus-factor
 
 ### Trend deltas — the seam, honestly degraded (AC3)
 
-The PRD: trend deltas exist **"where a prior Report JSON for the same repo is available."** The deterministic engine cannot read files (hexagonal), so this story builds the **injection seam** — an optional `ctx.priorMetrics?: readonly Metric[]` — and, **when absent (the default), emits `not_available("No prior report available for trend comparison.")`**. When a prior IS injected (by a future CLI trend story / Epic 4 JSON read), it computes the current-vs-prior hygiene-score delta + direction. This mirrors Story 2.3/2.4's honest-degradation posture (name the gap, don't fabricate). Powers UJ-2 (trend diffing) once the prior-load lands. [Source: docs/planning-artifacts/prds/prd-commit-sage-2026-06-06/prd.md#Group F trend deltas, #UJ-2]
+The PRD: trend deltas exist **"where a prior Report JSON for the same repo is available."** The deterministic engine cannot read files (hexagonal), so this story builds the **injection seam** — an optional `ctx.priorMetrics?: readonly Metric[]` — and, **when absent (the default), emits `not_available("No prior report available for trend comparison.")`**. When a prior IS injected (by a future CLI trend story / Epic 4 JSON read), it computes the current-vs-prior hygiene-score delta + direction. This mirrors Story 2.3/2.4's honest-degradation posture (name the gap, don't fabricate). Powers UJ-2 (trend diffing) once the prior-load lands. [Source: docs/planning-artifacts/prds/prd-commit-whisper-2026-06-06/prd.md#Group F trend deltas, #UJ-2]
 
 ### PRD §4.2 Group F catalog — the authoritative definitions
 
@@ -109,7 +109,7 @@ The PRD: trend deltas exist **"where a prior Report JSON for the same repo is av
 | `f-trend-deltas` | Trend deltas | change since last run, **only when a prior Report JSON for the same repo is available** |
 | `f-strengths-weaknesses` | Hygiene strengths & weaknesses | the repo's best and worst dimensions, surfaced for Coaching |
 
-[Source: docs/planning-artifacts/prds/prd-commit-sage-2026-06-06/prd.md#4.2 Group F] — IDs follow the kebab convention; titles verbatim. The static one-line description is not stored in the envelope.
+[Source: docs/planning-artifacts/prds/prd-commit-whisper-2026-06-06/prd.md#4.2 Group F] — IDs follow the kebab convention; titles verbatim. The static one-line description is not stored in the envelope.
 
 ### The exact engine/model contracts + the A–E value shapes Group F consumes
 
@@ -153,7 +153,7 @@ The PRD: trend deltas exist **"where a prior Report JSON for the same repo is av
 ### References
 
 - [Source: docs/planning-artifacts/epics.md#Story 2.5: Group F — Repository Health Signals] · [Source: docs/planning-artifacts/epics.md#NFR-8]
-- [Source: docs/planning-artifacts/prds/prd-commit-sage-2026-06-06/prd.md#4.2 Group F] · [Source: …#FR-4] · [Source: …#FR-5] · [Source: …#UJ-2 trend diffing]
+- [Source: docs/planning-artifacts/prds/prd-commit-whisper-2026-06-06/prd.md#4.2 Group F] · [Source: …#FR-4] · [Source: …#FR-5] · [Source: …#UJ-2 trend diffing]
 - [Source: docs/planning-artifacts/architecture.md#C2 — Metrics Engine Architecture] (hybrid topology, uniform envelope, health-band ownership)
 - [Source: src/analyze/engine.ts] (the pass to extend) · [Source: src/analyze/model.ts] (`AnalysisContext`) · [Source: src/analyze/metric.ts] · [Source: src/analyze/stats.ts] · [Source: src/analyze/registry.ts] · [Source: src/analyze/groups/a-cadence.ts] · [Source: src/analyze/groups/b-contribution.ts] · [Source: src/analyze/groups/c-message-quality.ts] · [Source: src/analyze/groups/d-branching.ts] · [Source: src/analyze/groups/e-churn.ts] · [Source: tests/determinism/analysis-determinism.test.ts]
 

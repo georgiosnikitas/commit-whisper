@@ -182,7 +182,7 @@ describe("runLaunchpad (AC1, AC4)", () => {
       prompts: scriptedPrompts({ texts: ["", ""], formats: ["terminal"] }).prompts,
       runAnalysis: captureAnalysis().runAnalysis,
     });
-    expect(out.text()).toContain("commit-sage .");
+    expect(out.text()).toContain("commit-whisper .");
   });
 });
 
@@ -235,25 +235,25 @@ function guidedDeps(over: Partial<LaunchpadDeps>): LaunchpadDeps {
 describe("formatEquivalentCommand (AC2)", () => {
   it("emits the cwd target + real flags (max-commits, format)", () => {
     const cmd = formatEquivalentCommand(".", { repoTarget: ".", maxCommits: 500, outputFormats: ["markdown"] });
-    expect(cmd).toBe("commit-sage . --max-commits 500 --format markdown");
+    expect(cmd).toBe("commit-whisper . --max-commits 500 --format markdown");
   });
 
   it("omits --format when the selection is the default ['terminal']", () => {
-    expect(formatEquivalentCommand(".", { outputFormats: ["terminal"] })).toBe("commit-sage .");
+    expect(formatEquivalentCommand(".", { outputFormats: ["terminal"] })).toBe("commit-whisper .");
   });
 
   it("comma-joins multiple formats", () => {
     const cmd = formatEquivalentCommand(".", { outputFormats: ["terminal", "html"] });
-    expect(cmd).toBe("commit-sage . --format terminal,html");
+    expect(cmd).toBe("commit-whisper . --format terminal,html");
   });
 
   it("emits --since / --until from the date bounds", () => {
     const cmd = formatEquivalentCommand(".", { startDate: "2024-01-01", endDate: "2024-06-30" });
-    expect(cmd).toBe("commit-sage . --since 2024-01-01 --until 2024-06-30");
+    expect(cmd).toBe("commit-whisper . --since 2024-01-01 --until 2024-06-30");
   });
 
   it("uses the remote URL as the positional target", () => {
-    expect(formatEquivalentCommand("https://github.com/x/y", {})).toBe("commit-sage https://github.com/x/y");
+    expect(formatEquivalentCommand("https://github.com/x/y", {})).toBe("commit-whisper https://github.com/x/y");
   });
 
   it("never emits a --branch flag (no such flag exists)", () => {
@@ -262,14 +262,14 @@ describe("formatEquivalentCommand (AC2)", () => {
   });
 
   it("shell-quotes a target with whitespace or metacharacters (faithful, paste-safe)", () => {
-    expect(formatEquivalentCommand("/a path/repo", {})).toBe("commit-sage '/a path/repo'");
-    expect(formatEquivalentCommand("https://h/x?a=1&b=2", {})).toBe("commit-sage 'https://h/x?a=1&b=2'");
-    expect(formatEquivalentCommand("/o'reilly", {})).toBe("commit-sage '/o'\\''reilly'");
+    expect(formatEquivalentCommand("/a path/repo", {})).toBe("commit-whisper '/a path/repo'");
+    expect(formatEquivalentCommand("https://h/x?a=1&b=2", {})).toBe("commit-whisper 'https://h/x?a=1&b=2'");
+    expect(formatEquivalentCommand("/o'reilly", {})).toBe("commit-whisper '/o'\\''reilly'");
   });
 
   it("leaves a normal URL or path bare", () => {
     expect(formatEquivalentCommand("https://github.com/acme/app.git", {})).toBe(
-      "commit-sage https://github.com/acme/app.git",
+      "commit-whisper https://github.com/acme/app.git",
     );
   });
 });
@@ -347,7 +347,7 @@ describe("runGuidedAnalyze via runLaunchpad (AC1, AC2, AC3)", () => {
       maxCommits: 500,
       outputFormats: ["terminal", "html"],
     });
-    expect(out.text()).toContain("▸ Next time: commit-sage . --max-commits 500 --format terminal,html");
+    expect(out.text()).toContain("▸ Next time: commit-whisper . --max-commits 500 --format terminal,html");
     expect(sel.calls()).toBe(2); // looped back to the menu
   });
 
@@ -385,8 +385,8 @@ describe("runGuidedAnalyze via runLaunchpad (AC1, AC2, AC3)", () => {
       }),
     );
     expect(analysis.calls[0]?.repoTarget).toBe("https://github.com/acme/app");
-    expect(out.text()).toContain("COMMIT_SAGE_GIT_TOKEN");
-    expect(out.text()).toContain("▸ Next time: commit-sage https://github.com/acme/app");
+    expect(out.text()).toContain("COMMIT_WHISPER_GIT_TOKEN");
+    expect(out.text()).toContain("▸ Next time: commit-whisper https://github.com/acme/app");
     // AC3: the secret itself is never prompted (no prompt collects a key/token).
     expect(scripted.textMessages.some((m) => /key|token|secret/i.test(m))).toBe(false);
   });
@@ -403,7 +403,7 @@ describe("runGuidedAnalyze via runLaunchpad (AC1, AC2, AC3)", () => {
         gitTokenConfigured: true,
       }),
     );
-    expect(out.text()).not.toContain("COMMIT_SAGE_GIT_TOKEN");
+    expect(out.text()).not.toContain("COMMIT_WHISPER_GIT_TOKEN");
   });
 
   it("echo-only when no executor is injected (still teaches the command)", async () => {
@@ -416,7 +416,7 @@ describe("runGuidedAnalyze via runLaunchpad (AC1, AC2, AC3)", () => {
         prompts: scriptedPrompts({ texts: ["", "2024-01-01..2024-06-30"], formats: ["json"] }).prompts,
       }),
     );
-    expect(out.text()).toContain("▸ Next time: commit-sage . --since 2024-01-01 --until 2024-06-30 --format json");
+    expect(out.text()).toContain("▸ Next time: commit-whisper . --since 2024-01-01 --until 2024-06-30 --format json");
   });
 });
 
@@ -424,7 +424,7 @@ describe("runGuidedAnalyze via runLaunchpad (AC1, AC2, AC3)", () => {
 
 const ENV_OK: EnvVarStatus[] = [
   { name: "OPENAI_API_KEY", set: true },
-  { name: "COMMIT_SAGE_GIT_TOKEN", set: false, note: "only needed for private remotes" },
+  { name: "COMMIT_WHISPER_GIT_TOKEN", set: false, note: "only needed for private remotes" },
 ];
 
 describe("formatStatusReport (AC1, AC2)", () => {
@@ -435,7 +435,7 @@ describe("formatStatusReport (AC1, AC2)", () => {
     expect(report).toContain("AI          ollama (llama3)");
     expect(report).toContain("✓ reachable");
     expect(report).toContain("✓ OPENAI_API_KEY     set");
-    expect(report).toContain("✗ COMMIT_SAGE_GIT_TOKEN     missing");
+    expect(report).toContain("✗ COMMIT_WHISPER_GIT_TOKEN     missing");
     expect(report).toContain("Repository  ✓ ~/work/payments-api (main)");
   });
 
@@ -587,7 +587,7 @@ function captureSave() {
   const saved: SettingsData[] = [];
   const saveSettings = async (data: SettingsData): Promise<string> => {
     saved.push(data);
-    return "/home/alice/.commit-sage/config.json";
+    return "/home/alice/.commit-whisper/config.json";
   };
   return { saved, saveSettings };
 }
@@ -609,7 +609,7 @@ describe("runSettings via runLaunchpad (Story 6.5)", () => {
     });
     expect(save.saved).toHaveLength(1);
     expect(save.saved[0]).toEqual({ provider: "openai", llmModel: "gpt-4o", outputFormats: ["html"] });
-    expect(out.text()).toContain("✓ Saved to /home/alice/.commit-sage/config.json");
+    expect(out.text()).toContain("✓ Saved to /home/alice/.commit-whisper/config.json");
     expect(out.text()).toContain(SETTINGS_SAVED_NOTE);
     expect(sel.calls()).toBe(2); // looped back to the menu
   });
@@ -860,7 +860,7 @@ describe("buy / restore / coffee browser hand-offs (AC1)", () => {
       },
     });
     expect(opened).toEqual([DEFAULT_STORE_URL]);
-    expect(out.text()).toContain("commit-sage never handles payment");
+    expect(out.text()).toContain("commit-whisper never handles payment");
   });
 
   it("Restore opens the orders URL with the no-payment note", async () => {
@@ -877,7 +877,7 @@ describe("buy / restore / coffee browser hand-offs (AC1)", () => {
       },
     });
     expect(opened).toEqual([DEFAULT_RESTORE_URL]);
-    expect(out.text()).toContain("commit-sage never handles payment");
+    expect(out.text()).toContain("commit-whisper never handles payment");
   });
 
   it("Buy Me a Coffee opens the coffee URL", async () => {

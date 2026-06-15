@@ -4,9 +4,9 @@ import { browserCommand } from "./open-browser.js";
 
 describe("browserCommand — platform → argv mapping", () => {
   it("macOS (darwin) → `open <target>`", () => {
-    expect(browserCommand("darwin", "commit-sage-report.html")).toEqual({
+    expect(browserCommand("darwin", "commit-whisper-report.html")).toEqual({
       command: "open",
-      args: ["commit-sage-report.html"],
+      args: ["commit-whisper-report.html"],
     });
   });
 

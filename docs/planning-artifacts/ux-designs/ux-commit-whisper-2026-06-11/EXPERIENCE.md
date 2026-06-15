@@ -1,5 +1,5 @@
 ---
-title: commit-sage EXPERIENCE
+title: commit-whisper EXPERIENCE
 status: draft
 created: 2026-06-11
 updated: 2026-06-13
@@ -8,20 +8,20 @@ updated: 2026-06-13
 Sources
 -------
 
-- {planning_artifacts}/prds/prd-commit-sage-2026-06-06/prd.md
-- {planning_artifacts}/prds/prd-commit-sage-2026-06-06/addendum.md
+- {planning_artifacts}/prds/prd-commit-whisper-2026-06-06/prd.md
+- {planning_artifacts}/prds/prd-commit-whisper-2026-06-06/addendum.md
 
-commit-sage — Experience Spine
+commit-whisper — Experience Spine
 ------------------------------
 
 > Terminal-first git-history analysis. Report JSON is canonical; HTML, Markdown, and terminal are the rendered outputs derived from it. The terminal runs the analysis and can render the full report; the HTML report is the richest visual surface and opens in a browser when HTML output is selected. The product is not a standalone web app or hosted portal.
 >
-> Interaction is progressive, escapable, skippable, and self-teaching: the bare zero-arg `commit-sage` command is the single interactive entry — a discovery menu plus gap-filling prompts — while passing any argument runs a strict single-shot that never prompts and hard-fails on missing input.
+> Interaction is progressive, escapable, skippable, and self-teaching: the bare zero-arg `commit-whisper` command is the single interactive entry — a discovery menu plus gap-filling prompts — while passing any argument runs a strict single-shot that never prompts and hard-fails on missing input.
 
 Foundation
 ----------
 
-commit-sage runs from the terminal on macOS, Linux, and Windows, and ships as a self-contained executable so a machine without a preinstalled Node runtime can run it. The primary interaction begins with a CLI command, continues with phase progress in the terminal, and ends with the rendered output(s) the user selected.
+commit-whisper runs from the terminal on macOS, Linux, and Windows, and ships as a self-contained executable so a machine without a preinstalled Node runtime can run it. The primary interaction begins with a CLI command, continues with phase progress in the terminal, and ends with the rendered output(s) the user selected.
 
 Report JSON is the canonical artifact; HTML, Markdown, and terminal are rendered outputs generated from it, so they never disagree and runs stay diff-able for trend deltas. Terminal output can present the full report on its own; the HTML report is the richest visual surface and opens in a browser when HTML output is selected. There is no standalone web app, hosted dashboard, or central portal.
 
@@ -63,13 +63,13 @@ Component Patterns
 
 | Component | Use | Behavioral rules |
 | --- | --- | --- |
-| Command invocation | Terminal | The `commit-sage` command is the entry; any argument (e.g. `commit-sage analyze <repo-url>`, plus flags for scope, provider/model, and output formats) runs strict single-shot, while the bare command opens the interactive menu |
+| Command invocation | Terminal | The `commit-whisper` command is the entry; any argument (e.g. `commit-whisper analyze <repo-url>`, plus flags for scope, provider/model, and output formats) runs strict single-shot, while the bare command opens the interactive menu |
 | Menu (launchpad) | Terminal (zero-arg, TTY) | The single interactive entry: a calm, line-oriented list of actions for discovery, led by "Analyze this repository" (the cwd default); always includes "Settings", "Status / doctor", "Help / show all flags", and "Quit"; license actions appear by state; never a flashy dashboard or a mandatory wizard |
 | Header readiness line | Terminal (every interactive screen) | A persistent, dim header shown on every interactive screen — license tier · AI provider/model (or `⚠ not configured`) · cwd path and branch — so the user always knows who they are, whether they can run, and what "this repo" means without opening Status / doctor |
-| Settings | Terminal (menu action) | A guided, writable configuration surface: sets non-secret AI plumbing (provider, model, base URL) and everyday defaults (output format, timezone, max-commits) and writes them to `~/.commit-sage`; the writable counterpart to the read-only Status / doctor view and a calm way out of the first-run no-provider state (especially by picking local Ollama); never collects a secret — a cloud key stays an env var, named but never entered |
+| Settings | Terminal (menu action) | A guided, writable configuration surface: sets non-secret AI plumbing (provider, model, base URL) and everyday defaults (output format, timezone, max-commits) and writes them to `~/.commit-whisper`; the writable counterpart to the read-only Status / doctor view and a calm way out of the first-run no-provider state (especially by picking local Ollama); never collects a secret — a cloud key stays an env var, named but never entered |
 | Status / doctor view | Terminal (menu action) | A read-only "where do I stand" mirror: license tier, configured provider/model and whether it is actually reachable (the doctor probes, not just checks the var is set), and which required env vars are set vs missing (values never shown); the primary guide out of the first-run no-provider state |
 | Guided prompt | Terminal (interactive) | Fills only missing required inputs; collects input, then goes silent; defaults anything inferable; never bleeds prompt styling into the report |
-| Command echo | Terminal (end of interactive run) | Echoes the equivalent full command (`Next time: commit-sage --max-commits 500 --format md`) so the menu teaches itself out of existence |
+| Command echo | Terminal (end of interactive run) | Echoes the equivalent full command (`Next time: commit-whisper --max-commits 500 --format md`) so the menu teaches itself out of existence |
 | Phase log | Terminal | Show retrieve → analyze → narrate → render in order; one line per phase |
 | Run summary | Terminal | Confirm output is ready and name the saved path(s), branch scope, and confidence level |
 | Metric section | Rendered report | Show title, value(s), a status band whose shape — not color — carries the health signal (`●` ok · `◐` watch · `▲` risk · greyed `○` n/a) with a text label alongside, and the four-facet explanation (meaning, good behaviours, needs improvement, suggestions) in a stable layout |
@@ -84,7 +84,7 @@ The launchpad action set (zero-arg, TTY) is fixed and state-aware:
 | --- | --- | --- |
 | Analyze this repository | Always — default/primary | Analyzes the current directory; the cwd is inferred as the repo, so it never asks for a URL |
 | Analyze a remote repository | Always | Prompts for a repository URL; any required access token stays env-only (named, never collected) |
-| Settings | Always | Configures non-secret AI (provider, model, base URL) and everyday defaults (output format, timezone, max-commits); writes `~/.commit-sage`; never collects a secret |
+| Settings | Always | Configures non-secret AI (provider, model, base URL) and everyday defaults (output format, timezone, max-commits); writes `~/.commit-whisper`; never collects a secret |
 | Status / doctor | Always | Shows license tier, configured provider/model and whether it is reachable (probed, not just set), and required env vars set vs missing |
 | Help / show all flags | Always | Prints the full flag reference |
 | Activate license | Unlicensed | Prompts for a license key to activate this device (the only in-app key entry) |
@@ -111,7 +111,7 @@ State Patterns
 | Interactive menu (zero-arg, TTY) | Terminal | Open the launchpad led by "Analyze this repository" (cwd default), with "Settings", "Status / doctor", "Help / show all flags", and "Quit" always present and license actions shown by state (Activate / Buy-Restore / Buy Me a Coffee when unlicensed, Deactivate when licensed); Esc/quit exits cleanly and prints a short flags cheatsheet |
 | Missing required input (argument mode) | Terminal | Strict single-shot hard-fails with a typed, actionable error and a non-zero exit code; never prompts to fill the gap |
 | Zero-arg, non-interactive (no TTY / CI) | Terminal | Fail fast with a clean, typed error and a non-zero exit code; never hang, never prompt |
-| First run, missing secret (token or LLM key) | Terminal | Secrets are read from env vars only and are never prompted for or stored. Argument mode hard-fails naming the exact env var and points to bare `commit-sage` for guided setup; zero-arg interactive names the exact env var in the menu and waits for the user to set it and re-run |
+| First run, missing secret (token or LLM key) | Terminal | Secrets are read from env vars only and are never prompted for or stored. Argument mode hard-fails naming the exact env var and points to bare `commit-whisper` for guided setup; zero-arg interactive names the exact env var in the menu and waits for the user to set it and re-run |
 | First run, no AI provider configured | Terminal | AI is required, so with no provider configured the run cannot produce output. The tool never prompts for the secret; instead the menu and Status / doctor name a concrete path — set a provider key (e.g. `OPENAI_API_KEY`) or configure a local Ollama provider for a zero-cost path — then re-run |
 | Analyze chosen with no provider (no-AI interstitial) | Terminal | The Analyze actions are never disabled; choosing one with no provider configured routes to a calm teaching screen (not an error) that names the env-var path (e.g. `OPENAI_API_KEY`) and points to Settings and the zero-cost local Ollama option, then returns to the menu |
 | Provider configured but unreachable | Terminal | A configured provider is not the same as a reachable one (e.g. Ollama is selected but not running). A preflight reachability probe runs before retrieval and fails fast with an actionable message — "Ollama isn't responding at `<url>` — start it with `ollama serve`, or pick another provider in Settings" — so the run never dies connection-refused minutes into analysis |
@@ -137,14 +137,14 @@ Interaction Primitives
 
 The entry model is decided by argument count and terminal context, never by hidden state:
 
-- **Zero arguments, interactive terminal (TTY):** the bare `commit-sage` command opens interactive mode — a top-level menu for discovery plus guided prompts for gap-filling. This is the only interactive entry point in the product. Inside a git repo the menu's primary action analyzes the current directory (cwd-first) and never asks for a URL; analyzing a remote repository is the explicit second path and the only one that prompts for a URL (its access token stays env-only).
+- **Zero arguments, interactive terminal (TTY):** the bare `commit-whisper` command opens interactive mode — a top-level menu for discovery plus guided prompts for gap-filling. This is the only interactive entry point in the product. Inside a git repo the menu's primary action analyzes the current directory (cwd-first) and never asks for a URL; analyzing a remote repository is the explicit second path and the only one that prompts for a URL (its access token stays env-only).
 - **Zero arguments, non-interactive (no TTY / CI):** fail fast with a clean, typed error and a non-zero exit code. Never hang, never prompt.
 - **One or more arguments (any context, even a terminal):** strict single-shot. Run when every required input is present; otherwise hard-fail with a typed, actionable error and a non-zero exit code. Passing any argument is an explicit intent to run non-interactively, so argument mode never prompts.
-- **First run with no secret (access token or LLM key):** secrets are read from environment variables only and are never prompted for or stored. In argument mode, hard-fail with an error that names the exact environment variable to set and points the user to run bare `commit-sage` for guided setup; in zero-arg interactive mode, the menu names the exact environment variable to set and the user exports it and re-runs. Neither mode ever prompts for a secret — the redirect is what keeps the failure from being a hostile cliff.
+- **First run with no secret (access token or LLM key):** secrets are read from environment variables only and are never prompted for or stored. In argument mode, hard-fail with an error that names the exact environment variable to set and points the user to run bare `commit-whisper` for guided setup; in zero-arg interactive mode, the menu names the exact environment variable to set and the user exports it and re-runs. Neither mode ever prompts for a secret — the redirect is what keeps the failure from being a hostile cliff.
 - **AI-first by default — the narrative is the hero:** the interactive default needs a configured LLM provider, because the full narrated report *is* the product; a brand-new user with nothing set up cannot get that hero report yet. Because secrets are never prompted, the launchpad and the Status / doctor view are the way through: set a provider key (e.g. `OPENAI_API_KEY`) or configure a local Ollama provider for a zero-cost path, then re-run. This is the one genuinely heavier onboarding moment, so the guidance must be concrete (name the variable and offer the local Ollama option), never a vague "configure a provider." A separate, explicit `--no-ai` metrics-only path exists for CI/headless (see State Patterns), but it is **never** the interactive default and **never** the Free-tier identity — interactively the narrative is always the hero, and it is present on the Free tier.
 - **No-AI interstitial, not a locked door:** choosing an Analyze action with no provider configured never disables the action or throws a raw error — it routes to a calm teaching screen that names the env-var path (e.g. `OPENAI_API_KEY`), points to Settings, and leads with the zero-cost local Ollama option, then drops back to the menu. Discovery is preserved; the dead-end always has a door.
 - **Preflight reachability (configured ≠ reachable):** before the costly retrieve/analyze, a fast preflight probes the chosen provider — pinging the Ollama endpoint, or a low-cost auth check for a cloud provider — and fails fast with an actionable message if it is unreachable (e.g. "Ollama isn't responding at `<url>` — start it with `ollama serve`, or pick another provider in Settings"). Picking Ollama in Settings configures it; it does not install or start it, so the probe is what turns a silent multi-minute connection-refused into an immediate, fixable message.
-- **Self-teaching bridge:** every interactive run ends by echoing the equivalent full command (e.g. `Next time: commit-sage --max-commits 500 --format md`) so the menu teaches itself out of existence. A single-shot success may show at most one dim tip line.
+- **Self-teaching bridge:** every interactive run ends by echoing the equivalent full command (e.g. `Next time: commit-whisper --max-commits 500 --format md`) so the menu teaches itself out of existence. A single-shot success may show at most one dim tip line.
 - **Escape hatch:** in the zero-arg menu, Esc or quit exits cleanly (success) and prints a short flags cheatsheet on the way out, and a "Help / show all flags" item is always present. Ctrl-C always cancels with no half-written output.
 - **Prompts collect, then go silent:** at most a few prompts, and prompt styling never bleeds into the report, which stays a line-oriented brief. Anything inferable is defaulted, not asked — the cwd is taken as the repo, date bounds default to all history (start/end dates are optional), and a default output format is assumed.
 - **Stream separation:** stdout carries only machine output; all human chrome (menu, prompts, spinner, tips) goes to stderr, so piping and redirecting stay clean.
@@ -179,7 +179,7 @@ Key Flows
 
 Flow 1 — Dana analyzes an inherited repo
 
-1. Dana runs `commit-sage analyze <repo-url>` with HTML output selected; because she passes arguments, the run is strict single-shot — no menu, no prompts. Her access token and LLM key are read from the environment.
+1. Dana runs `commit-whisper analyze <repo-url>` with HTML output selected; because she passes arguments, the run is strict single-shot — no menu, no prompts. Her access token and LLM key are read from the environment.
 2. The terminal confirms the repo target and that all branches are in scope by default.
 3. Retrieval starts and the terminal shows retrieve → analyze → narrate → render progress.
 4. Analysis and narration run; the terminal displays a concise running summary.
@@ -187,7 +187,7 @@ Flow 1 — Dana analyzes an inherited repo
 6. Dana reads the Summary, then jumps to Coaching for next steps.
 7. **Climax:** Dana can recount the repo's story and name one concrete improvement without leaving the report.
 
-Failure beat: if the browser fails to open, the terminal still gives Dana the HTML path and the report is fully usable from disk. On a first run with no LLM key set, argument mode does not prompt — it hard-fails with a typed error that names the exact environment variable to set and points her to run bare `commit-sage` for guided setup.
+Failure beat: if the browser fails to open, the terminal still gives Dana the HTML path and the report is fully usable from disk. On a first run with no LLM key set, argument mode does not prompt — it hard-fails with a typed error that names the exact environment variable to set and points her to run bare `commit-whisper` for guided setup.
 
 Flow 2 — Marco uses it in CI
 
@@ -202,12 +202,12 @@ Failure beat: an invalid license, auth failure, provider failure, or a missing r
 
 Flow 3 — Sofia checks her own Git hygiene
 
-1. Sofia runs bare `commit-sage` in her terminal; with zero arguments in an interactive shell, the launchpad menu opens.
+1. Sofia runs bare `commit-whisper` in her terminal; with zero arguments in an interactive shell, the launchpad menu opens.
 2. She picks "Analyze this repository" — the default action — and because the cwd is a git repo it is taken as the target, so she is never asked for a URL; guided prompts fill only what's missing (optional date bounds, output format(s)). AI is required, so on this first run, if no provider is configured, she gets no output yet: the menu and the Status / doctor view name a concrete path — set `OPENAI_API_KEY`, or point at a local Ollama provider for a zero-cost run — and she exports the variable and re-runs. The menu never prompts for or stores the secret.
 3. The run proceeds on the Free tier; the terminal states that 100 of her N commits were analyzed (Free tier cap, applied after any date filter) and, because she is unlicensed, shows the Buy Me a Coffee link in the summary.
 4. She opens the report and reads the Coaching section, which cites her own message-quality and branching Metrics.
 5. Each recommendation is grounded in a Metric (e.g., "62% of your messages are under 10 characters"), prioritized in the closing summary.
-6. The run ends by echoing the equivalent command (e.g. `Next time: commit-sage --max-commits 100 --format html`) so she can skip the menu next time.
+6. The run ends by echoing the equivalent command (e.g. `Next time: commit-whisper --max-commits 100 --format html`) so she can skip the menu next time.
 7. **Climax:** Sofia knows the next two habits to improve and understands, from her own data, why they matter — and now has the one-line command to repeat the run.
 
 Failure beat: if a Metric is `not_available`, the report explains the limitation instead of leaving a blank gap. If Sofia quits the menu with Esc, it exits cleanly and prints a short flags cheatsheet on the way out.
@@ -234,7 +234,7 @@ Inspiration & Anti-patterns
 - **Rejected — standalone dashboards / hosted portals:** they hide the action behind another surface and violate the terminal-first, no-central-portal posture.
 - **Rejected — per-developer ranking or surveillance:** manager-facing output stays at team-level health; individual scoreboards are forbidden by design.
 - **Rejected — ungrounded AI claims:** the Narrative never asserts history the Metrics don't support; a confidently wrong report is the worst outcome.
-- **Rejected — forward authoring:** commit-sage explains the past; it does not write the user's next commit or PR.
+- **Rejected — forward authoring:** commit-whisper explains the past; it does not write the user's next commit or PR.
 - **Rejected — gamification / streaks / badges:** the product is about understanding git history, not dopamine loops.
 - **Rejected — silent completion states:** every run needs clear phase and result feedback.
 

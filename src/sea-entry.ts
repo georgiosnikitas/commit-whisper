@@ -9,7 +9,7 @@
  * `process.argv.slice(2)` is correct here, exactly as in `index.ts`: modern Node
  * SEA (the Node 22 target) normalizes a packaged binary's argv to
  * `[execPath, execPath, ...userArgs]` (argv[1] is present), so the user's args
- * start at index 2 in BOTH the packaged binary and a `node …commit-sage.cjs`
+ * start at index 2 in BOTH the packaged binary and a `node …commit-whisper.cjs`
  * dry-run. (Early/pre-20 SEA omitted argv[1]; we target Node 22, so this holds.)
  */
 

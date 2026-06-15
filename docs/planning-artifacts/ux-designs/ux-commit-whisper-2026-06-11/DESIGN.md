@@ -1,11 +1,11 @@
 ---
-title: commit-sage DESIGN
+title: commit-whisper DESIGN
 status: draft
 created: 2026-06-11
 updated: 2026-06-13
 ---
 
-name: commit-sage
+name: commit-whisper
 description: Terminal-first git-history analysis that renders a canonical JSON into HTML, Markdown, and terminal reports.
 colors:
   surface-base: '#0B0D10'
@@ -101,13 +101,13 @@ components:
     radius: '{rounded.full}'
 ---
 
-commit-sage DESIGN
+commit-whisper DESIGN
 
 Terminal-first git-history analysis that explains and coaches from a repository's own commit history.
 
 | Field | Value |
 | --- | --- |
-| Name | commit-sage |
+| Name | commit-whisper |
 | Tagline | "I know what you did last commit." |
 | Primary surface | Terminal |
 | Canonical artifact | Report JSON (also selectable as a fourth output format) |
@@ -118,7 +118,7 @@ Terminal-first git-history analysis that explains and coaches from a repository'
 Brand & Style
 -------------
 
-commit-sage is a terminal-native analyst that turns long git history into a narrated, coaching report. It should feel like a knowledgeable peer who has read the entire history and wants to help — calm under pressure, precise about evidence, encouraging rather than judgmental, and never theatrical. Its tagline, *"I know what you did last commit,"* is knowing and a little playful, but the product is always grounded in the repository's own data. The interface is not trying to entertain; it is trying to explain.
+commit-whisper is a terminal-native analyst that turns long git history into a narrated, coaching report. It should feel like a knowledgeable peer who has read the entire history and wants to help — calm under pressure, precise about evidence, encouraging rather than judgmental, and never theatrical. Its tagline, *"I know what you did last commit,"* is knowing and a little playful, but the product is always grounded in the repository's own data. The interface is not trying to entertain; it is trying to explain.
 
 The product is terminal-first. Report JSON is the canonical artifact, and HTML, Markdown, and terminal are the rendered outputs generated from it — they never disagree because they derive from the same JSON. The HTML report is the richest visual surface and can open in a browser when HTML output is selected; it is not a standalone web app, and there is no hosted dashboard or central portal.
 
@@ -186,9 +186,9 @@ Components
 ----------
 
 - **Terminal shell** — The live run surface. Shows command invocation, phase progress, warnings, and the final summary. The terminal shell should support copyable paths and commands.
-- **Menu / launchpad** — The zero-arg discovery surface, shown only when `commit-sage` is run with no arguments in an interactive terminal. A calm, line-oriented list led by **Analyze this repository** (the cwd default), then **Analyze a remote repository**, **Settings**, **Status / doctor**, and **Help / show all flags**. License actions are state-dependent — **Activate** (the only in-app key entry), **Buy / Restore** (a browser hand-off), and the optional **Buy Me a Coffee** link appear when unlicensed, while **Deactivate** appears when licensed — and **Quit** (Esc) exits cleanly and prints a flags cheatsheet. It is self-teaching (each interactive run echoes the equivalent command) and reads as a quiet index of what the tool can do — never a flashy dashboard or a mandatory wizard. (Full screen-by-screen composition: MENUS.md.)
+- **Menu / launchpad** — The zero-arg discovery surface, shown only when `commit-whisper` is run with no arguments in an interactive terminal. A calm, line-oriented list led by **Analyze this repository** (the cwd default), then **Analyze a remote repository**, **Settings**, **Status / doctor**, and **Help / show all flags**. License actions are state-dependent — **Activate** (the only in-app key entry), **Buy / Restore** (a browser hand-off), and the optional **Buy Me a Coffee** link appear when unlicensed, while **Deactivate** appears when licensed — and **Quit** (Esc) exits cleanly and prints a flags cheatsheet. It is self-teaching (each interactive run echoes the equivalent command) and reads as a quiet index of what the tool can do — never a flashy dashboard or a mandatory wizard. (Full screen-by-screen composition: MENUS.md.)
 - **Header readiness line** — A persistent, dim two-line header opening **every** interactive screen: the product line, then a readiness line mirroring the user's state — `<tier> · AI: <provider (model) | ⚠ not configured> · cwd: <path> (<branch>)` — so they always know who they are, whether they can run, and what "this repo" means without opening Status / doctor. The tagline shows in full on the bare launchpad and is dropped in argument-mode runs. (Composition: MENUS.md.)
-- **Settings** — A guided configuration surface reached from the menu. It sets **non-secret** AI plumbing (provider, model, base URL) and everyday defaults (default output format, timezone, max-commits), writing them to the config home (`~/.commit-sage`) so they are remembered. It is the writable counterpart to the read-only Status / doctor view, and it is the calm way out of the first-run “no AI provider” state — especially by picking the zero-cost local Ollama. It **never** collects a secret: a cloud provider’s key stays an environment variable, named but never entered here. Same line-oriented posture — no dashboard.
+- **Settings** — A guided configuration surface reached from the menu. It sets **non-secret** AI plumbing (provider, model, base URL) and everyday defaults (default output format, timezone, max-commits), writing them to the config home (`~/.commit-whisper`) so they are remembered. It is the writable counterpart to the read-only Status / doctor view, and it is the calm way out of the first-run “no AI provider” state — especially by picking the zero-cost local Ollama. It **never** collects a secret: a cloud provider’s key stays an environment variable, named but never entered here. Same line-oriented posture — no dashboard.
 - **Status / doctor view** — A read-only diagnostic reachable from the menu: current license tier; the configured LLM provider/model **and whether it is actually reachable** — the doctor *probes* (pings the Ollama endpoint, or runs a low-cost auth check for a cloud provider), so **configured** and **reachable** are reported as distinct states (Ollama can be set but not running); and which required environment variables are set vs missing (set/missing only — secret values are never shown). It is the calm answer to "where do I stand?" and the primary guide out of the first-run state where no AI provider is configured yet. Same line-oriented posture as the rest of the terminal — no gauges, no dashboard.
 - **No-AI interstitial** — Choosing an Analyze action with no provider configured never disables the row or throws a raw error; it routes to a calm teaching screen that names the env-only path (e.g. `OPENAI_API_KEY`), points to Settings, and leads with the zero-cost local Ollama option, then drops back to the menu. Discovery is preserved; the dead-end always has a door. (Composition: MENUS.md.)
 - **Phase log** — A short, structured sequence of retrieve / analyze / narrate / render messages. It is the user's proof that the run is alive.

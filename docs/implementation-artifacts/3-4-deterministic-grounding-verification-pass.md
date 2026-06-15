@@ -115,7 +115,7 @@ The authoritative design is explicit: **"Grounding (FR-9): deterministic post-ge
 
 - [Source: docs/planning-artifacts/epics.md#Story 3.4: Deterministic grounding verification pass] (the ACs)
 - [Source: docs/planning-artifacts/architecture.md#Grounding (FR-9): deterministic post-generation check] (no second LLM call; numeric/fact claim must reference a metric present in the model; cannot itself hallucinate; feeds FR-10) · [Source: …#Fail-open narration] (grounding is fail-open)
-- [Source: docs/planning-artifacts/prds/prd-commit-sage-2026-06-06/prd.md#FR-9] (prompt constraints + post-gen verification; removed or rewritten before render; says so where insufficient) · [Source: …#FR-10] (the pass rate feeds confidence — 3.5)
+- [Source: docs/planning-artifacts/prds/prd-commit-whisper-2026-06-06/prd.md#FR-9] (prompt constraints + post-gen verification; removed or rewritten before render; says so where insufficient) · [Source: …#FR-10] (the pass rate feeds confidence — 3.5)
 - [Source: src/narrate/schema.ts] (the `Narrative` shape + `.min(1)` constraints the placeholders protect) · [Source: src/narrate/narrate.ts] (the orchestrator to wire) · [Source: src/analyze/metric.ts] (`Metric`/`MetricValue` to walk) · [Source: src/assemble/report-schema.ts] (the strict read-back the grounded narrative must still satisfy)
 
 ### Completion Notes

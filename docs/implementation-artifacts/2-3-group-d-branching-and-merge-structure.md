@@ -76,7 +76,7 @@ This is the **third Epic 2 metrics story** — Group D, the **topology** group. 
 - **Changing the retrieval (`git log`) flags** — do **NOT** add `-m`/`--first-parent`/`--cc` to capture merge diffs; that is a 1.4/retrieval concern and would change Groups A/B/C/E values. Group D computes integrated size from the branch commits already in the history. [Source: src/retrieve/git-log.ts]
 - **Commit-selection inputs** (author filter / max-commits / no-merges / dates / timezone narrowing the set) — **Story 2.6**. Group D computes over the model's existing commit set. Note `--no-merges` (2.6) would strip merge commits entirely, which by design makes the merge-dependent Group D metrics `not_available` — that interaction is 2.6's to wire, not 2.3's. [Source: docs/planning-artifacts/epics.md#Story 2.6]
 - **Free-tier 100-commit cap** — **Story 2.7**.
-- **AI Metric Explanations** (Epic 3, Story 3.2); **health bands** (render-time, Epic 4); the **Group D overview chart** (branch/merge timeline + merge-density bars — Epic 4 consumes this data). [Source: docs/planning-artifacts/prds/prd-commit-sage-2026-06-06/prd.md#FR-6/FR-8]
+- **AI Metric Explanations** (Epic 3, Story 3.2); **health bands** (render-time, Epic 4); the **Group D overview chart** (branch/merge timeline + merge-density bars — Epic 4 consumes this data). [Source: docs/planning-artifacts/prds/prd-commit-whisper-2026-06-06/prd.md#FR-6/FR-8]
 - **Remote / multi-branch retrieval** — retrieval is local HEAD history (Branch "head" default, 1.2/1.4); Group D's tip/mainline model assumes a single HEAD leaf. Multi-branch (`--all`) is a later concern. [Source: src/config/run-config.ts, src/retrieve/local.ts]
 
 ### The merge-numstat fact — read this before writing any code
@@ -105,7 +105,7 @@ The 1.4 retrieval runs `git log --numstat` with **no** `-m` / `--first-parent` /
 | `d-long-lived-branches` | Long-lived branch signal | merged branches whose span (first unique commit → merge) exceeds **30 days** |
 | `d-average-changes-per-merge` | Average changes per merge | size of integrated units; small steady merges vs. big-bang integrations |
 
-[Source: docs/planning-artifacts/prds/prd-commit-sage-2026-06-06/prd.md#4.2 Group D] — IDs follow the kebab convention; titles verbatim. Note the PRD title for D2 is "Merge vs. rebase tendency" and D5 "Average changes per merge."
+[Source: docs/planning-artifacts/prds/prd-commit-whisper-2026-06-06/prd.md#4.2 Group D] — IDs follow the kebab convention; titles verbatim. Note the PRD title for D2 is "Merge vs. rebase tendency" and D5 "Average changes per merge."
 
 ### The exact engine/model contracts to build on (do NOT redefine)
 
@@ -139,8 +139,8 @@ The 1.4 retrieval runs `git log --numstat` with **no** `-m` / `--first-parent` /
 ### References
 
 - [Source: docs/planning-artifacts/epics.md#Story 2.3: Group D — Branching & Merge Structure]
-- [Source: docs/planning-artifacts/prds/prd-commit-sage-2026-06-06/prd.md#4.2 History Analysis — Metrics Catalog (Group D)] · [Source: …#FR-4] · [Source: …#FR-5]
-- [Source: docs/planning-artifacts/prds/prd-commit-sage-2026-06-06/addendum.md#Metrics catalog — feasibility notes] (rebase tendency + long-lived branches are `[ASSUMPTION]`-tagged for a computability pass)
+- [Source: docs/planning-artifacts/prds/prd-commit-whisper-2026-06-06/prd.md#4.2 History Analysis — Metrics Catalog (Group D)] · [Source: …#FR-4] · [Source: …#FR-5]
+- [Source: docs/planning-artifacts/prds/prd-commit-whisper-2026-06-06/addendum.md#Metrics catalog — feasibility notes] (rebase tendency + long-lived branches are `[ASSUMPTION]`-tagged for a computability pass)
 - [Source: docs/planning-artifacts/architecture.md#C2 — Metrics Engine Architecture]
 - [Source: src/retrieve/git-log.ts] (the `--numstat` merge-diff omission) · [Source: src/analyze/model.ts] (`parents`) · [Source: src/analyze/groups/c-message-quality.ts] (the pattern) · [Source: src/analyze/metric.ts] · [Source: src/analyze/stats.ts] · [Source: src/analyze/registry.ts] · [Source: tests/determinism/analysis-determinism.test.ts]
 

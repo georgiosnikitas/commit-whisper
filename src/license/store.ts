@@ -1,7 +1,7 @@
 /**
  * The license cache (Story 7.1 read · Story 7.2 write/clear).
  *
- * `~/.commit-sage/license.json` holds the licensing artifacts a one-time
+ * `~/.commit-whisper/license.json` holds the licensing artifacts a one-time
  * interactive **Activate** caches so later runs resolve the paid tier without
  * re-supplying anything: the server-issued **activation-instance id** (the
  * device identifier) and the **license key** (a credential, not a user secret —
@@ -96,13 +96,13 @@ export async function readLicenseCache(
 
 /**
  * Read the cached activation-instance id (the device identifier). A
- * `COMMIT_SAGE_LICENSE_INSTANCE` env override wins; otherwise the cached value.
+ * `COMMIT_WHISPER_LICENSE_INSTANCE` env override wins; otherwise the cached value.
  */
 export async function readActivationInstanceId(
   env: NodeJS.ProcessEnv,
   io: LicenseStoreIo = defaultLicenseStoreIo,
 ): Promise<string | undefined> {
-  const override = str(env.COMMIT_SAGE_LICENSE_INSTANCE);
+  const override = str(env.COMMIT_WHISPER_LICENSE_INSTANCE);
   if (override !== undefined) {
     return override;
   }

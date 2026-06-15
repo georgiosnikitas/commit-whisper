@@ -18,8 +18,8 @@
  *      text, not the score (judging by provider identity would be unfair/brittle).
  *
  * A `low` rating carries an `escalation` that explicitly recommends a stronger
- * model and NAMES the config to change (`COMMIT_SAGE_PROVIDER` /
- * `COMMIT_SAGE_LLM_MODEL`). Confidence is a quality signal carried under the
+ * model and NAMES the config to change (`COMMIT_WHISPER_PROVIDER` /
+ * `COMMIT_WHISPER_LLM_MODEL`). Confidence is a quality signal carried under the
  * Report `narrative` subtree — it never changes the exit code (a low-confidence
  * narrated run is still a clean showpiece).
  */
@@ -83,7 +83,7 @@ export function buildEscalation(provider: Provider | undefined, llmModel: string
   const current = `${provider ?? "(unset)"}/${llmModel ?? "(unset)"}`;
   return (
     "Confidence is low — re-run with a stronger model. " +
-    `Set COMMIT_SAGE_PROVIDER and COMMIT_SAGE_LLM_MODEL (currently ${current}) ` +
+    `Set COMMIT_WHISPER_PROVIDER and COMMIT_WHISPER_LLM_MODEL (currently ${current}) ` +
     "to a more capable provider/model."
   );
 }

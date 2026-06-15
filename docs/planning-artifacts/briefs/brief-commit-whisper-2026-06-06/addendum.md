@@ -1,4 +1,4 @@
-# Addendum — Product Brief: commit-sage
+# Addendum — Product Brief: commit-whisper
 
 Depth captured during discovery that belongs in downstream documents (market research, PRD, architecture) or earned a place but does not fit the 1–2 page brief.
 

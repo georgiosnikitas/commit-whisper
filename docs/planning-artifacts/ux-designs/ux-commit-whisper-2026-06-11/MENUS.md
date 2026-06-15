@@ -1,11 +1,11 @@
 ---
-title: commit-sage MENUS
+title: commit-whisper MENUS
 status: draft
 created: 2026-06-12
 updated: 2026-06-15
 ---
 
-commit-sage MENUS
+commit-whisper MENUS
 =================
 
 This is the **composition** layer for the interactive (zero-argument, TTY) surface.
@@ -42,7 +42,7 @@ dim **readiness line** that mirrors the user's state so they always know *who th
 whether they can run, and what "this repo" means* — without opening Status/doctor.
 
 ```
-  commit-sage · I know what you did last commit
+  commit-whisper · I know what you did last commit
   │
   ◇  <tier> · AI: <provider (model) | ⚠ not configured> · cwd: <path> (<branch>)
   │
@@ -68,7 +68,7 @@ predict the outcome before pressing Enter.
 ### State: unlicensed, AI configured
 
 ```
-  commit-sage · I know what you did last commit
+  commit-whisper · I know what you did last commit
   │
   ◇  Free · AI: ollama (llama3) · cwd: ~/work/payments-api (main)
   │
@@ -148,7 +148,7 @@ Menu item reference
 | --- | --- | --- | --- |
 | Analyze this repository | ACT | always | Guided run against cwd (default target) |
 | Analyze a remote repository… | ACT | always | Prompt for URL, then guided run (`…` = more input coming) |
-| Settings | ORIENT | always | Configure non-secret AI + defaults; writes `~/.commit-sage` |
+| Settings | ORIENT | always | Configure non-secret AI + defaults; writes `~/.commit-whisper` |
 | Status / doctor | ORIENT | always | Read-only readiness diagnostic |
 | Help / show all flags | ORIENT | always | Full flag reference (same content as `--help`) |
 | Activate license | LICENSE | unlicensed | Enter a license key to bind this device |
@@ -167,7 +167,7 @@ a wall — it names the exact, env-only path and leads with the zero-cost local 
 ```
   ◆  Analysis needs an AI provider
   │
-  │  commit-sage explains your history with an LLM — every run narrates,
+  │  commit-whisper explains your history with an LLM — every run narrates,
   │  so you'll need one provider configured and reachable. Two easy paths:
   │
   │  • Local & free — open Settings and pick Ollama, then make sure it's
@@ -183,7 +183,7 @@ Settings
 --------
 
 The single place to configure **non-secret** AI plumbing and everyday defaults. Choices are
-written to `~/.commit-sage` (set-once, remembered). The resolver precedence still holds:
+written to `~/.commit-whisper` (set-once, remembered). The resolver precedence still holds:
 an explicit env var or flag overrides a saved Setting. **No secret is ever entered here** —
 a cloud provider's key stays an environment variable.
 
@@ -200,7 +200,7 @@ a cloud provider's key stays an environment variable.
   ◇  Timezone         UTC
   ◇  Max commits      (none)
   │
-  │   ✓ Saved to ~/.commit-sage/config
+  │   ✓ Saved to ~/.commit-whisper/config
   │   ⓘ Ollama runs locally — no key needed, but it must be running:
   │      `ollama serve`, then `ollama pull <model>`. Saving selects it; it
   │      doesn't start it. For cloud providers, set the key in your
@@ -232,7 +232,7 @@ self-teaching bridge, updating live as fields change.
   ◇  Date range all         (↵ all · or absolute since/until, e.g. 2024-01-01..2024-06-30)
   ◇  Output     ◉ terminal  ○ html  ○ markdown  ○ json   (space to toggle)
   │
-  │   ▸ Next time:  commit-sage --branch main --format terminal
+  │   ▸ Next time:  commit-whisper --branch main --format terminal
   │
   └  ↵ run · esc cancel
 ```
@@ -272,10 +272,10 @@ spinner) · `·` queued — the `●◐▲○` shapes mean *health*, never progr
   ◆  Done · confidence: high
   │
   │   Report ready:
-  │     ./commit-sage-report.html      (opening in browser…)
-  │     ./commit-sage-report.json
+  │     ./commit-whisper-report.html      (opening in browser…)
+  │     ./commit-whisper-report.json
   │
-  │   ▸ Reproduce:  commit-sage --format html,json
+  │   ▸ Reproduce:  commit-whisper --format html,json
   │
   └  ↵ menu · esc quit
 ```
@@ -297,10 +297,10 @@ degraded exit code (see architecture exit-code enum) so a script can tell this f
   │     → retry · check the provider (Status / doctor) · switch it in Settings
   │
   │   Report ready (raw analysis only):
-  │     ./commit-sage-report.html      (opening in browser…)
-  │     ./commit-sage-report.json
+  │     ./commit-whisper-report.html      (opening in browser…)
+  │     ./commit-whisper-report.json
   │
-  │   ▸ Reproduce:  commit-sage --format html,json
+  │   ▸ Reproduce:  commit-whisper --format html,json
   │
   └  ↵ menu · esc quit
 ```
@@ -373,7 +373,7 @@ The license key is **not a secret** — it is entered in-app and may be cached.
   └  ↵ activate · esc menu
 ```
 
-On success: validates online, caches the activation-instance id under `~/.commit-sage`, and
+On success: validates online, caches the activation-instance id under `~/.commit-whisper`, and
 returns to the launchpad now showing the paid tier. On a definitive invalid/revoked key, it
 says so plainly and stays on this screen.
 
@@ -382,19 +382,19 @@ says so plainly and stays on this screen.
 Two one-shot browser hand-offs — no in-terminal screen, no in-app checkout (payment and
 account lookup always live in the browser). **Buy** opens the store/checkout; **Restore**
 opens the customer's Lemon Squeezy orders to recover an existing key. Both URLs are
-deployment-overridable (`COMMIT_SAGE_STORE_URL` / `COMMIT_SAGE_RESTORE_URL`); on an
+deployment-overridable (`COMMIT_WHISPER_STORE_URL` / `COMMIT_WHISPER_RESTORE_URL`); on an
 open failure the URL is printed plainly so it stays copyable (never a dead-end).
 
 ```
   ◆  Opening the store in your browser…
-  │   commit-sage never handles payment — checkout happens in your browser.
+  │   commit-whisper never handles payment — checkout happens in your browser.
   │   After buying, return and choose “Activate license”.
   └  ↵ menu
 ```
 
 ```
   ◆  Opening your Lemon Squeezy orders in your browser…
-  │   commit-sage never handles payment. Find your license key in your
+  │   commit-whisper never handles payment. Find your license key in your
   │   Lemon Squeezy orders, then return and choose “Activate license”.
   └  ↵ menu
 ```
@@ -426,7 +426,7 @@ flagged to John (PRD) and Winston (architecture):
 
 1. **`Settings` is a new menu action** (provider/model/base-URL + default format/timezone/
    max-commits). Not in the locked FR-14 action set. → John (FR-14).
-2. **Settings *writes* non-secret config** to `~/.commit-sage`. The architecture's resolver
+2. **Settings *writes* non-secret config** to `~/.commit-whisper`. The architecture's resolver
    currently only *reads* this file; a write path is new (non-secret fields only, never a
    key). → Winston (config-write path).
 3. **Licensing split:** key entry lives **only** under **Activate**; **Buy** and **Restore**

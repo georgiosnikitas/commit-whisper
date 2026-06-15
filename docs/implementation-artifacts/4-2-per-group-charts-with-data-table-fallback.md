@@ -71,7 +71,7 @@ This is an intentional, documented divergence from architecture I1's charting-li
 
 ### The authoritative chart + card spec (do not re-derive)
 
-[Source: docs/planning-artifacts/ux-designs/ux-commit-sage-2026-06-11/TEMPLATE-HTML.md#Group overview charts / Per-metric visual — by shape / Metric card — uniform skeleton]
+[Source: docs/planning-artifacts/ux-designs/ux-commit-whisper-2026-06-11/TEMPLATE-HTML.md#Group overview charts / Per-metric visual — by shape / Metric card — uniform skeleton]
 
 - **Group overview charts (locked signatures):** A multi-series line (commits & churn) · B Pareto bar + bus-factor marker · C stacked bar (message-quality categories) · D branch/merge timeline + merge-density bars · E horizontal hotspots bar + churn trend line · F radar of component scores + overall gauge.
 - **Per-metric visual by shape:** time-series → small line/area · distribution → small bar/histogram · scalar-in-range → sparkline / mini-gauge + number · pure scalar → **bold stat, no chart**.
@@ -127,7 +127,7 @@ This is an intentional, documented divergence from architecture I1's charting-li
 ### References
 
 - [Source: docs/planning-artifacts/epics.md#Story 4.2: Per-group charts with accessible data-table fallback] (the ACs) · [Source: …#FR-6] (chart-per-group + per-metric visual + health band) · [Source: …#FR-7] (degrade per format) · [Source: …#NFR-8] (no per-developer ranking) · [Source: …#UX-DR6/7/14] (metric card, chart block, accessibility floor)
-- [Source: docs/planning-artifacts/ux-designs/ux-commit-sage-2026-06-11/TEMPLATE-HTML.md] (group chart signatures, visual-by-shape, metric-card skeleton, progressive disclosure, self-containment & no-JS) · [Source: …/DESIGN.md] (chart-panel/metric-card surfaces, palette)
+- [Source: docs/planning-artifacts/ux-designs/ux-commit-whisper-2026-06-11/TEMPLATE-HTML.md] (group chart signatures, visual-by-shape, metric-card skeleton, progressive disclosure, self-containment & no-JS) · [Source: …/DESIGN.md] (chart-panel/metric-card surfaces, palette)
 - [Source: docs/planning-artifacts/architecture.md#I1 — HTML Charting & Templating] (animations off, mandatory data-table fallback, inline self-containment, ≤1 MB, Rail (a/b/c)) \u2014 **deviation:** inline SVG instead of Chart.js (this story's ADR) · [Source: prd.md#§4.2 decision-log (G)] (health bands render-owned from §4.2 thresholds)
 - [Source: src/render/html/html-renderer.ts] (the 4.1 shell to extend) · [Source: src/assemble/report-schema.ts] (`Report`/`Metric`)
 

@@ -4,9 +4,9 @@ import { binaryNameFor, postjectArgsFor, seaPlanFor, SEA_FUSE, MACHO_SEGMENT } f
 
 describe("binaryNameFor", () => {
   it("appends .exe only on Windows", () => {
-    expect(binaryNameFor("win32")).toBe("commit-sage.exe");
-    expect(binaryNameFor("darwin")).toBe("commit-sage");
-    expect(binaryNameFor("linux")).toBe("commit-sage");
+    expect(binaryNameFor("win32")).toBe("commit-whisper.exe");
+    expect(binaryNameFor("darwin")).toBe("commit-whisper");
+    expect(binaryNameFor("linux")).toBe("commit-whisper");
   });
 });
 
@@ -16,7 +16,7 @@ describe("seaPlanFor", () => {
     expect(plan).toEqual({
       isWindows: false,
       isMac: true,
-      binaryName: "commit-sage",
+      binaryName: "commit-whisper",
       removeSignature: true,
       reSign: true,
       chmod: true,
@@ -30,7 +30,7 @@ describe("seaPlanFor", () => {
     expect(plan).toEqual({
       isWindows: false,
       isMac: false,
-      binaryName: "commit-sage",
+      binaryName: "commit-whisper",
       removeSignature: false,
       reSign: false,
       chmod: true,
@@ -44,7 +44,7 @@ describe("seaPlanFor", () => {
     expect(plan).toEqual({
       isWindows: true,
       isMac: false,
-      binaryName: "commit-sage.exe",
+      binaryName: "commit-whisper.exe",
       removeSignature: false,
       reSign: false,
       chmod: false,
@@ -55,7 +55,7 @@ describe("seaPlanFor", () => {
 });
 
 describe("postjectArgsFor", () => {
-  const base = { binaryPath: "dist-sea/commit-sage", blobPath: "dist-sea/sea-prep.blob" };
+  const base = { binaryPath: "dist-sea/commit-whisper", blobPath: "dist-sea/sea-prep.blob" };
 
   it("carries the blob name + the sentinel fuse on every platform", () => {
     for (const platform of ["darwin", "linux", "win32"] as const) {
@@ -63,7 +63,7 @@ describe("postjectArgsFor", () => {
       expect(args.slice(0, 5)).toEqual([
         "--yes",
         "postject",
-        "dist-sea/commit-sage",
+        "dist-sea/commit-whisper",
         "NODE_SEA_BLOB",
         "dist-sea/sea-prep.blob",
       ]);

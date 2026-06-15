@@ -3,23 +3,23 @@ stepsCompleted: [1, 2, 3, 4]
 status: 'complete'
 completedAt: '2026-06-12'
 inputDocuments:
-  - docs/planning-artifacts/prds/prd-commit-sage-2026-06-06/prd.md
+  - docs/planning-artifacts/prds/prd-commit-whisper-2026-06-06/prd.md
   - docs/planning-artifacts/architecture.md
-  - docs/planning-artifacts/ux-designs/ux-commit-sage-2026-06-11/EXPERIENCE.md
-  - docs/planning-artifacts/ux-designs/ux-commit-sage-2026-06-11/DESIGN.md
+  - docs/planning-artifacts/ux-designs/ux-commit-whisper-2026-06-11/EXPERIENCE.md
+  - docs/planning-artifacts/ux-designs/ux-commit-whisper-2026-06-11/DESIGN.md
 ---
 
-# commit-sage - Epic Breakdown
+# commit-whisper - Epic Breakdown
 
 ## Overview
 
-This document provides the complete epic and story breakdown for commit-sage, decomposing the requirements from the PRD, UX Design, and Architecture into implementable stories.
+This document provides the complete epic and story breakdown for commit-whisper, decomposing the requirements from the PRD, UX Design, and Architecture into implementable stories.
 
 ## Requirements Inventory
 
 ### Functional Requirements
 
-- **FR-1 — Target a local or remote repository:** Point commit-sage at a **local filesystem path or a remote HTTPS URL** (GitHub/GitLab/Bitbucket) — both first-class; interactive mode defaults the target to the **current directory** when it's a git repo. Retrieve the full history across all branches reachable by default (scopable to a single named branch). **Commit-selection inputs** narrow which commits feed the Analysis, all optional: **author filter**, **max-commits** limit, **no-merges** (changes Group A–F values). **Dates** (start/end) optional — empty = unbounded (all history), no auto-shrink. **Timezone** explicit input, default **UTC**, governing date bounds + time-bucketed metrics. Reads per commit: hash, author + committer identity, author + commit timestamps, message, parent hashes, changed-file metadata. Strictly read-only.
+- **FR-1 — Target a local or remote repository:** Point commit-whisper at a **local filesystem path or a remote HTTPS URL** (GitHub/GitLab/Bitbucket) — both first-class; interactive mode defaults the target to the **current directory** when it's a git repo. Retrieve the full history across all branches reachable by default (scopable to a single named branch). **Commit-selection inputs** narrow which commits feed the Analysis, all optional: **author filter**, **max-commits** limit, **no-merges** (changes Group A–F values). **Dates** (start/end) optional — empty = unbounded (all history), no auto-shrink. **Timezone** explicit input, default **UTC**, governing date bounds + time-bucketed metrics. Reads per commit: hash, author + committer identity, author + commit timestamps, message, parent hashes, changed-file metadata. Strictly read-only.
 - **FR-2 — Authenticate to private repositories:** A PAT is needed **only for a private *remote*** — a local path or public remote needs none, and its absence is never an error for those. When needed, supplied via environment variable **only** (never CLI arg, never config file, never prompted or persisted). Insufficient-scope tokens produce a clear, actionable error naming the missing permission. Tokens never appear in Report JSON, logs, or rendered output.
 - **FR-3 — Handle retrieval limits and failures gracefully:** Distinguish network / auth / "repo not found" errors. No retry on transient or rate-limit errors — report clearly (provider + reset guidance where available) and exit without a partial Report. A repo larger than the Free-tier cap is retrieved only to the capped most-recent commit count, and the report states it was capped.
 - **FR-4 — Compute the metrics catalog:** Compute the Metrics in Groups A–F deterministically and without AI. Every metric is either computed and present in Report JSON or explicitly `not_available` with a reason — never silently omitted. Identical input history ⇒ identical values. No network beyond §4.1 retrieval; no repo mutation.
@@ -31,9 +31,9 @@ This document provides the complete epic and story breakdown for commit-sage, de
 - **FR-10 — Self-assess confidence and escalate:** Each run yields a `high` / `medium` / `low` confidence rating computed from verification pass rate, share of `not_available` metrics, and provider/runtime signals. Low confidence explicitly recommends re-running with a stronger provider and names which config to change; never silently degrades into confident-sounding output.
 - **FR-11 — Support multiple BYOK LLM providers; AI-first with fail-open:** The narrated **report** (the shareable showpiece) requires a reachable LLM — no AI, no showpiece, by construction; the interactive default is **AI-first**. But the deterministic `analysis` is never held hostage: on narration/grounding/provider failure the run **fails open**, rendering the analysis substrate with a loud degraded banner (exit 9) rather than producing nothing. An explicit **`--no-ai` / metrics-only** mode (no LLM call, clean substrate, exit 0) is the **default in headless/CI** — never the interactive default, never the Free-tier identity. A `aiMode` of `required`/`auto`/`off` governs this (forced `--ai` / interactive default / `--no-ai`). Closed provider enum: `ollama`, `openai`, `gemini`, `anthropic`, `openai-compatible`. Key from the provider's **native** env var only (`OPENAI_API_KEY`, `ANTHROPIC_API_KEY`, `GOOGLE_GENERATIVE_AI_API_KEY` — `GEMINI_API_KEY` alias; Ollama needs none); base URL required for `{ollama, openai-compatible}`. Reachability **preflight** (gated by `aiMode`) before retrieve. Free tier keeps the narrative via local Ollama at zero cost. Only Metrics/derived summaries sent — never tokens, never raw diffs.
 - **FR-12 — Compute the canonical Report JSON:** Every analysis **computes (assembles) in memory** a well-formed, documented, diff-stable Report JSON (`schemaVersion: "1.0.0"`, pre-impl) — the single source of truth from which any format renders with no re-analysis or AI re-call; it is **written to a destination only when `json` is a selected output** (FR-13). Two top-level subtrees: **`analysis`** (deterministic — all metric values/status, the byte-stable trend-diff target) and **`narrative`** (AI — Summary/Explanation/Coaching + per-metric explanations keyed by metric id). Structured shapes: Coaching `{introduction, chapters[], summary}`; per-metric explanation `{explanation, goodBehaviours, needsImprovement, suggestions}` under `narrative.explanations[metricId]`.
-- **FR-13 — Emit and render the selected output formats:** Multi-select from one Report JSON across **four** formats — **JSON** (the canonical artifact, emitted directly; first-class for piping/automation/diffing), **HTML** (self-contained), **Markdown** (PR/wiki), **Terminal** (immediate / CI logs). A single run can emit several formats at once with no re-analysis or second LLM call. `html`, `markdown`, and `json` are file-formats — each defaults to `./commit-sage-report.{html,md,json}` when no path is given, and `-` = stdout; `terminal` is stdout-native. **HTML auto-opens** in the browser in interactive mode when selected; **`--no-open`** suppresses it; CI never auto-opens. All formats present the same facts from the same Report JSON.
-- **FR-14 — Interactive (developer) execution:** The bare zero-argument `commit-sage` in an interactive terminal is the product's single interactive entry point — a discovery **menu** + guided prompts collecting only needed inputs, escapable, with visible phase progress; on completion it surfaces the equivalent non-interactive command (self-teaching). **Menu action set, conditioned on effective license state:** Analyze this repository (cwd) · Analyze a remote repository · Status / doctor (tier, configured provider, which required env vars set vs missing) · Help / show all flags · Activate license `[unlicensed]` · **Buy / Restore license** `[unlicensed]` (buy or recover a license) · Buy Me a Coffee `[unlicensed only; hidden when licensed]` · Deactivate license `[licensed]` · Quit (Esc). The menu never collects secrets (names the env var; may accept a license key, which is not a secret). First run with a missing secret names the exact env var (never prompts/stores). Ships as a self-contained executable.
-- **FR-15 — Headless / CI execution:** Any invocation with ≥1 argument (any context) is strict single-shot — never opens the menu, never prompts; runs immediately when required inputs are satisfied. Missing required input hard-fails immediately with a typed error + machine-readable exit code (no prompt, no hang); zero-arg in a non-TTY context also fails fast. Reads config from env/config/flags (secrets env-only); the paid license key is supplied via env var and the runner **validates** (not activates), failing closed on validation failure. **Headless/CI defaults to metrics-only** (`aiMode: off`) — no forced per-run inference — with a one-line nudge that narrative is available interactively or via `--ai`. **Operational flags/env:** `--ai`/`--no-ai`, `--show-config` (resolved config + per-field provenance, secrets `***`, then exit), `--non-interactive`, `--config <path>`, `--no-open`, `--verbose`/`--quiet`, `--version`, `NO_COLOR`/`FORCE_COLOR`. **Config/cache home `~/.commit-sage`** holds the config file + cached license activation-instance id (never secrets). Predictable artifact output paths.
+- **FR-13 — Emit and render the selected output formats:** Multi-select from one Report JSON across **four** formats — **JSON** (the canonical artifact, emitted directly; first-class for piping/automation/diffing), **HTML** (self-contained), **Markdown** (PR/wiki), **Terminal** (immediate / CI logs). A single run can emit several formats at once with no re-analysis or second LLM call. `html`, `markdown`, and `json` are file-formats — each defaults to `./commit-whisper-report.{html,md,json}` when no path is given, and `-` = stdout; `terminal` is stdout-native. **HTML auto-opens** in the browser in interactive mode when selected; **`--no-open`** suppresses it; CI never auto-opens. All formats present the same facts from the same Report JSON.
+- **FR-14 — Interactive (developer) execution:** The bare zero-argument `commit-whisper` in an interactive terminal is the product's single interactive entry point — a discovery **menu** + guided prompts collecting only needed inputs, escapable, with visible phase progress; on completion it surfaces the equivalent non-interactive command (self-teaching). **Menu action set, conditioned on effective license state:** Analyze this repository (cwd) · Analyze a remote repository · Status / doctor (tier, configured provider, which required env vars set vs missing) · Help / show all flags · Activate license `[unlicensed]` · **Buy / Restore license** `[unlicensed]` (buy or recover a license) · Buy Me a Coffee `[unlicensed only; hidden when licensed]` · Deactivate license `[licensed]` · Quit (Esc). The menu never collects secrets (names the env var; may accept a license key, which is not a secret). First run with a missing secret names the exact env var (never prompts/stores). Ships as a self-contained executable.
+- **FR-15 — Headless / CI execution:** Any invocation with ≥1 argument (any context) is strict single-shot — never opens the menu, never prompts; runs immediately when required inputs are satisfied. Missing required input hard-fails immediately with a typed error + machine-readable exit code (no prompt, no hang); zero-arg in a non-TTY context also fails fast. Reads config from env/config/flags (secrets env-only); the paid license key is supplied via env var and the runner **validates** (not activates), failing closed on validation failure. **Headless/CI defaults to metrics-only** (`aiMode: off`) — no forced per-run inference — with a one-line nudge that narrative is available interactively or via `--ai`. **Operational flags/env:** `--ai`/`--no-ai`, `--show-config` (resolved config + per-field provenance, secrets `***`, then exit), `--non-interactive`, `--config <path>`, `--no-open`, `--verbose`/`--quiet`, `--version`, `NO_COLOR`/`FORCE_COLOR`. **Config/cache home `~/.commit-whisper`** holds the config file + cached license activation-instance id (never secrets). Predictable artifact output paths.
 - **FR-16 — Enforce license tiers:** Free / Single-device / Unlimited-Automation enforced via online Lemon Squeezy validation at startup before analysis. Free = 100-commit cap (makes no call). Single-device is bound via a server-side activation instance (second device refused; `deactivate` frees an activation to move machines). Unlimited permits many activations including CI. Interactive degrades to the Free cap when validation cannot complete; headless fails closed (exit 8); an explicit invalid/revoked response grants no paid features in either mode. License enforcement never transmits repository data.
 
 ### NonFunctional Requirements
@@ -45,7 +45,7 @@ This document provides the complete epic and story breakdown for commit-sage, de
 - **NFR-5 — Network use:** Paid-tier license validation requires network access at startup (transmits only the license key + a device identifier, never repository data); the Free tier makes no such call. Rendered outputs remain self-contained and display with no server.
 - **NFR-6 — Portability:** Ships as a self-contained executable across macOS, Linux, and Windows.
 - **NFR-7 — Trust / accuracy:** Grounding (FR-9) + Confidence self-assessment (FR-10) are first-class; a confidently wrong Narrative is the worst outcome and is designed against.
-- **NFR-8 — No per-developer ranking (locked, absolute):** Both the Metrics and the Narrative analyze at the **repository / change level only** and never rank, score, or single out individual developers; all manager-facing output is team-level health. Binds Group B, Group F, the health bands, every Metric Explanation, and Coaching. This is a deliberate ethical guardrail and a differentiator (every commodity git-stats tool is an author leaderboard; commit-sage refuses to be one).
+- **NFR-8 — No per-developer ranking (locked, absolute):** Both the Metrics and the Narrative analyze at the **repository / change level only** and never rank, score, or single out individual developers; all manager-facing output is team-level health. Binds Group B, Group F, the health bands, every Metric Explanation, and Coaching. This is a deliberate ethical guardrail and a differentiator (every commodity git-stats tool is an author leaderboard; commit-whisper refuses to be one).
 
 ### Additional Requirements
 
@@ -53,7 +53,7 @@ _Technical requirements derived from the Architecture document that shape implem
 
 **Project scaffold (Epic 1, Story 1 — greenfield init):**
 - TypeScript 6.0.3 (strict, ESM, `nodenext`), Node.js 22 LTS target; `npm init` + locked deps: commander 15.0.0, @clack/prompts 1.5.1; dev: tsup 8.5.1 (esbuild), vitest 4.1.8, @types/node 22; strict `tsconfig.json` committed.
-- ESLint config enforcing patterns P2/P4/P5 (named exports, `CommitSageError`, no `console.log` in pipeline, `process.env` only in `config/`).
+- ESLint config enforcing patterns P2/P4/P5 (named exports, `CommitWhisperError`, no `console.log` in pipeline, `process.env` only in `config/`).
 
 **Cross-cutting architecture (foundational):**
 - Two-phase configuration resolver: Phase 1 pure deterministic merge (`defaults → config file → env → flags`) → `PartialRunConfig` with per-field provenance; Phase 2 gap handling (prompt only in 0-arg+TTY; typed error otherwise). Produces a frozen `RunConfig`.
@@ -64,9 +64,9 @@ _Technical requirements derived from the Architecture document that shape implem
 - `Secret<string>` wrapper redacting to `***` in `toString`/`toJSON`.
 - Exit-code enum: 0 success · 1 internal · 2 usage/validation · 3 missing input · 4 git/retrieve · 5 metrics · 6 narration/LLM (when AI required) · 7 render · 8 license · 9 completed-degraded (analysis rendered, narrative unavailable — the one code not thrown as an error). Codes 1–8 = no output; 0 and 9 = output produced.
 - Zod 4.4.3 (`zod/mini`) runtime validation at three checkpoints: config-in, LLM-output, Report-JSON-in.
-- **RunConfig contract + input source matrix:** 16 config-data fields, each declaring valid sources (flag / `COMMIT_SAGE_*` env / config file / interactive prompt) and precedence; secrets (git PAT, AI key) env-only and never in the prompt column; closed enums for provider and output format; explicit `branch` "all" sentinel; resolved `entitlement {tier, commitCap?}` rides the frozen `RunConfig` (like `analysisTimestamp`) so the license key itself never crosses the hexagonal boundary.
-- **Action/mode flags** (short-circuit, never enter `RunConfig`): `--help`, `--version`, `--show-config` (resolved values + per-field provenance, secrets `***`), `--non-interactive`, `--config <path>` (resolved before the config file), license `activate`/`deactivate`/`restore`. **Behavior modifiers:** `--verbose`/`--quiet` (+`COMMIT_SAGE_LOG_LEVEL`), `--no-open`, `NO_COLOR`/`FORCE_COLOR`.
-- **Config/cache home `~/.commit-sage`:** holds the config file + cached license activation-instance id; never secrets. (Cross-OS path convention e.g. `%APPDATA%` to confirm at impl.)
+- **RunConfig contract + input source matrix:** 16 config-data fields, each declaring valid sources (flag / `COMMIT_WHISPER_*` env / config file / interactive prompt) and precedence; secrets (git PAT, AI key) env-only and never in the prompt column; closed enums for provider and output format; explicit `branch` "all" sentinel; resolved `entitlement {tier, commitCap?}` rides the frozen `RunConfig` (like `analysisTimestamp`) so the license key itself never crosses the hexagonal boundary.
+- **Action/mode flags** (short-circuit, never enter `RunConfig`): `--help`, `--version`, `--show-config` (resolved values + per-field provenance, secrets `***`), `--non-interactive`, `--config <path>` (resolved before the config file), license `activate`/`deactivate`/`restore`. **Behavior modifiers:** `--verbose`/`--quiet` (+`COMMIT_WHISPER_LOG_LEVEL`), `--no-open`, `NO_COLOR`/`FORCE_COLOR`.
+- **Config/cache home `~/.commit-whisper`:** holds the config file + cached license activation-instance id; never secrets. (Cross-OS path convention e.g. `%APPDATA%` to confirm at impl.)
 
 **Per-stage architecture:**
 - Retrieval: `git clone` shell-out to system `git` (no native bindings); stateless every run; temp working dir with guaranteed cleanup on every exit path (success / failure / Ctrl-C).
@@ -74,18 +74,18 @@ _Technical requirements derived from the Architecture document that shape implem
 - Narration: Vercel AI SDK `ai` 6.0.203 (`@ai-sdk/openai|anthropic|google` + `openai-compatible` + Ollama); `generateObject` bound to Zod schemas; per-group ×6 batching + a coaching call; deterministic post-generation grounding check (no second LLM call).
 - Assembly: canonical Report JSON builder + schema (`schemaVersion "1.0.0"`).
 - Rendering: HTML via Chart.js 4.5.1 (animations off) + mandatory accessible data-table fallback, typed template literals, self-contained asset inlining; Markdown via typed literals (Mermaid); Terminal via picocolors 1.1.1 + hand-rolled tables; **JSON output path** writes the canonical Report JSON directly.
-- Licensing: online Lemon Squeezy License API via global `fetch` (no SDK) — `activate` / `validate` / `deactivate` / `restore` (CLI subcommands + interactive menu actions); device binding via activation instances; CI validates-not-activates with env-var key; cached activation-instance id stored under `~/.commit-sage` (a licensing artifact, not a user secret).
+- Licensing: online Lemon Squeezy License API via global `fetch` (no SDK) — `activate` / `validate` / `deactivate` / `restore` (CLI subcommands + interactive menu actions); device binding via activation instances; CI validates-not-activates with env-var key; cached activation-instance id stored under `~/.commit-whisper` (a licensing artifact, not a user secret).
 - Packaging (deferred, spike-gated): Node SEA (raw-mode stdin / ANSI across macOS/Linux/Windows); `pkg` / `nexe` fallbacks.
 
 **Tracked risk spikes (validate during implementation, not blockers):** performance at 50k commits vs the 2.5 GB RSS budget; the Node SEA packaging spike; TypeScript 6 toolchain confirmation (tsup/esbuild + vitest).
 
 ### UX Design Requirements
 
-- **UX-DR1 — Launchpad menu (zero-arg, TTY):** A calm, line-oriented list of discovery actions, led by **Analyze this repository** (cwd default), then **Analyze a remote repository**, **Settings** (configure provider/model/base URL + defaults, written to `~/.commit-sage`), **Status / doctor**, and **Help / show all flags**; license actions are state-conditioned (**Activate**, **Buy / Restore**, **Buy Me a Coffee** when unlicensed; **Deactivate** when licensed); **Quit** (Esc) always present. A persistent **header readiness line** (tier · AI provider/model or ⚠ not configured · cwd+branch) tops every interactive screen. Escapable via Esc/quit (clean exit + short flags cheatsheet); never a flashy dashboard or mandatory wizard. Fully keyboard-navigable; selection never conveyed by color alone; echoes the selected value in text.
+- **UX-DR1 — Launchpad menu (zero-arg, TTY):** A calm, line-oriented list of discovery actions, led by **Analyze this repository** (cwd default), then **Analyze a remote repository**, **Settings** (configure provider/model/base URL + defaults, written to `~/.commit-whisper`), **Status / doctor**, and **Help / show all flags**; license actions are state-conditioned (**Activate**, **Buy / Restore**, **Buy Me a Coffee** when unlicensed; **Deactivate** when licensed); **Quit** (Esc) always present. A persistent **header readiness line** (tier · AI provider/model or ⚠ not configured · cwd+branch) tops every interactive screen. Escapable via Esc/quit (clean exit + short flags cheatsheet); never a flashy dashboard or mandatory wizard. Fully keyboard-navigable; selection never conveyed by color alone; echoes the selected value in text.
 - **UX-DR2 — Guided prompts:** Fill only missing required inputs; default anything inferable (cwd is a git repo, default range/format); collect then go silent; prompt styling never bleeds into the report.
 - **UX-DR2a — Status / doctor view:** A read-only "where do I stand" mirror (menu action + impl-optional `--doctor` twin) showing license tier, configured provider/model, **whether the provider is reachable (probed, not just configured)**, and which required environment variables are set vs missing (named, never their values). No gauges/dashboard — a quiet diagnostic.
 - **UX-DR2b — First-run, no AI provider configured:** Because AI is required (FR-11) and secrets are never prompted, a brand-new user with no provider/key set must be guided — Status/doctor and the menu clearly name the fix ("set `OPENAI_API_KEY`, or use a local Ollama provider"), surfacing Ollama as the zero-cost local path. The tool never collects the key itself.
-- **UX-DR3 — Command echo / self-teaching bridge:** Every interactive run ends by echoing the equivalent full command (`Next time: commit-sage --max-commits 500 --format md`); a single-shot success may show at most one dim tip line.
+- **UX-DR3 — Command echo / self-teaching bridge:** Every interactive run ends by echoing the equivalent full command (`Next time: commit-whisper --max-commits 500 --format md`); a single-shot success may show at most one dim tip line.
 - **UX-DR4 — Phase log:** Show `retrieve → analyze → narrate → render` in order, one line per phase; progress messages by phase, not a silent spinner.
 - **UX-DR5 — Run summary block:** On completion state output is ready and name the saved path(s), repo/branch scope, and confidence level.
 - **UX-DR6 — Metric card / section:** Stable layout showing title, value(s), a right-sized **per-metric visual** (visual-by-shape), a derived **health band** (`ok`/`watch`/`risk`/`n/a`) by shape-differentiated glyph + label (never color alone), and the four-facet explanation (meaning, good behaviours, needs improvement, suggestions); a `not_available` metric still shows a card explaining why. In HTML, `ok` cards collapse to a one-line summary and `watch`/`risk` cards expand by default (progressive disclosure; all expanded with no JS).
@@ -125,7 +125,7 @@ _NFRs are cross-cutting and verified within the epics that realize them: determi
 ## Epic List
 
 ### Epic 1: Foundation & Walking Skeleton
-A developer can run `commit-sage` in a local git repository and get a real, narrated terminal report — the full pipeline working end-to-end on the thinnest viable slice. Establishes the project scaffold, the two-phase config resolver and frozen `RunConfig`, the capability gate, exit codes and stream discipline, local-cwd retrieval, the metrics-engine framework with its determinism harness and one proving metric group (Group A), minimal single-provider narration, canonical Report JSON assembly, and terminal rendering.
+A developer can run `commit-whisper` in a local git repository and get a real, narrated terminal report — the full pipeline working end-to-end on the thinnest viable slice. Establishes the project scaffold, the two-phase config resolver and frozen `RunConfig`, the capability gate, exit codes and stream discipline, local-cwd retrieval, the metrics-engine framework with its determinism harness and one proving metric group (Group A), minimal single-provider narration, canonical Report JSON assembly, and terminal rendering.
 **FRs covered:** FR-1 (local/cwd), FR-4 (framework + Group A), FR-5 (framework), FR-8 (minimal), FR-11 (first provider), FR-12, FR-13 (terminal), FR-15 (core strict single-shot)
 
 ### Epic 2: Complete Metrics Catalog
@@ -145,20 +145,20 @@ A user can analyze any repository, not just a local one. Adds remote HTTPS retri
 **FRs covered:** FR-1 (remote target), FR-2, FR-3 (remote + rate-limit failures)
 
 ### Epic 6: Interactive Experience
-A newcomer gets a guided, self-teaching first run. Adds the zero-arg launchpad menu (cwd-first), guided prompts that fill only what's missing, the Settings screen (configure provider/model/base URL + defaults, written to `~/.commit-sage`), the Status/doctor view, first-run-no-AI guidance, the command-echo self-teaching bridge, and the operational flags (`--show-config`, `--non-interactive`, `--verbose`/`--quiet`, `--version`, `NO_COLOR`/`FORCE_COLOR`).
+A newcomer gets a guided, self-teaching first run. Adds the zero-arg launchpad menu (cwd-first), guided prompts that fill only what's missing, the Settings screen (configure provider/model/base URL + defaults, written to `~/.commit-whisper`), the Status/doctor view, first-run-no-AI guidance, the command-echo self-teaching bridge, and the operational flags (`--show-config`, `--non-interactive`, `--verbose`/`--quiet`, `--version`, `NO_COLOR`/`FORCE_COLOR`).
 **FRs covered:** FR-14, FR-15 (operational flags)
 
 ### Epic 7: Licensing & Distribution
-The product can be monetized and shipped. Adds online Lemon Squeezy license validation, the three tiers, activate / deactivate / buy-restore flows, fail-closed (headless) versus degrade-to-Free (interactive) behavior, CI validate-not-activate, the `~/.commit-sage` config home, and the Node SEA self-contained-binary packaging spike across macOS/Linux/Windows.
+The product can be monetized and shipped. Adds online Lemon Squeezy license validation, the three tiers, activate / deactivate / buy-restore flows, fail-closed (headless) versus degrade-to-Free (interactive) behavior, CI validate-not-activate, the `~/.commit-whisper` config home, and the Node SEA self-contained-binary packaging spike across macOS/Linux/Windows.
 **FRs covered:** FR-16 (full enforcement), FR-15 (license validation in CI)
 
 ## Epic 1: Foundation & Walking Skeleton
 
-Run `commit-sage` in a local git repository and get a real, narrated terminal report — the full pipeline proven end-to-end on the thinnest viable slice.
+Run `commit-whisper` in a local git repository and get a real, narrated terminal report — the full pipeline proven end-to-end on the thinnest viable slice.
 
 ### Story 1.1: Project scaffold and toolchain
 
-As a developer building commit-sage,
+As a developer building commit-whisper,
 I want a strict, ESM-first TypeScript project scaffold with the locked toolchain,
 So that every later story is written against a consistent, type-safe, testable foundation.
 
@@ -206,7 +206,7 @@ So that every failure is scriptable and machine data never mixes with human chro
 
 **Given** any failure in the pipeline,
 **When** it propagates to the CLI shell,
-**Then** it is a `CommitSageError` subclass carrying an `exitCode` (0 success · 1 internal · 2 usage/validation · 3 missing input · 4 git/retrieve · 5 metrics · 6 narration/LLM · 7 render · 8 license · 9 completed-degraded) and a stable machine `code`,
+**Then** it is a `CommitWhisperError` subclass carrying an `exitCode` (0 success · 1 internal · 2 usage/validation · 3 missing input · 4 git/retrieve · 5 metrics · 6 narration/LLM · 7 render · 8 license · 9 completed-degraded) and a stable machine `code`,
 **And** the process exits with that code, emitting the human message to stderr,
 **And** code `9` (analysis rendered, narrative unavailable) is the one code NOT thrown as an error — the CLI shell sets it when the substrate render completes after a narration failure; codes 1–8 mean no output, 0 and 9 mean output produced.
 
@@ -218,14 +218,14 @@ So that every failure is scriptable and machine data never mixes with human chro
 ### Story 1.4: Local repository retrieval
 
 As a developer in a git repository,
-I want commit-sage to read my local history via the system `git`,
+I want commit-whisper to read my local history via the system `git`,
 So that analysis can run with no network and no clone.
 
 **Acceptance Criteria:**
 
 **Given** the current working directory is a git repository,
 **When** retrieval runs with no target argument,
-**Then** commit-sage defaults the target to cwd and reads, per commit, the hash, author and committer identity, author and commit timestamps, message, parent hashes, and changed-file metadata via a shell-out to the system `git` (no native bindings).
+**Then** commit-whisper defaults the target to cwd and reads, per commit, the hash, author and committer identity, author and commit timestamps, message, parent hashes, and changed-file metadata via a shell-out to the system `git` (no native bindings).
 
 **Given** a directory that is not a git repository,
 **When** retrieval runs,
@@ -276,7 +276,7 @@ So that every run yields explanation, not just numbers (AI is required).
 
 **Given** `aiMode: auto` (the interactive default) and a narration / grounding / provider failure mid-run,
 **When** the failure occurs after the deterministic analysis is already computed,
-**Then** commit-sage **fails open** — it renders the deterministic `analysis` substrate rather than discarding computed work, marks the output degraded, and exits with code **9** (completed-degraded), never silently substituting,
+**Then** commit-whisper **fails open** — it renders the deterministic `analysis` substrate rather than discarding computed work, marks the output degraded, and exits with code **9** (completed-degraded), never silently substituting,
 **And** the narrated **showpiece** report is impossible to produce without the `narrative` subtree (no AI, no showpiece) — so the report still requires AI by construction.
 
 **Given** `aiMode: off` (`--no-ai`, the headless/CI default),
@@ -310,13 +310,13 @@ So that all outputs derive from one source of truth and trends diff cleanly.
 ### Story 1.8: Terminal rendering and end-to-end strict single-shot run
 
 As a developer,
-I want `commit-sage` with arguments to print a terminal report end-to-end,
+I want `commit-whisper` with arguments to print a terminal report end-to-end,
 So that the full pipeline is demonstrably working on the walking skeleton.
 
 **Acceptance Criteria:**
 
 **Given** a local repo and a configured provider,
-**When** `commit-sage` is invoked with at least one argument,
+**When** `commit-whisper` is invoked with at least one argument,
 **Then** it runs strict single-shot (no menu, no prompts) through retrieve → analyze → narrate → assemble → render and prints a terminal report to stdout,
 **And** the run exits 0 on success.
 
@@ -331,7 +331,7 @@ So that the full pipeline is demonstrably working on the walking skeleton.
 
 **Given** a strict single-shot run that hard-fails on a missing required input,
 **When** the typed error is shown,
-**Then** it names what is missing and points the user to the bare `commit-sage` command for guided setup — the redirect that keeps the failure from being a hostile cliff.
+**Then** it names what is missing and points the user to the bare `commit-whisper` command for guided setup — the redirect that keeps the failure from being a hostile cliff.
 
 ## Epic 2: Complete Metrics Catalog
 
@@ -587,7 +587,7 @@ So that I can pipe, diff, and archive the canonical artifact.
 **When** a run completes,
 **Then** all selected formats are produced from the single Report JSON with no re-analysis or second LLM call,
 **And** selecting `json` writes the canonical Report JSON to the chosen destination,
-**And** HTML/Markdown with no path default to `./commit-sage-report.{html,md}`, and `-` means stdout.
+**And** HTML/Markdown with no path default to `./commit-whisper-report.{html,md}`, and `-` means stdout.
 
 ### Story 4.5: HTML auto-open with `--no-open`
 
@@ -617,7 +617,7 @@ So that I can report on repos I am not sitting inside.
 
 **Given** a remote HTTPS repository URL,
 **When** retrieval runs,
-**Then** commit-sage clones it into an OS temp working directory via the system `git`,
+**Then** commit-whisper clones it into an OS temp working directory via the system `git`,
 **And** the temp clone is cleaned up on every exit path (success, failure, Ctrl-C),
 **And** no clone is persisted between runs (stateless).
 
@@ -661,7 +661,7 @@ So that I can find what the tool does without reading docs.
 **Acceptance Criteria:**
 
 **Given** zero arguments in an interactive terminal,
-**When** `commit-sage` runs,
+**When** `commit-whisper` runs,
 **Then** a calm, line-oriented launchpad opens led by "Analyze this repository (cwd)", then "Analyze a remote repository", **"Settings"**, "Status / doctor", and "Help / show all flags",
 **And** a persistent **header readiness line** (tier · AI provider/model or ⚠ not configured · cwd path + branch) tops the screen,
 **And** license actions are shown by effective state (Activate, Buy / Restore, Buy Me a Coffee when unlicensed; Deactivate when licensed),
@@ -678,7 +678,7 @@ So that the run is easy now and I learn the headless form for next time.
 **Given** a guided run,
 **When** prompts are collected,
 **Then** only missing required inputs are asked, anything inferable (cwd is a git repo, default format) is defaulted, and prompt styling never bleeds into the report,
-**And** on completion the equivalent non-interactive command is echoed (e.g. `Next time: commit-sage --max-commits 500 --format md`),
+**And** on completion the equivalent non-interactive command is echoed (e.g. `Next time: commit-whisper --max-commits 500 --format md`),
 **And** the menu names any required secret's environment variable but never collects the secret.
 
 ### Story 6.3: Status/doctor view and first-run-no-AI guidance
@@ -731,7 +731,7 @@ So that I don't re-specify them every run and the first-run "no AI" state has a 
 
 **Given** the Settings menu action,
 **When** the user configures provider (closed enum), model, base URL, default output format, timezone, and/or max-commits,
-**Then** the non-secret choices are written to the config home (`~/.commit-sage`) via an atomic write (temp + rename) and remembered across runs,
+**Then** the non-secret choices are written to the config home (`~/.commit-whisper`) via an atomic write (temp + rename) and remembered across runs,
 **And** no secret is ever collected or written — a cloud provider's API key remains environment-variable-only and is named, never entered.
 
 **Given** a saved Setting and an overriding environment variable or flag,
@@ -752,7 +752,7 @@ So that paid tiers are enforced before any analysis.
 **Acceptance Criteria:**
 
 **Given** a run that requires a tier check,
-**When** commit-sage starts,
+**When** commit-whisper starts,
 **Then** before any analysis or rendering it validates the license online via the Lemon Squeezy License API and resolves the effective tier into the frozen `RunConfig` (e.g. `entitlement {tier, commitCap?}`),
 **And** the Free tier holds no key, makes no API call, and runs with the 100-commit cap,
 **And** license validation transmits only the license key and a device identifier — never repository data.
@@ -767,11 +767,11 @@ So that I control my devices without new purchases.
 
 **Given** the unlicensed interactive menu,
 **When** the user chooses "Buy / Restore license",
-**Then** commit-sage opens the store in the browser to buy a new license or recover an existing purchase (no in-terminal key entry, no in-app checkout).
+**Then** commit-whisper opens the store in the browser to buy a new license or recover an existing purchase (no in-terminal key entry, no in-app checkout).
 
 **Given** the unlicensed interactive menu and a license key in hand,
 **When** the user chooses "Activate license" and enters the key,
-**Then** commit-sage validates it online and caches the activation-instance id under `~/.commit-sage` — this is the only in-app key-entry screen.
+**Then** commit-whisper validates it online and caches the activation-instance id under `~/.commit-whisper` — this is the only in-app key-entry screen.
 
 **Given** a licensed Single-device user,
 **When** they choose "Deactivate license",
@@ -799,7 +799,7 @@ So that automation stays trustworthy and interactive use stays friendly.
 
 As a user without a Node runtime,
 I want a self-contained executable,
-So that I can run commit-sage with no prerequisites.
+So that I can run commit-whisper with no prerequisites.
 
 **Acceptance Criteria:**
 

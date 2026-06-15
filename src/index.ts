@@ -1,5 +1,5 @@
 /**
- * commit-sage entrypoint (Story 1.8).
+ * commit-whisper entrypoint (Story 1.8).
  *
  * The ONLY top-level await in the codebase: bootstrap the CLI shell and exit
  * with its resolved code. All logic lives in `cli/cli.ts` (`main`), which is

@@ -1,10 +1,10 @@
 /**
  * The typed error hierarchy (Story 1.3).
  *
- * Every operational failure is a `CommitSageError` subclass carrying a stable
+ * Every operational failure is a `CommitWhisperError` subclass carrying a stable
  * machine `code` and a numeric `exitCode` (the C4 model). The CLI shell maps a
  * thrown error to its `exitCode` and prints its `message` to stderr; any
- * non-`CommitSageError` throwable maps to exit 1 (internal). See
+ * non-`CommitWhisperError` throwable maps to exit 1 (internal). See
  * `cli/exit-codes.ts` for the canonical enum + the error->exit/message
  * resolvers, `shared/secret.ts` for `Secret<string>`, and `shared/ui.ts` for
  * the single stderr writer.
@@ -24,7 +24,7 @@ export interface ErrorOptions {
 }
 
 /** Base class for every operational failure mapped to a machine-readable exit code. */
-export class CommitSageError extends Error {
+export class CommitWhisperError extends Error {
   readonly code: string;
   readonly exitCode: number;
 
@@ -44,7 +44,7 @@ export class CommitSageError extends Error {
  * Thrown by Phase-2 gap handling when a required config field is missing in a
  * non-interactive context. It is a typed error, never a prompt (FR-15).
  */
-export class MissingRequiredConfigError extends CommitSageError {
+export class MissingRequiredConfigError extends CommitWhisperError {
   readonly field: string;
 
   constructor(field: string, envVar?: string) {
@@ -59,49 +59,49 @@ export class MissingRequiredConfigError extends CommitSageError {
 }
 
 /** Exit 1 — an unexpected / internal error (also the fallback for unknown throwables). */
-export class InternalError extends CommitSageError {
+export class InternalError extends CommitWhisperError {
   constructor(message = GENERIC_INTERNAL_MESSAGE) {
     super(message, "INTERNAL", 1);
   }
 }
 
 /** Exit 2 — a usage / validation error (e.g. a bad flag). */
-export class UsageError extends CommitSageError {
+export class UsageError extends CommitWhisperError {
   constructor(message: string) {
     super(message, "USAGE", 2);
   }
 }
 
 /** Exit 4 — a retrieve / git failure. Wraps the underlying git/spawn error as `cause`. */
-export class RetrieveError extends CommitSageError {
+export class RetrieveError extends CommitWhisperError {
   constructor(message: string, options?: ErrorOptions) {
     super(message, "RETRIEVE", 4, options);
   }
 }
 
 /** Exit 5 — a metrics-engine failure. */
-export class MetricsError extends CommitSageError {
+export class MetricsError extends CommitWhisperError {
   constructor(message: string) {
     super(message, "METRICS", 5);
   }
 }
 
 /** Exit 6 — a narration / LLM failure (thrown only when `aiMode: required`). Wraps the underlying SDK error as `cause`. */
-export class NarrationError extends CommitSageError {
+export class NarrationError extends CommitWhisperError {
   constructor(message: string, options?: ErrorOptions) {
     super(message, "NARRATION", 6, options);
   }
 }
 
 /** Exit 7 — a render failure. Wraps the underlying error as `cause` when one exists. */
-export class RenderError extends CommitSageError {
+export class RenderError extends CommitWhisperError {
   constructor(message: string, options?: ErrorOptions) {
     super(message, "RENDER", 7, options);
   }
 }
 
 /** Exit 8 — a license-gate failure. */
-export class LicenseError extends CommitSageError {
+export class LicenseError extends CommitWhisperError {
   constructor(message: string) {
     super(message, "LICENSE", 8);
   }

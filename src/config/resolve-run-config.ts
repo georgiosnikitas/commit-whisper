@@ -8,7 +8,7 @@
  * All I/O is INJECTED at this boundary (cwd, env, TTY signals, analysisTimestamp,
  * flags), keeping the resolver testable and the pipeline hexagonally clean. Two
  * layers are stubbed until their owning stories land:
- *   - `configFile` defaults to `{}` (real `~/.commit-sage` reading is Epic 6).
+ *   - `configFile` defaults to `{}` (real `~/.commit-whisper` reading is Epic 6).
  *   - `flags` is supplied by the caller (real commander parsing is `cli/`, 1.8).
  * `entitlement` defaults to the Free tier (the license gate is Epic 7).
  */
@@ -38,7 +38,7 @@ export interface ResolveInput {
   analysisTimestamp: IsoDate;
   /** Parsed-CLI non-secret layer (highest precedence). Injected by `cli/` (Story 1.8). */
   flags?: PartialRunConfig;
-  /** Config-file layer. Injected by Epic 6's `~/.commit-sage` reader; `{}` until then. */
+  /** Config-file layer. Injected by Epic 6's `~/.commit-whisper` reader; `{}` until then. */
   configFile?: PartialRunConfig;
   /** Resolved by the license gate (Epic 7); defaults to Free. */
   entitlement?: Entitlement;

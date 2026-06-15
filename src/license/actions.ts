@@ -45,7 +45,7 @@ export async function activateLicense(deps: ActivateDeps): Promise<ActivationOut
     const detail = err instanceof Error ? err.message : "write failed";
     return {
       ok: false,
-      reason: `Activated online, but couldn't save it on this device (${detail}). Set COMMIT_SAGE_LICENSE_KEY so it applies on your next run — do NOT re-activate (that would use another device slot).`,
+      reason: `Activated online, but couldn't save it on this device (${detail}). Set COMMIT_WHISPER_LICENSE_KEY so it applies on your next run — do NOT re-activate (that would use another device slot).`,
     };
   }
   return { ok: true, tier: tierForVariantName(result.variantName) };
@@ -67,7 +67,7 @@ export interface DeactivateDeps {
  */
 export async function deactivateLicense(deps: DeactivateDeps): Promise<DeactivationOutcome> {
   if (deps.licenseKey === undefined || deps.licenseKey === "") {
-    return { ok: false, reason: "No license key found — set COMMIT_SAGE_LICENSE_KEY, then re-run." };
+    return { ok: false, reason: "No license key found — set COMMIT_WHISPER_LICENSE_KEY, then re-run." };
   }
   if (deps.instanceId === undefined || deps.instanceId === "") {
     return { ok: false, reason: "No activation found on this device." };
@@ -82,7 +82,7 @@ export async function deactivateLicense(deps: DeactivateDeps): Promise<Deactivat
     const detail = err instanceof Error ? err.message : "write failed";
     return {
       ok: false,
-      reason: `Freed online, but couldn't clear the local cache (${detail}). Remove ~/.commit-sage/license.json to finish.`,
+      reason: `Freed online, but couldn't clear the local cache (${detail}). Remove ~/.commit-whisper/license.json to finish.`,
     };
   }
   return { ok: true };

@@ -1,6 +1,6 @@
 /**
  * The config-store (Story 6.5) — the product's one config WRITE path + the
- * `~/.commit-sage` reader that feeds the resolver's `configFile` layer.
+ * `~/.commit-whisper` reader that feeds the resolver's `configFile` layer.
  *
  * The interactive Settings screen persists the user's NON-SECRET everyday
  * choices (provider, model, base URL, default output format, timezone,
@@ -79,14 +79,14 @@ function coercePositiveInt(raw: unknown): number | undefined {
   return raw;
 }
 
-/** The config home: an explicit `COMMIT_SAGE_CONFIG` override, else `<home>/.commit-sage`. */
+/** The config home: an explicit `COMMIT_WHISPER_CONFIG` override, else `<home>/.commit-whisper`. */
 export function configHome(env: NodeJS.ProcessEnv): string {
-  const override = str(env.COMMIT_SAGE_CONFIG);
+  const override = str(env.COMMIT_WHISPER_CONFIG);
   if (override !== undefined) {
     return override;
   }
   const home = str(env.HOME) ?? str(env.USERPROFILE) ?? ".";
-  return join(home, ".commit-sage");
+  return join(home, ".commit-whisper");
 }
 
 /** The config file path inside the config home. */

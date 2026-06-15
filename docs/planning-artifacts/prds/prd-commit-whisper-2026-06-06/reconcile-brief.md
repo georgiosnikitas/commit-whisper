@@ -1,6 +1,6 @@
 # Brief → PRD Reconciliation
 
-*Finalize step 2. Source: [brief.md](../../briefs/brief-commit-sage-2026-06-06/brief.md) + addendum. Target: [prd.md](./prd.md) + addendum. Run 2026-06-06.*
+*Finalize step 2. Source: [brief.md](../../briefs/brief-commit-whisper-2026-06-06/brief.md) + addendum. Target: [prd.md](./prd.md) + addendum. Run 2026-06-06.*
 
 ## Verdict
 

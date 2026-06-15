@@ -73,7 +73,7 @@ describe("createNarrate", () => {
     })(ANALYSIS, cfg({ provider: "gemini", llmModel: "gemini-2.0-flash" }));
     const narrative = (outcome as { narrative: { confidence?: { level: string; escalation?: string } } }).narrative;
     expect(narrative.confidence?.level).toBe("low");
-    expect(narrative.confidence?.escalation).toContain("COMMIT_SAGE_PROVIDER");
+    expect(narrative.confidence?.escalation).toContain("COMMIT_WHISPER_PROVIDER");
   });
 
   it("applies the deterministic grounding pass — a fabricated numeric claim is removed before returning (Story 3.4)", async () => {

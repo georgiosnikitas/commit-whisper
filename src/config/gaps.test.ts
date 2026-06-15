@@ -53,7 +53,7 @@ describe("finalizeRunConfig — required-missing throws typed error (never a pro
     } catch (e) {
       expect((e as MissingRequiredConfigError).exitCode).toBe(3);
       expect((e as MissingRequiredConfigError).field).toBe("repoTarget");
-      expect((e as MissingRequiredConfigError).message).toContain("COMMIT_SAGE_REPO");
+      expect((e as MissingRequiredConfigError).message).toContain("COMMIT_WHISPER_REPO");
     }
   });
 
@@ -91,7 +91,7 @@ describe("finalizeRunConfig — required-missing throws typed error (never a pro
       expect.unreachable();
     } catch (e) {
       expect((e as MissingRequiredConfigError).field).toBe("provider");
-      expect((e as MissingRequiredConfigError).message).toContain("COMMIT_SAGE_PROVIDER");
+      expect((e as MissingRequiredConfigError).message).toContain("COMMIT_WHISPER_PROVIDER");
     }
   });
 });

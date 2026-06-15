@@ -9,12 +9,12 @@
  * Private-remote auth (5.2): an optional `Secret` PAT (env-only, resolved in
  * `config/env.ts`) is supplied to the clone via a credential helper FED FROM THE
  * CHILD ENVIRONMENT — the helper script in `argv` names the env var
- * (`$COMMIT_SAGE_GIT_PAT`), never the token value, so the secret never appears in
+ * (`$COMMIT_WHISPER_GIT_PAT`), never the token value, so the secret never appears in
  * `argv`/`ps`/logs/output. `GIT_TERMINAL_PROMPT=0` + a cleared credential helper
  * make a private-no-token clone fail fast instead of hanging on a prompt. An
  * auth-rejected clone yields a token-redacted, actionable `RetrieveError`.
  *
- * READ-ONLY: `git clone` reads the remote; commit-sage never pushes. `execFile`
+ * READ-ONLY: `git clone` reads the remote; commit-whisper never pushes. `execFile`
  * array args + a `--` end-of-options guard (no shell from us). Failure
  * classification beyond the auth dimension is Story 5.3.
  */
@@ -30,13 +30,13 @@ import { cloneFailureError } from "./errors.js";
 import type { Secret } from "../shared/secret.js";
 
 /** The child-env variable the credential helper reads the token from (never in argv). */
-const TOKEN_ENV_VAR = "COMMIT_SAGE_GIT_PAT";
+const TOKEN_ENV_VAR = "COMMIT_WHISPER_GIT_PAT";
 /** A username that authenticates a PAT on GitHub + GitLab (PAT-as-password). */
 const AUTH_USERNAME = "x-access-token";
 
 /**
  * The inline credential helper: a literal `sh` snippet git runs for a `get`. It
- * echoes the username + the password from `$COMMIT_SAGE_GIT_PAT` — the env var
+ * echoes the username + the password from `$COMMIT_WHISPER_GIT_PAT` — the env var
  * NAME (expanded by git's shell at runtime), never the token value. Neither the
  * token nor the URL is interpolated into this constant, so there is no injection.
  */

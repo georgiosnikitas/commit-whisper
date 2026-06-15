@@ -11,7 +11,7 @@ import { defineConfig } from "tsup";
  * (no native addons), and git is a `git` shell-out, so it all bundles cleanly.
  */
 export default defineConfig({
-  entry: { "commit-sage": "src/sea-entry.ts" },
+  entry: { "commit-whisper": "src/sea-entry.ts" },
   format: ["cjs"],
   target: "node22",
   platform: "node",

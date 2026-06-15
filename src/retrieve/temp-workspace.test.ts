@@ -32,7 +32,7 @@ function harness(over: Partial<TempWorkspaceDeps> = {}) {
   const removed: string[] = [];
   const signals = fakeSignals();
   const deps: TempWorkspaceDeps = {
-    mkdtemp: () => "/tmp/commit-sage-XXXX",
+    mkdtemp: () => "/tmp/commit-whisper-XXXX",
     rmrf: (dir) => {
       removed.push(dir);
     },
@@ -46,11 +46,11 @@ describe("withTempWorkspace", () => {
   it("on success: runs work in the temp dir, cleans up once, and deregisters handlers", async () => {
     const h = harness();
     const result = await withTempWorkspace(async (dir) => {
-      expect(dir).toBe("/tmp/commit-sage-XXXX");
+      expect(dir).toBe("/tmp/commit-whisper-XXXX");
       return "ok";
     }, h.deps);
     expect(result).toBe("ok");
-    expect(h.removed).toEqual(["/tmp/commit-sage-XXXX"]); // cleaned exactly once
+    expect(h.removed).toEqual(["/tmp/commit-whisper-XXXX"]); // cleaned exactly once
     expect(h.signals.count("SIGINT")).toBe(0); // handler removed
     expect(h.signals.count("SIGTERM")).toBe(0);
   });
@@ -62,7 +62,7 @@ describe("withTempWorkspace", () => {
         throw new Error("boom");
       }, h.deps),
     ).rejects.toThrow("boom");
-    expect(h.removed).toEqual(["/tmp/commit-sage-XXXX"]); // cleaned despite the throw
+    expect(h.removed).toEqual(["/tmp/commit-whisper-XXXX"]); // cleaned despite the throw
     expect(h.signals.count("SIGINT")).toBe(0);
     expect(h.signals.count("SIGTERM")).toBe(0);
   });
@@ -73,7 +73,7 @@ describe("withTempWorkspace", () => {
       h.signals.fire("SIGINT"); // Ctrl-C arrives while work is running
       return "done";
     }, h.deps);
-    expect(h.removed).toContain("/tmp/commit-sage-XXXX");
+    expect(h.removed).toContain("/tmp/commit-whisper-XXXX");
     expect(h.signals.exits).toContain(130);
   });
 
@@ -92,7 +92,7 @@ describe("withTempWorkspace", () => {
       h.signals.fire("SIGINT"); // cleanup #1 (handler)
       return "done"; // → finally cleanup #2 (no-op)
     }, h.deps);
-    expect(h.removed).toEqual(["/tmp/commit-sage-XXXX"]); // exactly one rm
+    expect(h.removed).toEqual(["/tmp/commit-whisper-XXXX"]); // exactly one rm
   });
 
   it("an rmrf failure is swallowed — never masks the work result", async () => {

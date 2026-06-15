@@ -47,7 +47,7 @@ function subcommand(args: readonly string[]): string | undefined {
 }
 
 const workspace: TempWorkspaceDeps = {
-  mkdtemp: () => "/tmp/commit-sage-DISPATCH",
+  mkdtemp: () => "/tmp/commit-whisper-DISPATCH",
   rmrf: () => {},
   signals: { once: () => {}, removeListener: () => {}, exit: () => {} },
 };
@@ -68,7 +68,7 @@ describe("createRetrieve — dispatch by target", () => {
   it("threads the git token to the remote adapter (the clone carries the token env, Story 5.2)", async () => {
     const p = probeRunner();
     await createRetrieve({ runner: p.runner, workspace, gitToken: new Secret("ghp_x") })(cfg("https://github.com/owner/repo"));
-    expect(p.cloneEnv()?.COMMIT_SAGE_GIT_PAT).toBe("ghp_x");
+    expect(p.cloneEnv()?.COMMIT_WHISPER_GIT_PAT).toBe("ghp_x");
   });
 
   it("a local target ignores the token (no clone, no token env)", async () => {

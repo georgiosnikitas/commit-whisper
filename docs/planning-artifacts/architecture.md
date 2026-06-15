@@ -5,15 +5,15 @@ lastStep: 8
 status: 'complete'
 completedAt: '2026-06-12'
 inputDocuments:
-  - docs/planning-artifacts/briefs/brief-commit-sage-2026-06-06/brief.md
-  - docs/planning-artifacts/briefs/brief-commit-sage-2026-06-06/addendum.md
-  - docs/planning-artifacts/prds/prd-commit-sage-2026-06-06/prd.md
-  - docs/planning-artifacts/prds/prd-commit-sage-2026-06-06/addendum.md
-  - docs/planning-artifacts/prds/prd-commit-sage-2026-06-06/reconcile-brief.md
-  - docs/planning-artifacts/prds/prd-commit-sage-2026-06-06/review-rubric.md
-  - docs/planning-artifacts/ux-designs/ux-commit-sage-2026-06-11/DESIGN.md
-  - docs/planning-artifacts/ux-designs/ux-commit-sage-2026-06-11/EXPERIENCE.md
-project_name: 'commit-sage'
+  - docs/planning-artifacts/briefs/brief-commit-whisper-2026-06-06/brief.md
+  - docs/planning-artifacts/briefs/brief-commit-whisper-2026-06-06/addendum.md
+  - docs/planning-artifacts/prds/prd-commit-whisper-2026-06-06/prd.md
+  - docs/planning-artifacts/prds/prd-commit-whisper-2026-06-06/addendum.md
+  - docs/planning-artifacts/prds/prd-commit-whisper-2026-06-06/reconcile-brief.md
+  - docs/planning-artifacts/prds/prd-commit-whisper-2026-06-06/review-rubric.md
+  - docs/planning-artifacts/ux-designs/ux-commit-whisper-2026-06-11/DESIGN.md
+  - docs/planning-artifacts/ux-designs/ux-commit-whisper-2026-06-11/EXPERIENCE.md
+project_name: 'commit-whisper'
 user_name: 'George'
 date: '2026-06-12'
 ---
@@ -92,7 +92,7 @@ _This document builds collaboratively through step-by-step discovery. Sections a
 
 ### Domain Framing
 
-commit-sage's primary domain is a **terminal-native Node.js CLI / batch pipeline**. There
+commit-whisper's primary domain is a **terminal-native Node.js CLI / batch pipeline**. There
 is no server, no persistence layer, and no UI framework in play; the only rich-render
 concern is a **self-contained static HTML report** emitted as a build artifact. Because
 of this, there is no canonical `create-app`-style starter for the project — the CLI
@@ -101,7 +101,7 @@ ecosystem has no single blessed scaffold the way web frameworks do.
 ### Options Weighed
 
 **Option A — oclif 4.23.14 (generator, batteries-included) — REJECTED as base.**
-oclif is an excellent framework for multi-command, plugin-driven CLIs, but commit-sage is
+oclif is an excellent framework for multi-command, plugin-driven CLIs, but commit-whisper is
 a single-purpose pipeline, not a command suite. Adopting it would pull in machinery we
 never use — the plugin system, auto-update, and AWS-S3-backed distribution — and expand
 the dependency surface (including the AWS SDK) in direct conflict with our lean,
@@ -187,7 +187,7 @@ non-interactive: if we cannot prove a usable TTY, we behave headlessly.
 **Any invocation with ≥1 arg is fully non-interactive, REGARDLESS of TTY.** It runs only
 if all required inputs are satisfied; any required-missing input produces a typed error
 and a non-zero exit code. It **NEVER prompts**, even in an interactive terminal. The
-**only** interactive entry point in the entire product is the bare zero-arg `commit-sage`
+**only** interactive entry point in the entire product is the bare zero-arg `commit-whisper`
 invoked in a TTY.
 
 ### Truth Table
@@ -222,7 +222,7 @@ variables only — the config-file and flag layers never carry secrets.**
 
 ### Config Persistence — the `Settings` Write Path
 
-The resolver above only **reads** `~/.commit-sage/config`. The interactive **`Settings`**
+The resolver above only **reads** `~/.commit-whisper/config`. The interactive **`Settings`**
 action (UX: *MENUS.md → Settings*) adds the product's one config **write** path: a
 `config/config-store.ts` writer that persists the user's **non-secret** everyday choices —
 provider, model, base URL, default output format, timezone, max-commits — so they are
@@ -243,7 +243,7 @@ set-once and remembered.
 - **Atomic write.** Persist via **write-to-temp + `rename`** (atomic on a single volume) so a
   racing second invocation or an interrupt can never leave a torn file. The on-disk format
   remains the documented **non-secret config schema** (P7 — `camelCase` keys), the same
-  shape the reader already parses; this does not make `~/.commit-sage` a cache (C1 unchanged).
+  shape the reader already parses; this does not make `~/.commit-whisper` a cache (C1 unchanged).
 
 ### Hexagonal Boundary
 
@@ -265,7 +265,7 @@ guarantees:
 ### Stream Discipline
 
 **stdout carries machine data only; stderr carries all human chrome** (menu, spinner,
-prompts, update notices). This keeps `commit-sage --format json > report.json` clean under
+prompts, update notices). This keeps `commit-whisper --format json > report.json` clean under
 every condition.
 
 ### Secrets
@@ -280,15 +280,15 @@ every condition.
   `config/env.ts` **also** accepts **`GEMINI_API_KEY`** as a friendly alias: it reads the
   alias explicitly and injects it as the provider factory's `apiKey`, rather than relying on
   the SDK's auto-pickup, so the friendly name works without a second SDK contract. The **git
-  PAT** resolves with **`COMMIT_SAGE_GIT_TOKEN` taking precedence** over the host-specific
+  PAT** resolves with **`COMMIT_WHISPER_GIT_TOKEN` taking precedence** over the host-specific
   `GITHUB_TOKEN` / `GITLAB_TOKEN` / `BITBUCKET_TOKEN` fallbacks (see the matrix note on the
   GitHub-Actions `GITHUB_TOKEN` footgun).
 - Secrets are wrapped in a `Secret<string>` type whose `toString` / `toJSON` redact to
   `***`. They are never written to Report JSON, logs, or any output.
-- **First run, no secret:** behavior is identical in every mode — commit-sage never
+- **First run, no secret:** behavior is identical in every mode — commit-whisper never
   prompts for or persists a secret.
   - *Argument mode* → hard error naming the required env var and redirecting the user to
-    bare `commit-sage`.
+    bare `commit-whisper`.
   - *Interactive mode* → the menu **names the required env var to set**; the user exports
     it and re-runs. No masked prompt and no on-disk secret, so the cross-OS `0600`
     secret-at-rest concern is moot.
@@ -320,7 +320,7 @@ computed work — a *distinct, scriptable* signal that output exists but is degr
 reserved for the case where narration was genuinely *required*** (`aiMode: required` — e.g. a
 forced `--ai` run that cannot reach a provider) and the run therefore truly fails, with no
 substrate masquerading as success; `6` and `9` are thus **mutually exclusive by `aiMode`**.
-Unlike `1`–`8`, **code `9` is not a thrown `CommitSageError`** — it is a degraded-success signal
+Unlike `1`–`8`, **code `9` is not a thrown `CommitWhisperError`** — it is a degraded-success signal
 the CLI shell sets when the render path completed on the substrate (see C4 and
 *Fail-Open & Metrics-Only*).
 
@@ -399,7 +399,7 @@ rendering (I2), license enforcement (I3).
   Reinforces the no-persistence/privacy posture and keeps the no-retry story clean.
   - *Cascading:* clone into an OS temp dir with **guaranteed cleanup on every exit path**
     (success, failure, Ctrl-C / `isCancel`).
-  - *Config home is not a cache:* the `~/.commit-sage` config home holds only the config
+  - *Config home is not a cache:* the `~/.commit-whisper` config home holds only the config
     file and the cached license activation-instance id — it **never** holds repository
     data, so this stateless posture is **unchanged** by it.
 
@@ -516,7 +516,7 @@ also emits a structured error object. An "unhealthy" repo finding is **not** a f
 the default `auto` mode the pipeline does **not** throw — it renders the deterministic
 `analysis` substrate, and the CLI shell maps that completed-but-degraded run to **exit 9**
 (see *Fail-Open & Metrics-Only*). So the shell distinguishes three terminal states: a thrown
-`CommitSageError` ⇒ its `exitCode` (`1`–`8`); a clean completion ⇒ `0`; a completion that fell
+`CommitWhisperError` ⇒ its `exitCode` (`1`–`8`); a clean completion ⇒ `0`; a completion that fell
 back to the substrate ⇒ `9`. Code `6` stays meaningful precisely because it fires **only** when
 narration was *required* (`aiMode: required`); in `auto`, the same underlying narration failure
 degrades to `9` instead.
@@ -699,23 +699,23 @@ the config / flag / prompt layers entirely (**env only**).
 
 | Field | Sources | Env var | Class | Requiredness · schema · notes |
 |---|---|---|---|---|
-| `repoTarget` | flag(pos)·config·env·prompt | `COMMIT_SAGE_REPO` | non-secret | required overall; **defaults to cwd**; local path or HTTPS URL |
-| `gitPat` | **env only** | `COMMIT_SAGE_GIT_TOKEN` (**primary**) → host fallback `GITHUB_TOKEN`·`GITLAB_TOKEN`·`BITBUCKET_TOKEN` (lower precedence) | **secret** | conditional — **private remote only**; never flag/config/prompt |
-| `branch` | flag·config·env·prompt | `COMMIT_SAGE_BRANCH` | non-secret | default = repo HEAD; reserved `all` ⇒ `{kind:"all"}` sentinel |
-| `startDate` | flag·config·env·prompt | `COMMIT_SAGE_START_DATE` | non-secret | optional; **unset = unbounded**; `YYYY-MM-DD`, read in `timezone` |
-| `endDate` | flag·config·env·prompt | `COMMIT_SAGE_END_DATE` | non-secret | optional; **unset = unbounded** |
-| `timezone` | flag(`--tz`)·config·env | `COMMIT_SAGE_TZ` | non-secret | **default `UTC`**; **determinism-critical** (governs date filters + time-bucketed metrics); not prompted |
-| `authorFilter` | flag·config·env·prompt | `COMMIT_SAGE_AUTHOR` | non-secret | optional; matches canonical (.mailmap) identity |
-| `maxCommits` | flag·config·env·prompt | `COMMIT_SAGE_MAX_COMMITS` | non-secret | optional positive int; see Date × Free-Cap ruling |
-| `noMerges` | flag(`--no-merges`)·config·env·prompt | `COMMIT_SAGE_NO_MERGES` | non-secret | bool, default `false`; **affects metric values** (not cosmetic) |
-| `outputFormats` | flag(`--format`, repeatable)·config·env·prompt | `COMMIT_SAGE_FORMAT` | non-secret | **multi-select** `{html,markdown,terminal,json}`; ≥ 1; default `terminal` |
-| `outputPath` | flag(`-o`)·config·env·prompt | `COMMIT_SAGE_OUT` | non-secret | applies to the **file formats** `{html, markdown, json}` (default `./commit-sage-report.{html,md,json}`; `-` = **stdout**); `terminal` is **stdout-native** and ignores it |
-| `aiMode` | flag(`--ai` / `--no-ai`)·config·env·channel-default | `COMMIT_SAGE_AI_MODE` (alias `COMMIT_SAGE_NO_AI`) | non-secret | tri-state (`required` · `auto` · `off`); **default `auto` interactive / `off` headless·CI**; `off` ⇒ skip `narrate` + preflight, exit 0; `auto` ⇒ fail-open substrate (exit 9) on narration loss; `required` (`--ai`) ⇒ hard-fail exit 6 |
-| `provider` | flag·config·env·prompt | `COMMIT_SAGE_PROVIDER` | non-secret | **required unless `aiMode: off`**; closed enum of 5 |
+| `repoTarget` | flag(pos)·config·env·prompt | `COMMIT_WHISPER_REPO` | non-secret | required overall; **defaults to cwd**; local path or HTTPS URL |
+| `gitPat` | **env only** | `COMMIT_WHISPER_GIT_TOKEN` (**primary**) → host fallback `GITHUB_TOKEN`·`GITLAB_TOKEN`·`BITBUCKET_TOKEN` (lower precedence) | **secret** | conditional — **private remote only**; never flag/config/prompt |
+| `branch` | flag·config·env·prompt | `COMMIT_WHISPER_BRANCH` | non-secret | default = repo HEAD; reserved `all` ⇒ `{kind:"all"}` sentinel |
+| `startDate` | flag·config·env·prompt | `COMMIT_WHISPER_START_DATE` | non-secret | optional; **unset = unbounded**; `YYYY-MM-DD`, read in `timezone` |
+| `endDate` | flag·config·env·prompt | `COMMIT_WHISPER_END_DATE` | non-secret | optional; **unset = unbounded** |
+| `timezone` | flag(`--tz`)·config·env | `COMMIT_WHISPER_TZ` | non-secret | **default `UTC`**; **determinism-critical** (governs date filters + time-bucketed metrics); not prompted |
+| `authorFilter` | flag·config·env·prompt | `COMMIT_WHISPER_AUTHOR` | non-secret | optional; matches canonical (.mailmap) identity |
+| `maxCommits` | flag·config·env·prompt | `COMMIT_WHISPER_MAX_COMMITS` | non-secret | optional positive int; see Date × Free-Cap ruling |
+| `noMerges` | flag(`--no-merges`)·config·env·prompt | `COMMIT_WHISPER_NO_MERGES` | non-secret | bool, default `false`; **affects metric values** (not cosmetic) |
+| `outputFormats` | flag(`--format`, repeatable)·config·env·prompt | `COMMIT_WHISPER_FORMAT` | non-secret | **multi-select** `{html,markdown,terminal,json}`; ≥ 1; default `terminal` |
+| `outputPath` | flag(`-o`)·config·env·prompt | `COMMIT_WHISPER_OUT` | non-secret | applies to the **file formats** `{html, markdown, json}` (default `./commit-whisper-report.{html,md,json}`; `-` = **stdout**); `terminal` is **stdout-native** and ignores it |
+| `aiMode` | flag(`--ai` / `--no-ai`)·config·env·channel-default | `COMMIT_WHISPER_AI_MODE` (alias `COMMIT_WHISPER_NO_AI`) | non-secret | tri-state (`required` · `auto` · `off`); **default `auto` interactive / `off` headless·CI**; `off` ⇒ skip `narrate` + preflight, exit 0; `auto` ⇒ fail-open substrate (exit 9) on narration loss; `required` (`--ai`) ⇒ hard-fail exit 6 |
+| `provider` | flag·config·env·prompt | `COMMIT_WHISPER_PROVIDER` | non-secret | **required unless `aiMode: off`**; closed enum of 5 |
 | `aiKey` | **env only** | native per provider: `OPENAI_API_KEY`·`ANTHROPIC_API_KEY`·`GOOGLE_GENERATIVE_AI_API_KEY` (alias `GEMINI_API_KEY`)·… | **secret** | conditional — **not for `ollama`**; never flag/config/prompt |
-| `llmBaseUrl` | flag·config·env (·prompt¹) | `COMMIT_SAGE_LLM_BASE_URL` | non-secret | conditional-required for `ollama`/`openai-compatible`; `ollama` defaults to `http://localhost:11434` |
-| `llmModel` | flag·config·env·prompt | `COMMIT_SAGE_LLM_MODEL` | non-secret | required, but **defaulted per provider** |
-| `licenseKey` | **env** or one-time interactive `activate` | `COMMIT_SAGE_LICENSE_KEY` | **license credential** | not a pipeline input; activation caches an **instance id** in `~/.commit-sage`; gate resolves `entitlement` (I3) |
+| `llmBaseUrl` | flag·config·env (·prompt¹) | `COMMIT_WHISPER_LLM_BASE_URL` | non-secret | conditional-required for `ollama`/`openai-compatible`; `ollama` defaults to `http://localhost:11434` |
+| `llmModel` | flag·config·env·prompt | `COMMIT_WHISPER_LLM_MODEL` | non-secret | required, but **defaulted per provider** |
+| `licenseKey` | **env** or one-time interactive `activate` | `COMMIT_WHISPER_LICENSE_KEY` | **license credential** | not a pipeline input; activation caches an **instance id** in `~/.commit-whisper`; gate resolves `entitlement` (I3) |
 
 ¹ The inventory lists `llmBaseUrl` as flag/env/config; per the Phase-2 rule it is **also
 prompted in interactive when conditionally required** (e.g. `openai-compatible`, which has
@@ -728,13 +728,13 @@ preflight is **skipped**, and the `narrate` stage does not run. The substrate is
 output and the run is a clean exit 0 (see *Key Architecture Rulings* and *Fail-Open &
 Metrics-Only*).
 
-**Git-PAT env names — architect's call (confirm at impl):** `COMMIT_SAGE_GIT_TOKEN` is the
+**Git-PAT env names — architect's call (confirm at impl):** `COMMIT_WHISPER_GIT_TOKEN` is the
 **primary** namespaced variable and **always wins**; the host-specific names —
 `GITHUB_TOKEN` (github.com), `GITLAB_TOKEN` (gitlab.com), `BITBUCKET_TOKEN` (bitbucket.org),
 resolved from the parsed remote **host** — are a **lower-precedence convenience fallback**.
 Precedence matters because of a real footgun: **GitHub Actions auto-injects `GITHUB_TOKEN`**
 scoped to the *current* repo, which would otherwise silently shadow the credential a user
-intends for a *different* target. Letting the namespaced `COMMIT_SAGE_GIT_TOKEN` win keeps
+intends for a *different* target. Letting the namespaced `COMMIT_WHISPER_GIT_TOKEN` win keeps
 the user's explicit choice authoritative; the host names stay handy for the common
 single-host case and for **self-hosted / enterprise** hosts the public names cannot
 disambiguate.
@@ -748,12 +748,12 @@ These resolve before, or instead of, the pipeline and are kept **out** of `RunCo
 | `--help`, `--version` | print and exit `0` |
 | `--show-config` | dump **resolved values + per-field provenance**, then exit; secrets print via `Secret<string>` ⇒ `***` |
 | `--non-interactive` | forces the capability gate **closed** (STRICT headless even in a TTY) |
-| `--config <path>` (or `COMMIT_SAGE_CONFIG`) | selects the config file; **resolved before** the config layer, so it can come **only from a flag or env** — never from the file it names (provenance edge case) |
+| `--config <path>` (or `COMMIT_WHISPER_CONFIG`) | selects the config file; **resolved before** the config layer, so it can come **only from a flag or env** — never from the file it names (provenance edge case) |
 | `license activate` / `deactivate` | license lifecycle (I3): `activate` validates a typed key and caches the activation-instance id; `deactivate` frees it (FR-16). The interactive **Buy / Restore** door is a **browser hand-off** (opens the store) — there is **no in-terminal key-restore** subcommand. |
 
 ### Behavior Modifiers (chrome, not results)
 
-- `--verbose` / `--quiet` (+ `COMMIT_SAGE_LOG_LEVEL`) — log verbosity; **stderr only**, never touches stdout data.
+- `--verbose` / `--quiet` (+ `COMMIT_WHISPER_LOG_LEVEL`) — log verbosity; **stderr only**, never touches stdout data.
 - `NO_COLOR` / `FORCE_COLOR` — color policy for the `ui` module (stderr; picocolors-aware, I2); `NO_COLOR` wins.
 
 ### Key Architecture Rulings
@@ -784,9 +784,9 @@ These resolve before, or instead of, the pipeline and are kept **out** of `RunCo
   required every run / no metrics-only path" ruling per the 2026-06-13 fail-open decision;
   George's "**the report needs AI**" call stands — it is now enforced *by construction* (the
   showpiece needs the `narrative` subtree, C3 / render), not by aborting runs.
-- **Config home = `~/.commit-sage`.** Holds the **config file** and the **cached license
+- **Config home = `~/.commit-whisper`.** Holds the **config file** and the **cached license
   activation-instance id** — nothing else. The repo to analyze **defaults to cwd**; remote
-  repos remain **stateless temp-clone-with-cleanup (C1 unchanged)**. `~/.commit-sage` is
+  repos remain **stateless temp-clone-with-cleanup (C1 unchanged)**. `~/.commit-whisper` is
   **not** a clone / analysis cache and **never** holds repository data. Its cross-OS path
   convention (XDG base dir / `%APPDATA%`) is an impl detail to confirm.
 - **Date × Free-Cap ordering.** **Filter by date first**, then cap to the most-recent
@@ -808,7 +808,7 @@ the hexagonal boundary, C1 stateless retrieval, and the determinism posture all 
 
 1. **Config-write path** (→ *Config Persistence — the `Settings` Write Path*;
    `config/config-store.ts`). The interactive `Settings` action persists **non-secret**
-   config to `~/.commit-sage`; the resolver's read precedence
+   config to `~/.commit-whisper`; the resolver's read precedence
    (`defaults → config file → env → flags`) is unchanged and secrets remain env-only.
 2. **Per-metric visuals + file-weight** (→ *I1*; `render/html/sparkline.ts`). Six group
    overview charts **plus** a right-sized per-metric visual on every card; one inlined
@@ -819,7 +819,7 @@ the hexagonal boundary, C1 stateless retrieval, and the determinism posture all 
    thresholds **owned by the metrics catalog (PRD §4.2)**; the metric envelope and Report
    JSON are unchanged, preserving determinism.
 
-Sources — `docs/planning-artifacts/ux-designs/ux-commit-sage-2026-06-11/`:
+Sources — `docs/planning-artifacts/ux-designs/ux-commit-whisper-2026-06-11/`:
 `MENUS.md`, `TEMPLATE-HTML.md`, `TEMPLATE-MARKDOWN.md`.
 
 ## Alignment Fix Pass (2026-06-13)
@@ -846,12 +846,12 @@ and the hexagonal boundary all stand.
    (Subsequently made **`aiMode`-gated** by *Fail-Open & Metrics-Only*: hard exit 6 only in
    `required`; skipped in `off`; non-blocking — fail-open — in `auto`.)
 4. **JSON default destination** (source matrix `outputPath`). `{html, markdown, json}` are
-   **file formats** (default `./commit-sage-report.{html,md,json}`, `-` = stdout); `terminal`
+   **file formats** (default `./commit-whisper-report.{html,md,json}`, `-` = stdout); `terminal`
    is stdout-native.
 5. **Gemini env var** (source matrix, Secrets). Canonical native
    **`GOOGLE_GENERATIVE_AI_API_KEY`**; **`GEMINI_API_KEY`** accepted as an explicit alias
    that `config/env.ts` injects as `apiKey` (not SDK auto-pickup).
-6. **Git PAT naming** (source matrix, Secrets). **`COMMIT_SAGE_GIT_TOKEN` is primary**;
+6. **Git PAT naming** (source matrix, Secrets). **`COMMIT_WHISPER_GIT_TOKEN` is primary**;
    `GITHUB_TOKEN` / `GITLAB_TOKEN` / `BITBUCKET_TOKEN` are lower-precedence fallbacks —
    guarding the GitHub-Actions auto-`GITHUB_TOKEN` footgun.
 7. **Health-band ownership** (C2). The `ok` / `watch` / `risk` / `na` thresholds are **domain
@@ -979,7 +979,7 @@ enum, **P5** ← stream discipline.
   `export default`); one port interface per boundary as `*.port.ts`; types co-located with
   their owning module, shared primitives under `src/shared/`.
 - **P7 · Config surface** — flags are `--kebab-case`; env vars are
-  `COMMIT_SAGE_SCREAMING_SNAKE`; config-file keys are `camelCase`; the resolver records
+  `COMMIT_WHISPER_SCREAMING_SNAKE`; config-file keys are `camelCase`; the resolver records
   `provenance` per field (which source set it).
 
 ### Structure Patterns
@@ -992,13 +992,13 @@ enum, **P5** ← stream discipline.
 
 ### Format Patterns
 
-- **P4 · Errors** — all failures are typed classes extending a `CommitSageError` base that
+- **P4 · Errors** — all failures are typed classes extending a `CommitWhisperError` base that
   carries an `exitCode` (the C4 enum), a stable machine `code` string, and a human message;
   errors are thrown upward and mapped to an exit code + stderr **only at the CLI shell**.
   With `--format json`, the error object is serialized to **stdout**. **Exit 9 is the one
   exception to "exit code ⇐ thrown error":** a fail-open degraded run is **not** an error — the
   CLI shell sets exit 9 when the render path completed on the substrate, so the shell maps
-  *thrown `CommitSageError` → its `exitCode` (1–8)*, *clean completion → 0*, and
+  *thrown `CommitWhisperError` → its `exitCode` (1–8)*, *clean completion → 0*, and
   *substrate-fallback completion → 9*.
 
 ### Communication Patterns
@@ -1014,7 +1014,7 @@ enum, **P5** ← stream discipline.
 ### Enforcement Guidelines
 
 **All AI agents MUST:** use named exports + `kebab-case` files; keep `argv` / `env` /
-prompts out of the pipeline; throw `CommitSageError` subclasses (never a bare `Error` at a
+prompts out of the pipeline; throw `CommitWhisperError` subclasses (never a bare `Error` at a
 boundary); route human text to stderr via `ui`; emit `camelCase`, ISO-UTC Report JSON.
 Enforced via ESLint rules plus the determinism test harness — violations are **build
 failures, not review notes.**
@@ -1034,7 +1034,7 @@ one, and distinct from this anti-pattern).
 | Pipeline stage | Module | FRs |
 |---|---|---|
 | CLI shell, menu, arg parse, exit-code mapping | `src/cli/` | FR-14, FR-15 |
-| Two-phase resolver, `RunConfig` (incl. `aiMode`), source matrix, Zod schemas, provenance, `~/.commit-sage` home + `Settings` non-secret config-write | `src/config/` | FR-2, FR-11, FR-14, FR-15 |
+| Two-phase resolver, `RunConfig` (incl. `aiMode`), source matrix, Zod schemas, provenance, `~/.commit-whisper` home + `Settings` non-secret config-write | `src/config/` | FR-2, FR-11, FR-14, FR-15 |
 | `git clone` shell-out, retrieval, temp-clone lifecycle | `src/retrieve/` | FR-1, FR-2, FR-3 |
 | Normalized model + ~30 pure-fn metrics (Groups A–F) | `src/analyze/` | FR-4, FR-5 |
 | AI client, `aiMode`-gated reachability preflight, per-group batching, grounding check, fail-open on narration loss | `src/narrate/` | FR-8, FR-9, FR-10, FR-11 |
@@ -1046,7 +1046,7 @@ one, and distinct from this anti-pattern).
 ### Complete Project Directory Structure
 
 ```
-commit-sage/
+commit-whisper/
 ├── README.md
 ├── LICENSE
 ├── package.json
@@ -1056,7 +1056,7 @@ commit-sage/
 ├── eslint.config.js          # enforces P2/P4/P5 + no-console-in-pipeline
 ├── .gitignore
 ├── .npmrc
-├── commit-sage.config.example.jsonc   # non-secret config template
+├── commit-whisper.config.example.jsonc   # non-secret config template
 ├── .github/
 │   └── workflows/
 │       ├── ci.yml            # lint · typecheck · test · build
@@ -1075,10 +1075,10 @@ commit-sage/
 │   │   ├── resolver.ts       # Phase 1 pure merge + provenance (defaults→config→env→flags)
 │   │   ├── gaps.ts           # Phase 2 gap handling (prompt vs typed error)
 │   │   ├── capability.ts     # TTY/CI gate (fails closed); channel also sets aiMode default (interactive→auto, headless/CI→off)
-│   │   ├── config-home.ts    # resolves ~/.commit-sage (config file + license cache; XDG/%APPDATA%)
+│   │   ├── config-home.ts    # resolves ~/.commit-whisper (config file + license cache; XDG/%APPDATA%)
 │   │   ├── config-store.ts   # Settings WRITE path: non-secret fields only (atomic temp+rename); never a secret
 │   │   ├── schema.ts         # Zod schemas (zod/mini)
-│   │   └── env.ts            # the ONLY reader of process.env (native + COMMIT_SAGE_*)
+│   │   └── env.ts            # the ONLY reader of process.env (native + COMMIT_WHISPER_*)
 │   ├── retrieve/
 │   │   ├── retrieve.port.ts
 │   │   ├── git-clone.ts      # shell-out to system git
@@ -1126,9 +1126,9 @@ commit-sage/
 │   │   ├── lemonsqueezy.ts   # fetch: validate/activate/deactivate
 │   │   ├── commands.ts       # activate (key entry) · deactivate subcommands + buy/restore browser hand-off (opens store; no in-terminal key-restore) — FR-14/FR-16
 │   │   ├── gate.ts           # startup check; interactive→degrade / headless→fail-closed
-│   │   └── instance-store.ts # cached activation-instance id in ~/.commit-sage (config home)
+│   │   └── instance-store.ts # cached activation-instance id in ~/.commit-whisper (config home)
 │   └── shared/
-│       ├── errors.ts         # CommitSageError base (exitCode + code)
+│       ├── errors.ts         # CommitWhisperError base (exitCode + code)
 │       ├── ui.ts             # ALL human output → stderr
 │       ├── secret.ts         # Secret<string> (redacts to ***)
 │       ├── concurrency.ts    # pLimit-style helper
@@ -1281,7 +1281,7 @@ empirical validations, future spikes, or tracked reliability risks — not missi
    review — Sally's finding; refined by the 2026-06-13 fail-open decision.)
 
 **Deferred minor items:** headless license-validation TTL / offline-grace policy. The
-config home is now fixed at `~/.commit-sage` (config file + cached activation-instance id);
+config home is now fixed at `~/.commit-whisper` (config file + cached activation-instance id);
 only its **cross-OS path convention** (XDG base dir / `%APPDATA%`) remains an impl detail.
 
 ### Architecture Readiness Assessment

@@ -54,19 +54,19 @@ so that the pipeline runs from one immutable, provenance-tracked input with no a
   - [x] Construct the `RunConfig`: copy the resolved config-data fields, attach the injected `analysisTimestamp`, `entitlement`, and `provenance`, then `deepFreeze` the whole object before returning.
   - [x] Co-locate `gaps.test.ts`: required-missing (headless) ⇒ `MissingRequiredConfigError` with `exitCode === 3`, stable `code`, and a message naming the field/env var; `aiMode: "off"` relaxes the AI cluster (no throw); `aiMode: "auto"`/`"required"` enforces `provider` + `llmModel`; `provider: "ollama"`/`"openai-compatible"` additionally enforces `llmBaseUrl`; the success path returns a **frozen** `RunConfig` (mutation rejected) carrying `provenance`, `analysisTimestamp`, and `entitlement`.
 - [x] **Task 6 — Minimal typed-error seam (`src/shared/errors.ts`) (AC: 3)**
-  - [x] Implement `CommitSageError extends Error` with `readonly code: string` and `readonly exitCode: number`; set `this.name = new.target.name` and call `Error.captureStackTrace` when available. Named export (P2). **No `console`** (this is `shared/`, P5 lint-enforced).
-  - [x] Implement `MissingRequiredConfigError extends CommitSageError` with `exitCode = 3` (the locked "Required input missing (non-interactive)" code — see Dev Notes "Exit-code enum") and a stable `code = "CONFIG_REQUIRED_MISSING"`; the constructor takes the field name (+ optional env var) and composes an actionable message.
-  - [x] Add the seam note in this file's header comment: **Story 1.3 expands this into the full `CommitSageError` hierarchy, the `cli/exit-codes.ts` C4 enum (0–9), stream discipline, and `Secret<string>`.** Story 1.2 plants only the base + the exit-code-3 subclass it needs.
-  - [x] Co-locate `errors.test.ts`: `MissingRequiredConfigError` is `instanceof Error` and `instanceof CommitSageError`; `exitCode === 3`; `code === "CONFIG_REQUIRED_MISSING"`; message contains the field name and the env var when supplied.
+  - [x] Implement `CommitWhisperError extends Error` with `readonly code: string` and `readonly exitCode: number`; set `this.name = new.target.name` and call `Error.captureStackTrace` when available. Named export (P2). **No `console`** (this is `shared/`, P5 lint-enforced).
+  - [x] Implement `MissingRequiredConfigError extends CommitWhisperError` with `exitCode = 3` (the locked "Required input missing (non-interactive)" code — see Dev Notes "Exit-code enum") and a stable `code = "CONFIG_REQUIRED_MISSING"`; the constructor takes the field name (+ optional env var) and composes an actionable message.
+  - [x] Add the seam note in this file's header comment: **Story 1.3 expands this into the full `CommitWhisperError` hierarchy, the `cli/exit-codes.ts` C4 enum (0–9), stream discipline, and `Secret<string>`.** Story 1.2 plants only the base + the exit-code-3 subclass it needs.
+  - [x] Co-locate `errors.test.ts`: `MissingRequiredConfigError` is `instanceof Error` and `instanceof CommitWhisperError`; `exitCode === 3`; `code === "CONFIG_REQUIRED_MISSING"`; message contains the field name and the env var when supplied.
 - [x] **Task 7 — Minimal non-secret env reader (`src/config/env.ts`) (AC: 1)**
-  - [x] Implement `readEnvLayer(env: NodeJS.ProcessEnv): PartialRunConfig` — parse the **non-secret** `COMMIT_SAGE_*` variables into an env layer: `repoTarget`(`COMMIT_SAGE_REPO`), `branch`(`COMMIT_SAGE_BRANCH`, `all`⇒`{kind:"all"}` else `{kind:"named",name}`), `startDate`/`endDate`, `timezone`(`COMMIT_SAGE_TZ`), `authorFilter`(`COMMIT_SAGE_AUTHOR`), `maxCommits`(`COMMIT_SAGE_MAX_COMMITS`→positive int), `noMerges`(`COMMIT_SAGE_NO_MERGES`→bool), `outputFormats`(`COMMIT_SAGE_FORMAT`→split/validate), `outputPath`(`COMMIT_SAGE_OUT`), `aiMode`(`COMMIT_SAGE_AI_MODE` tri-state; alias `COMMIT_SAGE_NO_AI` truthy ⇒ `"off"`), `provider`(`COMMIT_SAGE_PROVIDER`), `llmBaseUrl`(`COMMIT_SAGE_LLM_BASE_URL`), `llmModel`(`COMMIT_SAGE_LLM_MODEL`). Unset vars ⇒ field absent (not `undefined`-valued, just omitted).
-  - [x] This is the **single intended reader of `process.env`** (architecture: env-isolation, lint-enforced). **Secret env vars are explicitly deferred** — do NOT read `OPENAI_API_KEY`/`GOOGLE_GENERATIVE_AI_API_KEY`/`GEMINI_API_KEY`/`COMMIT_SAGE_GIT_TOKEN`/host tokens here yet (Story 1.6 wires `aiKey`; Epic 5 wires `gitPat`). Leave a comment marking that extension point.
+  - [x] Implement `readEnvLayer(env: NodeJS.ProcessEnv): PartialRunConfig` — parse the **non-secret** `COMMIT_WHISPER_*` variables into an env layer: `repoTarget`(`COMMIT_WHISPER_REPO`), `branch`(`COMMIT_WHISPER_BRANCH`, `all`⇒`{kind:"all"}` else `{kind:"named",name}`), `startDate`/`endDate`, `timezone`(`COMMIT_WHISPER_TZ`), `authorFilter`(`COMMIT_WHISPER_AUTHOR`), `maxCommits`(`COMMIT_WHISPER_MAX_COMMITS`→positive int), `noMerges`(`COMMIT_WHISPER_NO_MERGES`→bool), `outputFormats`(`COMMIT_WHISPER_FORMAT`→split/validate), `outputPath`(`COMMIT_WHISPER_OUT`), `aiMode`(`COMMIT_WHISPER_AI_MODE` tri-state; alias `COMMIT_WHISPER_NO_AI` truthy ⇒ `"off"`), `provider`(`COMMIT_WHISPER_PROVIDER`), `llmBaseUrl`(`COMMIT_WHISPER_LLM_BASE_URL`), `llmModel`(`COMMIT_WHISPER_LLM_MODEL`). Unset vars ⇒ field absent (not `undefined`-valued, just omitted).
+  - [x] This is the **single intended reader of `process.env`** (architecture: env-isolation, lint-enforced). **Secret env vars are explicitly deferred** — do NOT read `OPENAI_API_KEY`/`GOOGLE_GENERATIVE_AI_API_KEY`/`GEMINI_API_KEY`/`COMMIT_WHISPER_GIT_TOKEN`/host tokens here yet (Story 1.6 wires `aiKey`; Epic 5 wires `gitPat`). Leave a comment marking that extension point.
   - [x] Keep parsing pure/total: pass `env` in (don't read `process.env` inside — the orchestrator passes `process.env`), so it's table-testable. Invalid coercions (e.g. non-numeric `MAX_COMMITS`) ⇒ omit the field (do not throw here; value validation is deferred to the Zod story — see Dev Notes "Deferred — Zod schema validation").
-  - [x] Co-locate `env.test.ts`: each var maps to the right field with correct coercion; `COMMIT_SAGE_NO_AI=1` ⇒ `aiMode: "off"`; `branch=all` ⇒ `{kind:"all"}`; empty env ⇒ `{}`; non-numeric `MAX_COMMITS` omitted.
+  - [x] Co-locate `env.test.ts`: each var maps to the right field with correct coercion; `COMMIT_WHISPER_NO_AI=1` ⇒ `aiMode: "off"`; `branch=all` ⇒ `{kind:"all"}`; empty env ⇒ `{}`; non-numeric `MAX_COMMITS` omitted.
 - [x] **Task 8 — Orchestration entry (`src/config/resolve-run-config.ts`) (AC: 1, 2, 3)**
   - [x] Implement `resolveRunConfig(input)` composing the pure pieces: `detectCapability` → `buildDefaults({ interactive, cwd })` → gather the four layers `{ defaults, configFile, env, flags }` → `mergeLayers` → `finalizeRunConfig`. Return the frozen `RunConfig`.
   - [x] **Inject all I/O at the boundary** so the orchestrator stays thin and testable: `cwd` (from `process.cwd()`), `env` (from `process.env`, passed to `readEnvLayer`), TTY snapshot (`process.stdin.isTTY`/`process.stdout.isTTY`), `analysisTimestamp` (injected ISO string — **never `Date.now()`** inside the pipeline; see Dev Notes "Injected fields"), `flags` (the parsed-CLI non-secret layer — **injected by the caller**; real flag parsing is `cli/` Story 1.8), and `configFile` (**defaults to `{}`** — real config-file reading is Epic 6; see Dev Notes "Deferred — config-file read").
-  - [x] Apply the channel `aiMode` default correctly: it enters via the **defaults layer** (`buildDefaults`), so an explicit `--ai`/`--no-ai`/`COMMIT_SAGE_AI_MODE`/config value still overrides it through normal precedence; provenance reflects the true source.
+  - [x] Apply the channel `aiMode` default correctly: it enters via the **defaults layer** (`buildDefaults`), so an explicit `--ai`/`--no-ai`/`COMMIT_WHISPER_AI_MODE`/config value still overrides it through normal precedence; provenance reflects the true source.
   - [x] Co-locate `resolve-run-config.test.ts` (pure via injected I/O): end-to-end precedence across all four layers; channel default `aiMode` applied when no layer sets it and overridden when a layer does; headless + required-missing (AI requested, no provider) ⇒ `MissingRequiredConfigError` (exit 3); a fully-specified headless metrics-only input ⇒ frozen `RunConfig` with expected `provenance`.
 - [x] **Task 9 — Verify gates (AC: 1, 2, 3)**
   - [x] `npm run typecheck` clean (strict).
@@ -97,7 +97,7 @@ so that the pipeline runs from one immutable, provenance-tracked input with no a
 - [x] [Review][Defer] Enforce `entitlement.commitCap` against `maxCommits` [src/config/resolve-run-config.ts] — deferred: the Free 100-commit cap mechanics are Epic 2 by design.
 - [x] [Review][Defer] Replace the `as RunConfig` cast in `finalizeRunConfig` with an explicit mandatory-field invariant assertion (close the soundness gap where defaulted-mandatory fields are unvalidated) [src/config/gaps.ts] — deferred: precondition is documented + guaranteed by the sole caller and can't fire today.
 
-**Dismissed (8):** "interactive" source / interactive resolution unimplemented (sanctioned Epic 6 seam); `isFieldRequired` lacks exhaustiveness guard (false positive — TS 2366 "lacks ending return" already enforces it); `CommitSageError` needs `Object.setPrototypeOf` / `instanceof` breaks in ES5 (false positive — target es2023/node22, `errors.test.ts` verifies `instanceof`); CI "contradicts fails closed" (mischaracterized — unknown values → treated as CI → headless **is** failing closed); `aiModeDefault` unused / two sources of truth (both derive `interactive ? "auto" : "off"` from the same boolean, cannot drift; part of capability.ts's tested API); `deepFreeze` freezes caller-owned nested refs (by design — resolver owns its per-invocation inputs; the one real shared-constant smell is the Patch above); stringly-typed error `code` (typed-union + full hierarchy is Story 1.3 scope; errors.ts is a documented seam); `ctx.interactive` dead param (sanctioned seam — validate+freeze only, prompting is Epic 6 upstream).
+**Dismissed (8):** "interactive" source / interactive resolution unimplemented (sanctioned Epic 6 seam); `isFieldRequired` lacks exhaustiveness guard (false positive — TS 2366 "lacks ending return" already enforces it); `CommitWhisperError` needs `Object.setPrototypeOf` / `instanceof` breaks in ES5 (false positive — target es2023/node22, `errors.test.ts` verifies `instanceof`); CI "contradicts fails closed" (mischaracterized — unknown values → treated as CI → headless **is** failing closed); `aiModeDefault` unused / two sources of truth (both derive `interactive ? "auto" : "off"` from the same boolean, cannot drift; part of capability.ts's tested API); `deepFreeze` freezes caller-owned nested refs (by design — resolver owns its per-invocation inputs; the one real shared-constant smell is the Patch above); stringly-typed error `code` (typed-union + full hierarchy is Story 1.3 scope; errors.ts is a documented seam); `ctx.interactive` dead param (sanctioned seam — validate+freeze only, prompting is Epic 6 upstream).
 
 ## Dev Notes
 
@@ -109,14 +109,14 @@ so that the pipeline runs from one immutable, provenance-tracked input with no a
 - The **Phase-1 pure merge with provenance** (`config/resolver.ts`).
 - The **capability gate** (pure gate + thin TTY/CI adapter) (`config/capability.ts`).
 - The **Phase-2 gap handler** (non-interactive required-missing ⇒ typed error; freeze) (`config/gaps.ts`).
-- A **minimal typed-error seam** (`shared/errors.ts`: `CommitSageError` base + `MissingRequiredConfigError` exit 3).
+- A **minimal typed-error seam** (`shared/errors.ts`: `CommitWhisperError` base + `MissingRequiredConfigError` exit 3).
 - A **minimal non-secret env reader** (`config/env.ts`) and a **thin orchestrator** (`config/resolve-run-config.ts`) that composes the pure pieces with injected I/O.
 
 **Out of scope / deferred (do NOT build here — they belong to their own stories):**
 - **Secret fields + `Secret<string>`** (`shared/secret.ts`, `gitPat`, `aiKey`): Story 1.3 introduces `Secret<string>`; `aiKey` is wired in Story 1.6, `gitPat` in Epic 5. Secrets are **env-only and bypass the merge**, so the resolver is unaffected by their absence. Do not add secret fields to `RunConfig` yet. [Source: docs/planning-artifacts/architecture.md#Secrets]
-- **Full error hierarchy + exit-code enum + stream discipline** (`cli/exit-codes.ts`, `shared/ui.ts`): Story 1.3. This story plants only the `CommitSageError` base + the exit-3 subclass it needs. [Source: docs/planning-artifacts/epics.md#Story 1.3: Error model, exit codes, and stream discipline]
+- **Full error hierarchy + exit-code enum + stream discipline** (`cli/exit-codes.ts`, `shared/ui.ts`): Story 1.3. This story plants only the `CommitWhisperError` base + the exit-3 subclass it needs. [Source: docs/planning-artifacts/epics.md#Story 1.3: Error model, exit codes, and stream discipline]
 - **Zod schema validation** (`config/schema.ts`) + adding the `zod` dependency: deferred. The 1.2 ACs require a pure **merge** + provenance + gate + gap-error, not value validation. Value validation (positive-int `maxCommits`, IANA `timezone`, ISO dates, ≥1 `outputFormats`) lands with the config-file/env validation story; for now `env.ts` coerces leniently and omits invalid values. [Source: docs/planning-artifacts/architecture.md#Complete Project Directory Structure]
-- **Config-file read** (`config/config-home.ts`, `config/config-store.ts`, `~/.commit-sage`): Epic 6 (Settings + config home). For 1.2 the `configFile` layer is an **injected plain object defaulting to `{}`** — the merge already supports it. [Source: docs/planning-artifacts/architecture.md#Config Persistence — the `Settings` Write Path]
+- **Config-file read** (`config/config-home.ts`, `config/config-store.ts`, `~/.commit-whisper`): Epic 6 (Settings + config home). For 1.2 the `configFile` layer is an **injected plain object defaulting to `{}`** — the merge already supports it. [Source: docs/planning-artifacts/architecture.md#Config Persistence — the `Settings` Write Path]
 - **Real flag parsing** (commander wiring, `--ai`/`--no-ai`→`aiMode`, positional `repoTarget`): `cli/` (Story 1.8). For 1.2 the `flags` layer is **injected by the caller**.
 - **License `entitlement` resolution**: Epic 7 (license gate). For 1.2, inject a **Free-tier default** `{ tier: "free" }` (see "Injected fields").
 
@@ -170,20 +170,20 @@ Precedence is uniform: **defaults → config file → env → flags** (low → h
 
 | Field | Env var | Default | Requiredness |
 |---|---|---|---|
-| `repoTarget` | `COMMIT_SAGE_REPO` | **cwd** | required (always defaulted ⇒ never missing) |
-| `branch` | `COMMIT_SAGE_BRANCH` | `{ kind: "head" }` | optional; `all` ⇒ `{kind:"all"}` |
-| `startDate` | `COMMIT_SAGE_START_DATE` | — (unbounded) | optional |
-| `endDate` | `COMMIT_SAGE_END_DATE` | — (unbounded) | optional |
-| `timezone` | `COMMIT_SAGE_TZ` | `"UTC"` | optional (defaulted) |
-| `authorFilter` | `COMMIT_SAGE_AUTHOR` | — | optional |
-| `maxCommits` | `COMMIT_SAGE_MAX_COMMITS` | — | optional (positive int) |
-| `noMerges` | `COMMIT_SAGE_NO_MERGES` | `false` | optional (defaulted) |
-| `outputFormats` | `COMMIT_SAGE_FORMAT` | `["terminal"]` | optional (defaulted; ≥1) |
-| `outputPath` | `COMMIT_SAGE_OUT` | — (`-` = stdout) | optional |
-| `aiMode` | `COMMIT_SAGE_AI_MODE` (alias `COMMIT_SAGE_NO_AI`) | channel: interactive→`auto`, headless/CI→`off` | optional (defaulted) |
-| `provider` | `COMMIT_SAGE_PROVIDER` | — | **required iff `aiMode !== "off"`** |
-| `llmBaseUrl` | `COMMIT_SAGE_LLM_BASE_URL` | — (ollama→`http://localhost:11434` later) | **required iff `aiMode !== "off"` and provider ∈ {ollama, openai-compatible}** |
-| `llmModel` | `COMMIT_SAGE_LLM_MODEL` | — (per-provider default later) | **required iff `aiMode !== "off"`** |
+| `repoTarget` | `COMMIT_WHISPER_REPO` | **cwd** | required (always defaulted ⇒ never missing) |
+| `branch` | `COMMIT_WHISPER_BRANCH` | `{ kind: "head" }` | optional; `all` ⇒ `{kind:"all"}` |
+| `startDate` | `COMMIT_WHISPER_START_DATE` | — (unbounded) | optional |
+| `endDate` | `COMMIT_WHISPER_END_DATE` | — (unbounded) | optional |
+| `timezone` | `COMMIT_WHISPER_TZ` | `"UTC"` | optional (defaulted) |
+| `authorFilter` | `COMMIT_WHISPER_AUTHOR` | — | optional |
+| `maxCommits` | `COMMIT_WHISPER_MAX_COMMITS` | — | optional (positive int) |
+| `noMerges` | `COMMIT_WHISPER_NO_MERGES` | `false` | optional (defaulted) |
+| `outputFormats` | `COMMIT_WHISPER_FORMAT` | `["terminal"]` | optional (defaulted; ≥1) |
+| `outputPath` | `COMMIT_WHISPER_OUT` | — (`-` = stdout) | optional |
+| `aiMode` | `COMMIT_WHISPER_AI_MODE` (alias `COMMIT_WHISPER_NO_AI`) | channel: interactive→`auto`, headless/CI→`off` | optional (defaulted) |
+| `provider` | `COMMIT_WHISPER_PROVIDER` | — | **required iff `aiMode !== "off"`** |
+| `llmBaseUrl` | `COMMIT_WHISPER_LLM_BASE_URL` | — (ollama→`http://localhost:11434` later) | **required iff `aiMode !== "off"` and provider ∈ {ollama, openai-compatible}** |
+| `llmModel` | `COMMIT_WHISPER_LLM_MODEL` | — (per-provider default later) | **required iff `aiMode !== "off"`** |
 
 [Source: docs/planning-artifacts/architecture.md#Input Source Matrix (config-data)]
 
@@ -266,8 +266,8 @@ The full enum is Story 1.3; this story uses exactly one value: **`3` = "Required
 - [Source: docs/planning-artifacts/architecture.md#Key Architecture Rulings]
 - [Source: docs/planning-artifacts/architecture.md#Complete Project Directory Structure]
 - [Source: docs/planning-artifacts/architecture.md#Architectural Boundaries]
-- [Source: docs/planning-artifacts/prds/prd-commit-sage-2026-06-06/prd.md#FR-15: Headless / CI execution]
-- [Source: docs/planning-artifacts/prds/prd-commit-sage-2026-06-06/prd.md#FR-2: Authenticate to private repositories]
+- [Source: docs/planning-artifacts/prds/prd-commit-whisper-2026-06-06/prd.md#FR-15: Headless / CI execution]
+- [Source: docs/planning-artifacts/prds/prd-commit-whisper-2026-06-06/prd.md#FR-2: Authenticate to private repositories]
 - [Source: docs/implementation-artifacts/1-1-project-scaffold-and-toolchain.md#Dev Notes]
 - [Source: eslint.config.js]
 
@@ -292,8 +292,8 @@ All commands run from repo root:
 - **Branch sentinel refinement (review-relevant):** added `{ kind: "head" }` to the `Branch` union as the default sentinel for "repo HEAD" (the architecture's `named | all` had no way to express the documented "default = repo HEAD" without a magic empty string). `retrieve/` (Story 1.4) resolves it. Deliberate, documented refinement of the contract.
 - **`tsconfig.json` change (refines Story 1.1):** added `"types": ["node"]`. Story 1.1's `index.ts` used no Node globals so `@types/node` was never exercised by `tsc`; this story needs `process` / `NodeJS.ProcessEnv` / `Error.captureStackTrace`. Minimal, in-scope toolchain enablement. Did not touch any other 1.1-locked compiler option.
 - **New filename not in the architecture map:** `config/resolve-run-config.ts` — the thin composition entry that wires capability → defaults → merge → finalize. The architecture splits `resolver.ts`/`gaps.ts`/`capability.ts` but does not name the composer; named per P2 kebab-case. Flagged for review.
-- **Scope deferrals honored (see story Dev Notes):** secret fields (`gitPat`/`aiKey` + `Secret<string>`) → 1.3/1.6/Epic 5; full error hierarchy + `cli/exit-codes.ts` enum + stream discipline → 1.3; Zod value validation (`config/schema.ts` + the `zod` dep) → later; config-file read (`~/.commit-sage`) → Epic 6; real flag parsing → 1.8; license `entitlement` resolution → Epic 7. No new runtime/dev dependencies were added.
-- **`shared/errors.ts` is a seam, not the final hierarchy.** It plants `CommitSageError` (base: `code` + `exitCode`) and the single `MissingRequiredConfigError` (exit 3) the gap handler needs; Story 1.3 expands it (full subclass set, exit-code enum module, `Secret<string>`).
+- **Scope deferrals honored (see story Dev Notes):** secret fields (`gitPat`/`aiKey` + `Secret<string>`) → 1.3/1.6/Epic 5; full error hierarchy + `cli/exit-codes.ts` enum + stream discipline → 1.3; Zod value validation (`config/schema.ts` + the `zod` dep) → later; config-file read (`~/.commit-whisper`) → Epic 6; real flag parsing → 1.8; license `entitlement` resolution → Epic 7. No new runtime/dev dependencies were added.
+- **`shared/errors.ts` is a seam, not the final hierarchy.** It plants `CommitWhisperError` (base: `code` + `exitCode`) and the single `MissingRequiredConfigError` (exit 3) the gap handler needs; Story 1.3 expands it (full subclass set, exit-code enum module, `Secret<string>`).
 - **`process.env` is read in exactly one place** — the `= process.env` default parameter of `readEnvLayer` (`config/env.ts`), honoring the architecture's "single reader" rule while keeping parsing injectable/pure for tests. The orchestrator (`resolve-run-config.ts`) is **fully injected** — it takes `env` as a required input and reads nothing from `process` itself — so the lone `process.env` touchpoint in the slice is that default param, both under `src/config/**` as the lint rule requires.
 - **SonarQube advisory intentionally not actioned:** `type IsoDate = string` is flagged "redundant alias," but it is the architecture's contract type for `analysisTimestamp` / `startDate` / `endDate` ("ISO-8601; brand later if desired"). Kept for domain clarity. The four other initial advisories (Set membership ×3, `readEnvLayer` cognitive complexity) were resolved by refactor; the project's real gates (tsc/eslint/vitest/tsup) are all green.
 - **`.gitkeep` placeholders** in `src/config/` and `src/shared/` left in place (harmless now that real modules exist; removable in a later cleanup).
@@ -305,10 +305,10 @@ All commands run from repo root:
 - `src/config/sources.ts` — `FIELD_SPECS` source/requiredness matrix, `CONFIG_FIELD_KEYS`, `buildDefaults`
 - `src/config/resolver.ts` — `mergeLayers` (Phase-1 pure merge + provenance)
 - `src/config/capability.ts` — `computeCapability` gate, `detectCI`, `detectCapability`
-- `src/config/env.ts` — `readEnvLayer` (single `process.env` reader; non-secret `COMMIT_SAGE_*`)
+- `src/config/env.ts` — `readEnvLayer` (single `process.env` reader; non-secret `COMMIT_WHISPER_*`)
 - `src/config/gaps.ts` — `finalizeRunConfig` (Phase-2 gap handling + freeze)
 - `src/config/resolve-run-config.ts` — `resolveRunConfig` orchestrator
-- `src/shared/errors.ts` — `CommitSageError` base + `MissingRequiredConfigError`
+- `src/shared/errors.ts` — `CommitWhisperError` base + `MissingRequiredConfigError`
 
 **Added (tests, co-located):**
 - `src/config/run-config.test.ts`, `src/config/sources.test.ts`, `src/config/resolver.test.ts`, `src/config/capability.test.ts`, `src/config/env.test.ts`, `src/config/gaps.test.ts`, `src/config/resolve-run-config.test.ts`, `src/shared/errors.test.ts`

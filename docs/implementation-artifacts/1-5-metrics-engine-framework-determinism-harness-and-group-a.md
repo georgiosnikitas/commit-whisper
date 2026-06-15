@@ -143,7 +143,7 @@ The **byte-identical** bar (AC2) is met by serializing two `Analysis` runs with 
 
 ### Timezone handling without a new dependency
 
-The user `timezone` (IANA, default `UTC`) governs day/week/month and hour/day-of-week bucketing. Node's built-in `Intl.DateTimeFormat` with `timeZone` (and `formatToParts`) gives deterministic, dependency-free tz-correct bucketing — **prefer it over adding a date library** (lean/SEA posture; no new deps without approval). Compute the underlying metric in UTC; apply the tz only to derive bucket labels. If a robust tz approach proves to need a library, **HALT and ask** rather than adding one silently. [Source: docs/planning-artifacts/prds/prd-commit-sage-2026-06-06/prd.md#4.1] [Source: docs/implementation-artifacts/1-1-project-scaffold-and-toolchain.md#Scope discipline]
+The user `timezone` (IANA, default `UTC`) governs day/week/month and hour/day-of-week bucketing. Node's built-in `Intl.DateTimeFormat` with `timeZone` (and `formatToParts`) gives deterministic, dependency-free tz-correct bucketing — **prefer it over adding a date library** (lean/SEA posture; no new deps without approval). Compute the underlying metric in UTC; apply the tz only to derive bucket labels. If a robust tz approach proves to need a library, **HALT and ask** rather than adding one silently. [Source: docs/planning-artifacts/prds/prd-commit-whisper-2026-06-06/prd.md#4.1] [Source: docs/implementation-artifacts/1-1-project-scaffold-and-toolchain.md#Scope discipline]
 
 ### Group A metric catalog (PRD §4.2 — the 6 to implement)
 
@@ -156,7 +156,7 @@ The user `timezone` (IANA, default `UTC`) governs day/week/month and hour/day-of
 | `a-commit-size-distribution` | Commit size distribution | changed-lines-per-commit stats; binary files contribute 0 lines |
 | `a-time-of-day-day-of-week` | Time-of-day / day-of-week pattern | hour + weekday buckets in `ctx.timezone` (default UTC) |
 
-[Source: docs/planning-artifacts/prds/prd-commit-sage-2026-06-06/prd.md#4.2 History Analysis — Metrics Catalog]
+[Source: docs/planning-artifacts/prds/prd-commit-whisper-2026-06-06/prd.md#4.2 History Analysis — Metrics Catalog]
 
 ### Architecture topology (hybrid — one read, pure fns)
 
@@ -196,8 +196,8 @@ One shared pass builds the normalized model (`model.ts`); each metric is a **pur
 - [Source: docs/planning-artifacts/architecture.md#C2 — Metrics Engine Architecture]
 - [Source: docs/planning-artifacts/architecture.md#C1 — Data Contracts & Runtime Validation]
 - [Source: docs/planning-artifacts/architecture.md#Complete Project Directory Structure]
-- [Source: docs/planning-artifacts/prds/prd-commit-sage-2026-06-06/prd.md#4.2 History Analysis — Metrics Catalog]
-- [Source: docs/planning-artifacts/prds/prd-commit-sage-2026-06-06/prd.md#4.1 Repository Retrieval] (timezone input)
+- [Source: docs/planning-artifacts/prds/prd-commit-whisper-2026-06-06/prd.md#4.2 History Analysis — Metrics Catalog]
+- [Source: docs/planning-artifacts/prds/prd-commit-whisper-2026-06-06/prd.md#4.1 Repository Retrieval] (timezone input)
 - [Source: src/retrieve/retrieve.port.ts] · [Source: src/config/run-config.ts] · [Source: src/shared/errors.ts] · [Source: eslint.config.js] · [Source: vitest.config.ts]
 
 ## Dev Agent Record

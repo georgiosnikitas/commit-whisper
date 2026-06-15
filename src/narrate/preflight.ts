@@ -52,7 +52,7 @@ export async function preflightProvider(
     default:
       return {
         reachable: false,
-        reason: `Provider "${config.provider ?? "(none)"}" is not configured for narration. Set COMMIT_SAGE_PROVIDER.`,
+        reason: `Provider "${config.provider ?? "(none)"}" is not configured for narration. Set COMMIT_WHISPER_PROVIDER.`,
       };
   }
 }
@@ -178,7 +178,7 @@ async function preflightOpenAiCompatible(
   if (baseUrl === undefined) {
     return {
       reachable: false,
-      reason: 'No base URL configured for the "openai-compatible" provider (set COMMIT_SAGE_LLM_BASE_URL).',
+      reason: 'No base URL configured for the "openai-compatible" provider (set COMMIT_WHISPER_LLM_BASE_URL).',
     };
   }
   const key = config.aiKey;

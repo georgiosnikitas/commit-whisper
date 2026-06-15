@@ -3,7 +3,7 @@
  *
  * ALL human chrome — messages, warnings, errors, progress — goes to STDERR via
  * this module. stdout is reserved for machine data (Report JSON, the
- * `--show-config` dump), so `commit-sage --format json > report.json` stays
+ * `--show-config` dump), so `commit-whisper --format json > report.json` stays
  * clean under every condition.
  *
  * Story 6.4 adds two stderr-only behaviour modifiers, both wired in by the CLI
@@ -77,7 +77,7 @@ function nonEmpty(raw: string | undefined): string | undefined {
 
 /**
  * Resolve the stderr log level (AC2). A flag beats the env var: `--quiet` wins
- * over `--verbose`, then `COMMIT_SAGE_LOG_LEVEL` (quiet|verbose|normal), else
+ * over `--verbose`, then `COMMIT_WHISPER_LOG_LEVEL` (quiet|verbose|normal), else
  * `normal`. Pure — `env` is a parameter, never `process.env`.
  */
 export function resolveLogLevel(input: { verbose?: boolean; quiet?: boolean; env: NodeJS.ProcessEnv }): LogLevel {
@@ -87,7 +87,7 @@ export function resolveLogLevel(input: { verbose?: boolean; quiet?: boolean; env
   if (input.verbose === true) {
     return "verbose";
   }
-  const envLevel = nonEmpty(input.env.COMMIT_SAGE_LOG_LEVEL)?.toLowerCase();
+  const envLevel = nonEmpty(input.env.COMMIT_WHISPER_LOG_LEVEL)?.toLowerCase();
   if (envLevel === "quiet" || envLevel === "verbose" || envLevel === "normal") {
     return envLevel;
   }

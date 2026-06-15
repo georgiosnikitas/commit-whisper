@@ -1,9 +1,9 @@
 // @ts-check
 /**
- * Build a Node SEA (Single Executable Application) for commit-sage (Story 7.4).
+ * Build a Node SEA (Single Executable Application) for commit-whisper (Story 7.4).
  *
  * Pipeline (per the Node.js SEA docs):
- *   1. bundle  — tsup → one self-contained CJS file (dist-sea/commit-sage.cjs)
+ *   1. bundle  — tsup → one self-contained CJS file (dist-sea/commit-whisper.cjs)
  *   2. blob    — `node --experimental-sea-config sea-config.json` → sea-prep.blob
  *   3. copy    — copy the running `node` to the output binary name
  *   4. unsign  — (macOS) strip the signature before injecting
@@ -23,7 +23,7 @@ import { join } from "node:path";
 import { postjectArgsFor, seaPlanFor, SEA_FUSE } from "./sea-plan.mjs";
 
 const OUT_DIR = "dist-sea";
-const BUNDLE = join(OUT_DIR, "commit-sage.cjs");
+const BUNDLE = join(OUT_DIR, "commit-whisper.cjs");
 const BLOB = join(OUT_DIR, "sea-prep.blob");
 const SEA_CONFIG = "sea-config.json";
 
@@ -37,7 +37,7 @@ const binaryPath = join(OUT_DIR, binaryName);
 // build (from nodejs.org) — those embed the SEA fuse sentinel. Homebrew / some
 // nvm / distro builds omit it and cannot be injected. Override with the env var
 // when the running node isn't suitable.
-const baseNode = process.env.COMMIT_SAGE_SEA_NODE ?? process.execPath;
+const baseNode = process.env.COMMIT_WHISPER_SEA_NODE ?? process.execPath;
 
 /**
  * Run a command, inheriting stdio. `node` / `codesign` are real executables run
@@ -73,7 +73,7 @@ console.log(`base node: ${baseNode}`);
 if (!existsSync(baseNode)) {
   throw new Error(
     `Base node binary not found: ${baseNode}\n` +
-      `Set COMMIT_SAGE_SEA_NODE to an official Node.js build (https://nodejs.org/dist).`,
+      `Set COMMIT_WHISPER_SEA_NODE to an official Node.js build (https://nodejs.org/dist).`,
   );
 }
 if (!hasSeaFuse(baseNode)) {
@@ -82,7 +82,7 @@ if (!hasSeaFuse(baseNode)) {
       `  ${baseNode}\n` +
       `Use an OFFICIAL Node.js build from https://nodejs.org/dist (Homebrew / some nvm / distro\n` +
       `builds omit the fuse), then point this script at it:\n` +
-      `  COMMIT_SAGE_SEA_NODE=/path/to/official/bin/node npm run build:sea`,
+      `  COMMIT_WHISPER_SEA_NODE=/path/to/official/bin/node npm run build:sea`,
   );
 }
 

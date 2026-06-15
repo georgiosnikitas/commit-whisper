@@ -75,7 +75,7 @@ so that each number means something actionable.
 
 ### What a Metric Explanation IS (canonical — do not re-derive)
 
-[Source: docs/planning-artifacts/prds/prd-commit-sage-2026-06-06/prd.md#§3 Glossary + FR-8]
+[Source: docs/planning-artifacts/prds/prd-commit-whisper-2026-06-06/prd.md#§3 Glossary + FR-8]
 
 - **Metric Explanation** — an LLM-generated, repo-specific assessment **paired with an individual Metric**, carried in the Report JSON `narrative` subtree **keyed to its Metric by metric id** (FR-12), **not nested inside the Metric's deterministic record** (C2 — keeps `analysis` byte-stable/diffable). It covers **four facets**: (1) **explanation** of what the value(s) mean for this repo, (2) the **good behaviours** it reveals, (3) what **needs improvement**, (4) **suggestions** to improve. **Distinct from** the repo-level AI Narrative's `explanation` **part** (Story 3.1) — same English word, different thing (hence the `MetricExplanation*` naming, disambiguated in 3.1's rename).
 - **Every Metric in Groups A–F carries one** — not a restatement of its static one-line description; a `not_available` metric still receives one stating it could not be computed and why (FR-8: "the explanation set covers the full catalog with no silent gaps").
@@ -97,7 +97,7 @@ so that each number means something actionable.
 - **Deterministic grounding verification pass** (claim-by-claim numeric/factual check against metric ids; remove/rewrite unsupported claims) — **Story 3.4**. 3.2 anchors by id (drops hallucinated ids) but does **not** verify numeric claims inside the facet prose. [Source: epics.md#Story 3.4, prd.md#FR-9]
 - **Confidence self-assessment** (`high`/`medium`/`low`; the `not_available`-share signal) — **Story 3.5**. [Source: epics.md#Story 3.5]
 - **Full BYOK provider breadth** — **Story 3.6** (gemini-only slice holds). [Source: epics.md#Story 3.6]
-- **Rendering the four facets in a user-facing surface (terminal/HTML/Markdown)** — **Epic 4 (rich report)**. Per the UX, metric explanations live in the **rich rendered report** ("HTML report … metric explanations"; "Metric section | Rendered report | … the four-facet explanation … in a stable layout"), while the **terminal stays a narrative summary** (Summary/Explanation/Coaching + the metrics table). 3.2 carries the explanations in the **Report JSON** (the canonical source of truth, verifiable now via the schema + assembly); the terminal renderer is **unchanged** and HTML/Markdown render them in Epic 4. [Source: docs/planning-artifacts/ux-designs/ux-commit-sage-2026-06-11/EXPERIENCE.md, epics.md#Epic 4]
+- **Rendering the four facets in a user-facing surface (terminal/HTML/Markdown)** — **Epic 4 (rich report)**. Per the UX, metric explanations live in the **rich rendered report** ("HTML report … metric explanations"; "Metric section | Rendered report | … the four-facet explanation … in a stable layout"), while the **terminal stays a narrative summary** (Summary/Explanation/Coaching + the metrics table). 3.2 carries the explanations in the **Report JSON** (the canonical source of truth, verifiable now via the schema + assembly); the terminal renderer is **unchanged** and HTML/Markdown render them in Epic 4. [Source: docs/planning-artifacts/ux-designs/ux-commit-whisper-2026-06-11/EXPERIENCE.md, epics.md#Epic 4]
 - **Completeness enforcement when a model drops metrics** (filling a placeholder or hard-failing on an incomplete set) — a **grounding/confidence** concern (3.4/3.5). 3.2 passes the full metric list + instructs full coverage, and the test proves a complete response covers the catalog; a misbehaving model that omits metrics surfaces via 3.4/3.5, not a fabricated explanation here.
 
 ### The exact contracts to build on (do NOT redefine)
@@ -130,9 +130,9 @@ so that each number means something actionable.
 ### References
 
 - [Source: docs/planning-artifacts/epics.md#Story 3.2: Four-facet per-metric explanations] (the ACs)
-- [Source: docs/planning-artifacts/prds/prd-commit-sage-2026-06-06/prd.md#FR-8] (four facets; every metric incl. `not_available`; anchored + grounded cross-refs; single-request batching) · [Source: …#FR-9] (grounding — id-anchoring here, verification pass in 3.4) · [Source: …#FR-12] (keyed by metric id under `narrative`, not welded into the metric)
+- [Source: docs/planning-artifacts/prds/prd-commit-whisper-2026-06-06/prd.md#FR-8] (four facets; every metric incl. `not_available`; anchored + grounded cross-refs; single-request batching) · [Source: …#FR-9] (grounding — id-anchoring here, verification pass in 3.4) · [Source: …#FR-12] (keyed by metric id under `narrative`, not welded into the metric)
 - [Source: docs/planning-artifacts/architecture.md#Canonical Report JSON] (`narrative.explanations[metricId]`, never welded; `analysis` byte-stable) · [Source: …#LLM-output validation checkpoint]
-- [Source: docs/planning-artifacts/ux-designs/ux-commit-sage-2026-06-11/EXPERIENCE.md] (metric explanations live in the rich report; terminal stays a summary)
+- [Source: docs/planning-artifacts/ux-designs/ux-commit-whisper-2026-06-11/EXPERIENCE.md] (metric explanations live in the rich report; terminal stays a summary)
 - [Source: src/narrate/schema.ts · prompt.ts · generate.ts · narrate.ts · narrate.port.ts] (the 3.1 stack to extend) · [Source: src/assemble/report-schema.ts] (the `explanations` slot reserved in 3.1)
 
 ### Completion Notes

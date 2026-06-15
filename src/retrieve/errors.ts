@@ -89,14 +89,14 @@ function failureMessage(kind: CloneFailureKind, url: string, authenticated: bool
   switch (kind) {
     case "auth":
       return authenticated
-        ? `Authentication failed cloning "${url}". The token (COMMIT_SAGE_GIT_TOKEN) may lack the scope to read this repository — a private repo needs read access to its contents (e.g. the "repo" scope on GitHub, "read_repository" on GitLab). Verify the token's permissions.`
-        : `Authentication is required to clone "${url}". Set COMMIT_SAGE_GIT_TOKEN (or GITHUB_TOKEN / GITLAB_TOKEN / BITBUCKET_TOKEN) to a token that can read this repository.`;
+        ? `Authentication failed cloning "${url}". The token (COMMIT_WHISPER_GIT_TOKEN) may lack the scope to read this repository — a private repo needs read access to its contents (e.g. the "repo" scope on GitHub, "read_repository" on GitLab). Verify the token's permissions.`
+        : `Authentication is required to clone "${url}". Set COMMIT_WHISPER_GIT_TOKEN (or GITHUB_TOKEN / GITLAB_TOKEN / BITBUCKET_TOKEN) to a token that can read this repository.`;
     case "network":
       return `Could not reach the remote to clone "${url}". Check the URL and your network connection, then re-run.`;
     case "not-found":
       return `Repository not found cloning "${url}". It may not exist, or it may be private and your token lacks access — check the URL and the repository's visibility.`;
     case "rate-limit":
-      return `Rate limited while cloning "${url}". The host is throttling requests; commit-sage does not retry — wait a while and re-run.`;
+      return `Rate limited while cloning "${url}". The host is throttling requests; commit-whisper does not retry — wait a while and re-run.`;
     case "unknown":
     default:
       return `Failed to clone "${url}".`;

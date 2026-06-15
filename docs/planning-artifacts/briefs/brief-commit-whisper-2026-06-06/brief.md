@@ -1,11 +1,11 @@
 ---
-title: "Product Brief: commit-sage"
+title: "Product Brief: commit-whisper"
 status: final
 created: 2026-06-06
 updated: 2026-06-13
 ---
 
-# Product Brief: commit-sage
+# Product Brief: commit-whisper
 
 > **Tagline:** *"I know what you did last commit."*
 >
@@ -13,11 +13,11 @@ updated: 2026-06-13
 
 ## Executive Summary
 
-**commit-sage** is a terminal-native tool that turns impenetrable git history into a clear, narrated report. Existing tools already produce git statistics and graphs — but developers still can't *understand* them. commit-sage closes that comprehension gap: it retrieves a repository's commit history — from **GitHub, GitLab, or Bitbucket, or a local clone** — computes a thorough analysis, renders modern visualizations, and then uses AI to **explain the history in plain language** and **coach the reader toward better git practices** going forward. The AI narration is intrinsic: every run produces the explanation, never just raw numbers.
+**commit-whisper** is a terminal-native tool that turns impenetrable git history into a clear, narrated report. Existing tools already produce git statistics and graphs — but developers still can't *understand* them. commit-whisper closes that comprehension gap: it retrieves a repository's commit history — from **GitHub, GitLab, or Bitbucket, or a local clone** — computes a thorough analysis, renders modern visualizations, and then uses AI to **explain the history in plain language** and **coach the reader toward better git practices** going forward. The AI narration is intrinsic: every run produces the explanation, never just raw numbers.
 
-The need is one of scale. A single developer — and certainly a team, company, or engineering manager — can maintain many repositories on remote git servers, each carrying a history far too long for any human to read end to end. commit-sage reads what no human can, and hands back a story plus a path to improvement. Because it lives in the terminal, it runs wherever developers already work and slots directly into CI/CD for repeatable, automated analysis.
+The need is one of scale. A single developer — and certainly a team, company, or engineering manager — can maintain many repositories on remote git servers, each carrying a history far too long for any human to read end to end. commit-whisper reads what no human can, and hands back a story plus a path to improvement. Because it lives in the terminal, it runs wherever developers already work and slots directly into CI/CD for repeatable, automated analysis.
 
-commit-sage is sold as a perpetual, one-time purchase across three tiers: a **free** on-ramp, a **single-device** tier ($10) for the individual developer, and an **unlimited-devices/automation** tier ($100) for multi-machine, team, and CI/CD use. It is positioned as **developer-owned insight** — the developer learns how to improve; the engineering manager sees team and repository *health* to help teams shore up weaknesses and confirm strengths — never a surveillance scoreboard.
+commit-whisper is sold as a perpetual, one-time purchase across three tiers: a **free** on-ramp, a **single-device** tier ($10) for the individual developer, and an **unlimited-devices/automation** tier ($100) for multi-machine, team, and CI/CD use. It is positioned as **developer-owned insight** — the developer learns how to improve; the engineering manager sees team and repository *health* to help teams shore up weaknesses and confirm strengths — never a surveillance scoreboard.
 
 ## The Problem
 
@@ -32,7 +32,7 @@ The status quo forces a bad trade: stare at charts you don't understand, or igno
 
 ## The Solution
 
-commit-sage is a command-line tool that produces a complete, readable report from a git repository in one run.
+commit-whisper is a command-line tool that produces a complete, readable report from a git repository in one run.
 
 1. **Retrieve** — point it at a repository — a **local clone**, or a **remote on GitHub, GitLab, or Bitbucket** (private repos via a token read from the environment) — and it reads the commit history.
 2. **Analyze** — it computes a thorough, deterministic analysis across the history (contributors, cadence, message quality, branching/merge patterns, hotspots, evolution over time): roughly thirty metrics organized into six groups.
@@ -42,19 +42,19 @@ commit-sage is a command-line tool that produces a complete, readable report fro
 
 **The AI step is not optional.** Every run narrates — there is no metrics-only mode; analysing the history and explaining it are a single act. The Free tier still costs nothing because a local **Ollama** model is a zero-cost AI provider, so "AI required" needs no spend and keeps all data on-machine.
 
-You run it two ways, both terminal-native. A bare `commit-sage` in an interactive terminal opens a guided **launchpad menu** — the product's single interactive entry point; passing **any argument** runs a strict, fully scriptable **single-shot** that never prompts and slots directly into CI/CD, repeatable as history grows. Secrets — the git token and the LLM key — are read **only from environment variables**, never prompted or stored. Each run emits **one canonical Report JSON** (the single source of truth) and renders it into **HTML, Markdown, terminal, or JSON**, several at once if you like; the rich HTML report carries the per-group and per-metric visuals.
+You run it two ways, both terminal-native. A bare `commit-whisper` in an interactive terminal opens a guided **launchpad menu** — the product's single interactive entry point; passing **any argument** runs a strict, fully scriptable **single-shot** that never prompts and slots directly into CI/CD, repeatable as history grows. Secrets — the git token and the LLM key — are read **only from environment variables**, never prompted or stored. Each run emits **one canonical Report JSON** (the single source of truth) and renders it into **HTML, Markdown, terminal, or JSON**, several at once if you like; the rich HTML report carries the per-group and per-metric visuals.
 
 ## What Makes This Different
 
-The market splits into three camps, and commit-sage sits in the whitespace between them:
+The market splits into three camps, and commit-whisper sits in the whitespace between them:
 
 - **OSS git-stats tools** (git-quick-stats, gitstats, Hercules, onefetch) give graphs and numbers — but **zero explanation**. They *are* the comprehension problem.
 - **Commercial engineering-intelligence platforms** (LinearB, Swarmia, GitClear, Jellyfish, Pluralsight Flow) sell per-seat manager dashboards of team metrics — not a plain-language history narrative, and not git-practice coaching.
 - **AI git tools** (aicommits, OpenCommit, Copilot) write your *next* commit message — none explain your *past* history.
 
-commit-sage is the only one that fuses **retrospective explanation** (today: only crude stats) with **prescriptive coaching** (today: nonexistent), delivered in the terminal. The differentiator is comprehension and guidance, not more data.
+commit-whisper is the only one that fuses **retrospective explanation** (today: only crude stats) with **prescriptive coaching** (today: nonexistent), delivered in the terminal. The differentiator is comprehension and guidance, not more data.
 
-**First mover in real whitespace.** No tool does this today — commit-sage is the first to explain git history in plain language and coach better practices from it. That is the advantage: define the category, set the standard for explanation quality, and win the user base before anyone else arrives. The honest caveat: the barrier is execution and focus, not secret technology, so a determined competitor (including GitHub/Copilot) could eventually follow. We stay ahead by being first, staying dedicated and terminal-native, and making the explanation and coaching genuinely excellent.
+**First mover in real whitespace.** No tool does this today — commit-whisper is the first to explain git history in plain language and coach better practices from it. That is the advantage: define the category, set the standard for explanation quality, and win the user base before anyone else arrives. The honest caveat: the barrier is execution and focus, not secret technology, so a determined competitor (including GitHub/Copilot) could eventually follow. We stay ahead by being first, staying dedicated and terminal-native, and making the explanation and coaching genuinely excellent.
 
 ## Who This Serves
 
@@ -97,15 +97,15 @@ commit-sage is the only one that fuses **retrospective explanation** (today: onl
 ## Monetization
 
 - **Model:** perpetual, one-time purchase (no subscription). Three tiers.
-- **Free:** capped at the 100 most-recent commits — enough to prove value, gated where long histories begin (the exact pain commit-sage solves). The funnel. Includes a voluntary Buy Me a Coffee support link.
+- **Free:** capped at the 100 most-recent commits — enough to prove value, gated where long histories begin (the exact pain commit-whisper solves). The funnel. Includes a voluntary Buy Me a Coffee support link.
 - **Single-device ($10):** one device, with unlimited runs, repositories, and remote servers. An impulse-priced yes for the individual developer.
 - **Unlimited-devices/automation ($100):** any number of devices plus CI/CD automation — for teams and the manager-of-many-teams buyer with many repositories and long histories. Where the real value, and the real revenue, concentrates.
-- **AI cost is the user's, not ours:** inference runs on the user's own API key (bring-your-own), so commit-sage carries no per-use cost and the perpetual price stays pure margin after the sale.
-- **Licensing is online (Lemon Squeezy):** the two paid tiers are sold and enforced through **Lemon Squeezy** — *activate / validate / deactivate*. Single-device is bound to one device server-side via a Lemon Squeezy *activation instance* (movable by deactivating, no repurchase); Unlimited permits many activations, including headless/CI runners (which *validate* against an existing instance rather than re-activate). It remains a **perpetual one-time purchase**, but paid-tier validation is an **online check at startup**, so the blanket "works fully offline" promise no longer holds. The check transmits only the license key and a device id — **never repository data** — so the **privacy** guarantee (local Ollama ⇒ nothing leaves the machine) and the **no-central-portal** positioning both still stand (Lemon Squeezy is a third-party checkout/licensing service, not a commit-sage portal).
+- **AI cost is the user's, not ours:** inference runs on the user's own API key (bring-your-own), so commit-whisper carries no per-use cost and the perpetual price stays pure margin after the sale.
+- **Licensing is online (Lemon Squeezy):** the two paid tiers are sold and enforced through **Lemon Squeezy** — *activate / validate / deactivate*. Single-device is bound to one device server-side via a Lemon Squeezy *activation instance* (movable by deactivating, no repurchase); Unlimited permits many activations, including headless/CI runners (which *validate* against an existing instance rather than re-activate). It remains a **perpetual one-time purchase**, but paid-tier validation is an **online check at startup**, so the blanket "works fully offline" promise no longer holds. The check transmits only the license key and a device id — **never repository data** — so the **privacy** guarantee (local Ollama ⇒ nothing leaves the machine) and the **no-central-portal** positioning both still stand (Lemon Squeezy is a third-party checkout/licensing service, not a commit-whisper portal).
 - **Pricing strategy — adoption-first:** as a first mover with zero marginal cost per sale and word-of-mouth-driven growth, the $10 single-device tier is priced to spread and own the category while still signalling a real tool (not a throwaway); the $100 tier is the value-capture SKU. The $10 point also pays its own way operationally: at roughly $9 net it comfortably funds the online activate/validate/deactivate licensing machinery that a $2.99 sale (~$2.30 net) could barely justify. Land low and raise later — raising prices is easy, cutting is painful.
 - **Tradeoff (acknowledged):** perpetual revenue is new-customer-driven, so funnel and word-of-mouth matter more than with subscriptions. A possible future lever — paid major-version upgrades — is parked, not committed.
 - **Cannibalization (accepted, bounded):** because Single-device grants unlimited repos and servers, a small team could buy several Single-device licenses instead of Unlimited — but the arbitrage breaks even around **ten devices** ($100 ÷ $10) and still forgoes multiple devices under one license and CI/CD automation, so the pressure is real but bounded. Prices are **final** at $10 / $100 — a **10×** gap — with no additional mid tier planned.
 
 ## Vision
 
-commit-sage becomes the default way developers and teams *understand* their git history — the tool you point at any unfamiliar repository to instantly know its story and how to make it healthier. It starts as a terminal report for one developer and one repo, and grows into the comprehension-and-coaching layer over git for whole teams: automated health checks in every pipeline, faster onboarding into any codebase, and git practices that measurably improve over time — because, for the first time, someone (something) actually read the whole history and explained it.
+commit-whisper becomes the default way developers and teams *understand* their git history — the tool you point at any unfamiliar repository to instantly know its story and how to make it healthier. It starts as a terminal report for one developer and one repo, and grows into the comprehension-and-coaching layer over git for whole teams: automated health checks in every pipeline, faster onboarding into any codebase, and git practices that measurably improve over time — because, for the first time, someone (something) actually read the whole history and explained it.

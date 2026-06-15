@@ -68,7 +68,7 @@ function fakeWorkspace(): { deps: TempWorkspaceDeps; removed: string[] } {
   return {
     removed,
     deps: {
-      mkdtemp: () => "/tmp/commit-sage-AAAA",
+      mkdtemp: () => "/tmp/commit-whisper-AAAA",
       rmrf: (dir) => {
         removed.push(dir);
       },
@@ -89,7 +89,7 @@ describe("createRemoteRetrieve — AC1 clone-into-temp + read", () => {
     expect(clone).toContain("clone");
     expect(clone).toContain("--"); // end-of-options guard before the url
     expect(clone).toContain("https://github.com/owner/repo"); // the url is ONE argv element
-    expect(clone).toContain("/tmp/commit-sage-AAAA/repo"); // dest under the temp dir
+    expect(clone).toContain("/tmp/commit-whisper-AAAA/repo"); // dest under the temp dir
     // The history is read FROM the clone, but LABELLED with the URL (not the temp path).
     expect(history.repoTarget).toBe("https://github.com/owner/repo");
     expect(history.commits).toHaveLength(1);
@@ -100,7 +100,7 @@ describe("createRemoteRetrieve — AC1 clone-into-temp + read", () => {
     const { runner } = fakeRunner();
     const ws = fakeWorkspace();
     await createRemoteRetrieve(runner, ws.deps)(cfg("https://github.com/owner/repo"));
-    expect(ws.removed).toEqual(["/tmp/commit-sage-AAAA"]);
+    expect(ws.removed).toEqual(["/tmp/commit-whisper-AAAA"]);
   });
 });
 
@@ -115,7 +115,7 @@ describe("createRemoteRetrieve — private-remote auth (Story 5.2)", () => {
     expect(clone.args).toContain("credential.helper="); // clears any inherited helper (no GUI/system prompt)
     expect(clone.args.some((a) => a.startsWith("credential.helper=!f()"))).toBe(false); // but no inline helper
     expect(clone.extraEnv).toMatchObject({ GIT_TERMINAL_PROMPT: "0" }); // prompts off → fail fast, no hang
-    expect(clone.extraEnv?.COMMIT_SAGE_GIT_PAT).toBeUndefined(); // no token channel
+    expect(clone.extraEnv?.COMMIT_WHISPER_GIT_PAT).toBeUndefined(); // no token channel
   });
 
   it("an authenticated clone feeds the token via the child ENV, never argv (anti-ps-leak)", async () => {
@@ -123,8 +123,8 @@ describe("createRemoteRetrieve — private-remote auth (Story 5.2)", () => {
     const ws = fakeWorkspace();
     await createRemoteRetrieve(runner, ws.deps, new Secret(TOKEN))(cfg("https://github.com/owner/private"));
     const clone = cloneCall(calls);
-    expect(clone.args.some((a) => a.includes("$COMMIT_SAGE_GIT_PAT"))).toBe(true); // helper references the env-var NAME
-    expect(clone.extraEnv?.COMMIT_SAGE_GIT_PAT).toBe(TOKEN); // the VALUE is only in the child env
+    expect(clone.args.some((a) => a.includes("$COMMIT_WHISPER_GIT_PAT"))).toBe(true); // helper references the env-var NAME
+    expect(clone.extraEnv?.COMMIT_WHISPER_GIT_PAT).toBe(TOKEN); // the VALUE is only in the child env
     expect(clone.args.every((a) => !a.includes(TOKEN))).toBe(true); // never in argv / ps
     expect(clone.extraEnv).toMatchObject({ GIT_TERMINAL_PROMPT: "0" });
   });
@@ -139,9 +139,9 @@ describe("createRemoteRetrieve — private-remote auth (Story 5.2)", () => {
     const err = await createRemoteRetrieve(runner, ws.deps, new Secret(TOKEN))(cfg("https://github.com/owner/private")).catch((e: unknown) => e);
     expect(err).toBeInstanceOf(RetrieveError);
     expect((err as RetrieveError).message).toMatch(/scope|permission/i);
-    expect((err as RetrieveError).message).toContain("COMMIT_SAGE_GIT_TOKEN");
+    expect((err as RetrieveError).message).toContain("COMMIT_WHISPER_GIT_TOKEN");
     expect((err as RetrieveError).message).not.toContain(TOKEN); // never leaks the token
-    expect(ws.removed).toEqual(["/tmp/commit-sage-AAAA"]); // still cleaned up
+    expect(ws.removed).toEqual(["/tmp/commit-whisper-AAAA"]); // still cleaned up
   });
 
   it("an auth-rejected clone WITHOUT a token → a set-the-var error", async () => {
@@ -154,7 +154,7 @@ describe("createRemoteRetrieve — private-remote auth (Story 5.2)", () => {
     const err = await createRemoteRetrieve(runner, ws.deps)(cfg("https://github.com/owner/private")).catch((e: unknown) => e);
     expect(err).toBeInstanceOf(RetrieveError);
     expect((err as RetrieveError).message).toMatch(/Authentication is required/i);
-    expect((err as RetrieveError).message).toContain("COMMIT_SAGE_GIT_TOKEN");
+    expect((err as RetrieveError).message).toContain("COMMIT_WHISPER_GIT_TOKEN");
   });
 
   it("a NON-auth clone failure stays the generic message (the taxonomy is Story 5.3)", async () => {
@@ -218,7 +218,7 @@ describe("createRemoteRetrieve — classified failures + no-retry (Story 5.3)", 
       const { runner } = failing(stderr);
       const ws = fakeWorkspace();
       await createRemoteRetrieve(runner, ws.deps)(cfg("https://x/repo")).catch(() => {});
-      expect(ws.removed).toEqual(["/tmp/commit-sage-AAAA"]);
+      expect(ws.removed).toEqual(["/tmp/commit-whisper-AAAA"]);
     }
   });
 });
@@ -234,7 +234,7 @@ describe("createRemoteRetrieve — clone failure + cleanup (Story 5.1)", () => {
     await expect(
       createRemoteRetrieve(runner, ws.deps)(cfg("https://github.com/owner/missing")),
     ).rejects.toBeInstanceOf(RetrieveError);
-    expect(ws.removed).toEqual(["/tmp/commit-sage-AAAA"]); // cleaned despite the failure
+    expect(ws.removed).toEqual(["/tmp/commit-whisper-AAAA"]); // cleaned despite the failure
   });
 
   it("a post-clone read error names the URL, never the disposable temp path", async () => {
@@ -250,7 +250,7 @@ describe("createRemoteRetrieve — clone failure + cleanup (Story 5.1)", () => {
     const ws = fakeWorkspace();
     await expect(
       createRemoteRetrieve(runner, ws.deps)(cfg("https://github.com/owner/repo")),
-    ).rejects.toThrowError(/https:\/\/github\.com\/owner\/repo/); // the URL, not /tmp/commit-sage-AAAA
-    expect(ws.removed).toEqual(["/tmp/commit-sage-AAAA"]);
+    ).rejects.toThrowError(/https:\/\/github\.com\/owner\/repo/); // the URL, not /tmp/commit-whisper-AAAA
+    expect(ws.removed).toEqual(["/tmp/commit-whisper-AAAA"]);
   });
 });

@@ -123,18 +123,18 @@ describe("resolveLogLevel (Story 6.4)", () => {
     expect(resolveLogLevel({ verbose: true, env: {} })).toBe("verbose");
   });
 
-  it("falls back to COMMIT_SAGE_LOG_LEVEL when no flag is given", () => {
-    expect(resolveLogLevel({ env: { COMMIT_SAGE_LOG_LEVEL: "quiet" } })).toBe("quiet");
-    expect(resolveLogLevel({ env: { COMMIT_SAGE_LOG_LEVEL: "VERBOSE" } })).toBe("verbose");
+  it("falls back to COMMIT_WHISPER_LOG_LEVEL when no flag is given", () => {
+    expect(resolveLogLevel({ env: { COMMIT_WHISPER_LOG_LEVEL: "quiet" } })).toBe("quiet");
+    expect(resolveLogLevel({ env: { COMMIT_WHISPER_LOG_LEVEL: "VERBOSE" } })).toBe("verbose");
   });
 
   it("a flag beats the env var", () => {
-    expect(resolveLogLevel({ verbose: true, env: { COMMIT_SAGE_LOG_LEVEL: "quiet" } })).toBe("verbose");
+    expect(resolveLogLevel({ verbose: true, env: { COMMIT_WHISPER_LOG_LEVEL: "quiet" } })).toBe("verbose");
   });
 
   it("defaults to normal (no flag, no/invalid env)", () => {
     expect(resolveLogLevel({ env: {} })).toBe("normal");
-    expect(resolveLogLevel({ env: { COMMIT_SAGE_LOG_LEVEL: "loud" } })).toBe("normal");
+    expect(resolveLogLevel({ env: { COMMIT_WHISPER_LOG_LEVEL: "loud" } })).toBe("normal");
   });
 });
 

@@ -84,7 +84,7 @@ describe("main — strict single-shot wiring", () => {
     const cap = captureRun();
     await main([".", "--no-ai"], {
       ...BASE,
-      env: { COMMIT_SAGE_GIT_TOKEN: "ghp_tok" },
+      env: { COMMIT_WHISPER_GIT_TOKEN: "ghp_tok" },
       ui: recorder().ui,
       run: cap.run,
     });
@@ -218,13 +218,13 @@ describe("main — HTML auto-open decision (Story 4.5)", () => {
 });
 
 describe("main — AC4: hard-fail names the gap and redirects", () => {
-  it("a missing required input exits 3, names the missing config, and points to bare commit-sage", async () => {
+  it("a missing required input exits 3, names the missing config, and points to bare commit-whisper", async () => {
     const r = recorder();
     const code = await main(["--ai"], { ...BASE, ui: r.ui }); // required ⇒ provider/model required, none set
     expect(code).toBe(ExitCode.MissingInput);
     const joined = r.errors.join(" ");
     expect(joined).toContain("Required configuration");
-    expect(joined).toContain("Run `commit-sage` with no arguments for guided setup.");
+    expect(joined).toContain("Run `commit-whisper` with no arguments for guided setup.");
   });
 });
 
@@ -264,7 +264,7 @@ describe("main — zero-arg launchpad (Story 6.1)", () => {
       ...BASE,
       stdinIsTTY: true,
       stdoutIsTTY: true,
-      env: { COMMIT_SAGE_PROVIDER: "ollama", COMMIT_SAGE_LLM_MODEL: "llama3" },
+      env: { COMMIT_WHISPER_PROVIDER: "ollama", COMMIT_WHISPER_LLM_MODEL: "llama3" },
       gitRunner: repoRunner,
       launchpad: lp.launchpad,
     });
@@ -286,7 +286,7 @@ describe("main — zero-arg launchpad (Story 6.1)", () => {
       ...BASE,
       stdinIsTTY: true,
       stdoutIsTTY: true,
-      env: { COMMIT_SAGE_GIT_TOKEN: "ghp_tok" },
+      env: { COMMIT_WHISPER_GIT_TOKEN: "ghp_tok" },
       gitRunner: repoRunner,
       launchpad: withToken.launchpad,
     });
@@ -312,7 +312,7 @@ describe("main — zero-arg launchpad (Story 6.1)", () => {
       ...BASE,
       stdinIsTTY: true,
       stdoutIsTTY: true,
-      env: { COMMIT_SAGE_PROVIDER: "openai", COMMIT_SAGE_LLM_MODEL: "gpt-4o" },
+      env: { COMMIT_WHISPER_PROVIDER: "openai", COMMIT_WHISPER_LLM_MODEL: "gpt-4o" },
       gitRunner: repoRunner,
       launchpad: lp.launchpad,
       run: cap.run,
@@ -348,13 +348,13 @@ describe("main — zero-arg launchpad (Story 6.1)", () => {
       ...BASE,
       stdinIsTTY: true,
       stdoutIsTTY: true,
-      env: { COMMIT_SAGE_PROVIDER: "openai", COMMIT_SAGE_LLM_MODEL: "gpt-4o" },
+      env: { COMMIT_WHISPER_PROVIDER: "openai", COMMIT_WHISPER_LLM_MODEL: "gpt-4o" },
       gitRunner: repoRunner,
       launchpad: lp.launchpad,
     });
     const names = (lp.calls[0]!.envDiagnostics ?? []).map((d) => d.name);
     expect(names).toContain("OPENAI_API_KEY");
-    expect(names).toContain("COMMIT_SAGE_GIT_TOKEN");
+    expect(names).toContain("COMMIT_WHISPER_GIT_TOKEN");
     expect(typeof lp.calls[0]!.probeReachability).toBe("function");
   });
 
@@ -364,7 +364,7 @@ describe("main — zero-arg launchpad (Story 6.1)", () => {
       ...BASE,
       stdinIsTTY: true,
       stdoutIsTTY: true,
-      env: { COMMIT_SAGE_PROVIDER: "ollama", COMMIT_SAGE_LLM_MODEL: "llama3" },
+      env: { COMMIT_WHISPER_PROVIDER: "ollama", COMMIT_WHISPER_LLM_MODEL: "llama3" },
       gitRunner: repoRunner,
       launchpad: lp.launchpad,
       preflight: async () => ({ reachable: false, reason: "Ollama responded with HTTP 500." }),
@@ -485,7 +485,7 @@ describe("main — Settings config-file layer (Story 6.5)", () => {
     const cap = captureRun();
     await main([".", "--no-ai"], {
       ...BASE,
-      env: { COMMIT_SAGE_MAX_COMMITS: "99" },
+      env: { COMMIT_WHISPER_MAX_COMMITS: "99" },
       configFile: { maxCommits: 25 },
       ui: recorder().ui,
       run: cap.run,
@@ -498,7 +498,7 @@ describe("main — Settings config-file layer (Story 6.5)", () => {
     const cap = captureRun();
     await main([".", "--no-ai", "--max-commits", "7"], {
       ...BASE,
-      env: { COMMIT_SAGE_MAX_COMMITS: "99" },
+      env: { COMMIT_WHISPER_MAX_COMMITS: "99" },
       configFile: { maxCommits: 25 },
       ui: recorder().ui,
       run: cap.run,
@@ -543,7 +543,7 @@ describe("main — Settings config-file layer (Story 6.5)", () => {
       ...BASE,
       stdinIsTTY: true,
       stdoutIsTTY: true,
-      env: { COMMIT_SAGE_PROVIDER: "openai", COMMIT_SAGE_LLM_MODEL: "gpt-4o" },
+      env: { COMMIT_WHISPER_PROVIDER: "openai", COMMIT_WHISPER_LLM_MODEL: "gpt-4o" },
       configFile: { provider: "ollama", llmModel: "llama3" },
       gitRunner: repoRunner,
       launchpad: lp.launchpad,
@@ -601,7 +601,7 @@ describe("main — license entitlement gate (Story 7.1)", () => {
     const r = recorder();
     await main([".", "--show-config"], {
       ...BASE,
-      env: { COMMIT_SAGE_LICENSE_KEY: "LIC-SUPERSECRET" },
+      env: { COMMIT_WHISPER_LICENSE_KEY: "LIC-SUPERSECRET" },
       resolveEntitlement: async () => ({ kind: "resolved", entitlement: { tier: "unlimited" } }),
       ui: r.ui,
       writeStdout: r.writeStdout,
@@ -624,7 +624,7 @@ describe("main — fail-closed vs degrade-to-Free (Story 7.3)", () => {
     expect(cap.calls).toHaveLength(0); // no analysis, no rendering
   });
 
-  it("the fail-closed message names the license + COMMIT_SAGE_LICENSE_KEY (validate-not-activate) (AC1)", async () => {
+  it("the fail-closed message names the license + COMMIT_WHISPER_LICENSE_KEY (validate-not-activate) (AC1)", async () => {
     const r = recorder();
     await main([".", "--no-ai"], {
       ...BASE,
@@ -634,7 +634,7 @@ describe("main — fail-closed vs degrade-to-Free (Story 7.3)", () => {
     });
     const errorText = r.errors.join("\n");
     expect(errorText).toContain("server unreachable");
-    expect(errorText).toContain("COMMIT_SAGE_LICENSE_KEY");
+    expect(errorText).toContain("COMMIT_WHISPER_LICENSE_KEY");
     expect(errorText.toLowerCase()).toContain("validat");
   });
 
@@ -725,13 +725,13 @@ describe("main — license actions wiring (Story 7.2)", () => {
     expect(outcome).toEqual({ ok: true, tier: "single-device" });
   });
 
-  it("a COMMIT_SAGE_STORE_URL override flows into the launchpad storeUrl", async () => {
+  it("a COMMIT_WHISPER_STORE_URL override flows into the launchpad storeUrl", async () => {
     const lp = captureLaunchpad();
     await main([], {
       ...BASE,
       stdinIsTTY: true,
       stdoutIsTTY: true,
-      env: { COMMIT_SAGE_STORE_URL: "https://my.store/buy" },
+      env: { COMMIT_WHISPER_STORE_URL: "https://my.store/buy" },
       resolveEntitlement: async () => ({ kind: "resolved", entitlement: { tier: "free", commitCap: 100 } }),
       gitRunner: repoRunner,
       launchpad: lp.launchpad,
@@ -739,13 +739,13 @@ describe("main — license actions wiring (Story 7.2)", () => {
     expect(lp.calls[0]!.storeUrl).toBe("https://my.store/buy");
   });
 
-  it("a COMMIT_SAGE_RESTORE_URL override flows into the launchpad restoreUrl", async () => {
+  it("a COMMIT_WHISPER_RESTORE_URL override flows into the launchpad restoreUrl", async () => {
     const lp = captureLaunchpad();
     await main([], {
       ...BASE,
       stdinIsTTY: true,
       stdoutIsTTY: true,
-      env: { COMMIT_SAGE_RESTORE_URL: "https://my.orders/x" },
+      env: { COMMIT_WHISPER_RESTORE_URL: "https://my.orders/x" },
       resolveEntitlement: async () => ({ kind: "resolved", entitlement: { tier: "free", commitCap: 100 } }),
       gitRunner: repoRunner,
       launchpad: lp.launchpad,

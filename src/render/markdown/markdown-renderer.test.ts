@@ -37,7 +37,7 @@ describe("renderMarkdown — narrative-first showpiece (AC3)", () => {
   const out = showpiece();
 
   it("starts with the title and ends with a trailing newline", () => {
-    expect(out.startsWith("# commit-sage")).toBe(true);
+    expect(out.startsWith("# commit-whisper")).toBe(true);
     expect(out.endsWith("\n")).toBe(true);
   });
 

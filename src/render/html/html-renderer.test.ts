@@ -75,7 +75,7 @@ describe("renderHtml — narrative-first band order (AC2)", () => {
   const out = showpiece();
 
   it("renders masthead → Summary → Explanation → Coaching → metric groups, in order", () => {
-    const iMast = out.indexOf("<h1>commit-sage</h1>");
+    const iMast = out.indexOf("<h1>commit-whisper</h1>");
     const iSummary = out.indexOf('id="summary"');
     const iExplanation = out.indexOf('id="explanation"');
     const iCoaching = out.indexOf('id="coaching"');

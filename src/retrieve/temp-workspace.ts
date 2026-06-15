@@ -40,7 +40,7 @@ const EXIT_ON_SIGINT = 130; // 128 + 2
 const EXIT_ON_SIGTERM = 143; // 128 + 15
 
 function defaultMkdtemp(): string {
-  return mkdtempSync(join(tmpdir(), "commit-sage-"));
+  return mkdtempSync(join(tmpdir(), "commit-whisper-"));
 }
 
 function defaultRmrf(dir: string): void {

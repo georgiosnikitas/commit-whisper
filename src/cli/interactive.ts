@@ -1,7 +1,7 @@
 /**
  * The launchpad — the single interactive entry point (Story 6.1).
  *
- * Reached ONLY by the bare zero-argument `commit-sage` in an interactive TTY
+ * Reached ONLY by the bare zero-argument `commit-whisper` in an interactive TTY
  * (the STRICT truth table's one prompting row); any argument bypasses this for
  * strict single-shot. This module is the calm, line-oriented discovery menu: a
  * persistent header readiness line, a state-aware action list (license rows vary
@@ -150,13 +150,13 @@ export interface LaunchpadDeps {
 }
 
 /** The locked product tagline (brief.md / DESIGN.md). */
-export const LAUNCHPAD_TAGLINE = "commit-sage · I know what you did last commit";
+export const LAUNCHPAD_TAGLINE = "commit-whisper · I know what you did last commit";
 
 /** The short, copyable cheatsheet printed on Esc/Quit (AC4). */
 export const FLAGS_CHEATSHEET = [
   "Common commands:",
-  "  commit-sage .              analyze the current repository",
-  "  commit-sage <path|url>     analyze a local path or remote URL",
+  "  commit-whisper .              analyze the current repository",
+  "  commit-whisper <path|url>     analyze a local path or remote URL",
   "  --no-ai                    metrics only — no LLM call",
   "  --format html,json         choose one or more output formats",
   "  --help                     the full flag reference",
@@ -165,16 +165,16 @@ export const FLAGS_CHEATSHEET = [
 /**
  * The shared first-run-no-AI fix copy (Story 6.3, AC2 + AC3): names the cloud
  * env-var path AND the zero-cost local Ollama path (with its must-be-running
- * note). commit-sage narrates every run, so a provider is required — these are
+ * note). commit-whisper narrates every run, so a provider is required — these are
  * the two concrete cures.
  */
 export const NO_AI_FIX = [
   "Two zero-config paths:",
-  "  • Local & free — run Ollama, then set COMMIT_SAGE_PROVIDER=ollama.",
+  "  • Local & free — run Ollama, then set COMMIT_WHISPER_PROVIDER=ollama.",
   "    It must be running: `ollama serve`, then `ollama pull <model>`.",
   "    Nothing leaves your machine.",
   "  • Cloud — set a provider key in your environment, e.g. OPENAI_API_KEY",
-  "    (commit-sage never stores keys).",
+  "    (commit-whisper never stores keys).",
 ].join("\n");
 
 /** The calm no-AI interstitial shown when an Analyze action is chosen with no provider (AC3 — teach, never wall). */
@@ -342,7 +342,7 @@ const GUIDED_DATE = /^\d{4}-\d{2}-\d{2}/;
  * selection differs from the default `["terminal"]`.
  */
 export function formatEquivalentCommand(target: string, flags: PartialRunConfig): string {
-  const parts = ["commit-sage", quoteArg(target)];
+  const parts = ["commit-whisper", quoteArg(target)];
   if (flags.maxCommits !== undefined) {
     parts.push("--max-commits", String(flags.maxCommits));
   }
@@ -572,7 +572,7 @@ async function runGuidedAnalyze(deps: LaunchpadDeps, mode: "cwd" | "remote", out
       // AC3: name the env var for a private remote — never a collect field.
       writeLine(
         output,
-        "If this repository is private, set COMMIT_SAGE_GIT_TOKEN in your environment first — commit-sage never collects it.",
+        "If this repository is private, set COMMIT_WHISPER_GIT_TOKEN in your environment first — commit-whisper never collects it.",
       );
     }
   }
@@ -802,9 +802,9 @@ async function runOpenUrl(deps: LaunchpadDeps, url: string, label: string, note:
 }
 
 const BUY_NOTE =
-  "commit-sage never handles payment — checkout happens in your browser. After buying, return and choose “Activate license”.";
+  "commit-whisper never handles payment — checkout happens in your browser. After buying, return and choose “Activate license”.";
 const RESTORE_NOTE =
-  "commit-sage never handles payment. Find your license key in your Lemon Squeezy orders, then return and choose “Activate license”.";
+  "commit-whisper never handles payment. Find your license key in your Lemon Squeezy orders, then return and choose “Activate license”.";
 
 /** Default browser hand-off URLs (deployment-overridable via `cli/` from the environment). */
 export const DEFAULT_STORE_URL = "https://georgiosnikitas.lemonsqueezy.com/";

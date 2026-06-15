@@ -200,7 +200,7 @@ describe("preflightProvider — full BYOK breadth (Story 3.6)", () => {
       fetchImpl: fetchSpy,
     });
     expect(res.reachable).toBe(false);
-    expect((res as { reason: string }).reason).toContain("COMMIT_SAGE_LLM_BASE_URL");
+    expect((res as { reason: string }).reason).toContain("COMMIT_WHISPER_LLM_BASE_URL");
     expect(fetchSpy).not.toHaveBeenCalled();
   });
 
@@ -210,7 +210,7 @@ describe("preflightProvider — full BYOK breadth (Story 3.6)", () => {
       fetchImpl: fetchSpy,
     });
     expect(res.reachable).toBe(false);
-    expect((res as { reason: string }).reason).toContain("COMMIT_SAGE_LLM_BASE_URL");
+    expect((res as { reason: string }).reason).toContain("COMMIT_WHISPER_LLM_BASE_URL");
     expect(fetchSpy).not.toHaveBeenCalled();
   });
 

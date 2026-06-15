@@ -1,4 +1,4 @@
-# Addendum — PRD: commit-sage
+# Addendum — PRD: commit-whisper
 
 Technical depth and downstream context that belongs in architecture/UX, not in the PRD's capability-level narrative.
 
@@ -11,7 +11,7 @@ Technical depth and downstream context that belongs in architecture/UX, not in t
 - **CI distribution caveat:** Node normally needs a runtime present, awkward on ephemeral CI runners. Mitigation → ship a **self-contained single executable**. Options:
   - Node 20+ **Single Executable Applications (SEA)** — official.
   - `pkg` (Vercel) or `nexe` — mature bundlers.
-  - `npx commit-sage` — fine for developers who already have Node, not for runtime-less CI.
+  - `npx commit-whisper` — fine for developers who already have Node, not for runtime-less CI.
   - (Bun's `--compile` is an alternative runtime that produces single binaries, if the team ever revisits the runtime choice.)
 - **Likely library areas (not decisions):** a git access layer (libgit2 binding / simple-git / direct git plumbing), a charting lib for HTML (d3 / Chart.js / vega-lite) rendered to self-contained HTML, a templating engine for HTML/Markdown, and provider SDKs (OpenAI/Anthropic/Gemini/Ollama or a unified OpenAI-compatible client).
 

@@ -62,7 +62,7 @@ describe("cloneFailureError", () => {
 
   it("keeps the 5.2 auth token-present / token-absent split", () => {
     expect(cloneFailureError(URL, true, gitError("Authentication failed")).message).toMatch(/scope|permission/i);
-    expect(cloneFailureError(URL, true, gitError("Authentication failed")).message).toContain("COMMIT_SAGE_GIT_TOKEN");
+    expect(cloneFailureError(URL, true, gitError("Authentication failed")).message).toContain("COMMIT_WHISPER_GIT_TOKEN");
     expect(cloneFailureError(URL, false, gitError("could not read Username")).message).toMatch(/Authentication is required/i);
   });
 

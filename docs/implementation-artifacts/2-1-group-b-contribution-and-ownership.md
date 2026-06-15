@@ -75,9 +75,9 @@ This is the **first Epic 2 metrics story**: it adds **Group B** to the catalog u
 - **Groups C, D, E, F** — Stories 2.2–2.5. (Group E's churn/hotspots will *reuse* this story's `files` model field; Group F's Collaboration Breadth will *reuse* `gini` + bus-factor.)
 - **Commit-selection inputs** (author filter / max-commits / no-merges / dates / timezone actually narrowing the set) — **Story 2.6**. Group B computes over whatever commit set the model already holds; it does not parse or apply selection. [Source: docs/planning-artifacts/epics.md#Story 2.6]
 - **Free-tier 100-commit cap** — **Story 2.7**. [Source: docs/planning-artifacts/epics.md#Story 2.7]
-- **AI Metric Explanations** (the four-facet per-metric LLM text) — **Epic 3, Story 3.2**. Group B emits only the deterministic envelope (`title` + machine `value` + `status`); the static one-line description lives in the PRD catalog, not the envelope. [Source: docs/planning-artifacts/prds/prd-commit-sage-2026-06-06/prd.md#4.2]
-- **Health bands** (`ok`/`watch`/`risk`/`n/a`) — render-time classifier (Epic 4), **not** stored in the envelope. Do not add a band field. [Source: docs/planning-artifacts/prds/prd-commit-sage-2026-06-06/prd.md#Metric health bands]
-- **The Group B overview chart** (Pareto + bus-factor marker) — Epic 4 render. 2.1 produces the *data* (anonymized shares + bus factor) that chart will consume. [Source: docs/planning-artifacts/prds/prd-commit-sage-2026-06-06/prd.md#FR-6]
+- **AI Metric Explanations** (the four-facet per-metric LLM text) — **Epic 3, Story 3.2**. Group B emits only the deterministic envelope (`title` + machine `value` + `status`); the static one-line description lives in the PRD catalog, not the envelope. [Source: docs/planning-artifacts/prds/prd-commit-whisper-2026-06-06/prd.md#4.2]
+- **Health bands** (`ok`/`watch`/`risk`/`n/a`) — render-time classifier (Epic 4), **not** stored in the envelope. Do not add a band field. [Source: docs/planning-artifacts/prds/prd-commit-whisper-2026-06-06/prd.md#Metric health bands]
+- **The Group B overview chart** (Pareto + bus-factor marker) — Epic 4 render. 2.1 produces the *data* (anonymized shares + bus factor) that chart will consume. [Source: docs/planning-artifacts/prds/prd-commit-whisper-2026-06-06/prd.md#FR-6]
 - **`.mailmap` file reading** — still injected via `AnalysisContext.mailmap` (Epic 6 wires the real read); Group B uses the already-canonicalized identities in the model. [Source: src/analyze/identity.ts]
 
 ### NFR-8 — the absolute guardrail this story lives under (read first)
@@ -88,7 +88,7 @@ Group B is the **highest-risk** group for NFR-8 because its raw material *is* pe
 - Per-author tallies are computed **internally** (from `model.authors` + a per-author line tally over `model.commits`) but **never emitted with identity**.
 - "Contribution distribution" / "ownership by area" emit **sorted-descending shares**, **Gini/concentration coefficients**, **counts**, and **anonymized per-area concentration** — the *shape* of concentration, which is the metric's stated purpose ("concentration vs. spread", "knowledge concentration"), not a named leaderboard.
 - The **NFR-8 guard test** (Task 5) makes this enforceable: it fails if any author name/email string leaks into a Group B value. This is the single most important test in the story and what the Acceptance Auditor will check.
-- Framing wording (titles already team-level) and the bus-factor "risk to mitigate" framing align with the PRD's Group F bus-factor-risk note. [Source: docs/planning-artifacts/prds/prd-commit-sage-2026-06-06/prd.md#Group F / NFR-8]
+- Framing wording (titles already team-level) and the bus-factor "risk to mitigate" framing align with the PRD's Group F bus-factor-risk note. [Source: docs/planning-artifacts/prds/prd-commit-whisper-2026-06-06/prd.md#Group F / NFR-8]
 
 ### PRD §4.2 Group B catalog — the authoritative metric definitions
 
@@ -101,7 +101,7 @@ Group B is the **highest-risk** group for NFR-8 because its raw material *is* pe
 | `b-ownership-by-area` | Ownership by area | which authors dominate which dirs/files, **on hotspots only** (top 10 dirs + top 20 files by touch count) to bound cost |
 | `b-co-authorship` | Co-authorship / collaboration signal | use of `Co-authored-by` trailers where present `[ASSUMPTION]` |
 
-[Source: docs/planning-artifacts/prds/prd-commit-sage-2026-06-06/prd.md#4.2 Group B] — IDs follow the `a-…` kebab convention from Group A; titles are verbatim from the catalog (the static description is NOT stored in the envelope — it surfaces via the catalog / Epic 3 explanations).
+[Source: docs/planning-artifacts/prds/prd-commit-whisper-2026-06-06/prd.md#4.2 Group B] — IDs follow the `a-…` kebab convention from Group A; titles are verbatim from the catalog (the static description is NOT stored in the envelope — it surfaces via the catalog / Epic 3 explanations).
 
 ### The exact engine/model contracts to build on (Story 1.5 — do NOT redefine)
 
@@ -139,7 +139,7 @@ Group B is the **highest-risk** group for NFR-8 because its raw material *is* pe
 ### References
 
 - [Source: docs/planning-artifacts/epics.md#Story 2.1: Group B — Contribution & Ownership] · [Source: docs/planning-artifacts/epics.md#NFR-8]
-- [Source: docs/planning-artifacts/prds/prd-commit-sage-2026-06-06/prd.md#4.2 History Analysis — Metrics Catalog (Group B)] · [Source: …#FR-4 Compute the metrics catalog] · [Source: …#FR-5]
+- [Source: docs/planning-artifacts/prds/prd-commit-whisper-2026-06-06/prd.md#4.2 History Analysis — Metrics Catalog (Group B)] · [Source: …#FR-4 Compute the metrics catalog] · [Source: …#FR-5]
 - [Source: docs/planning-artifacts/architecture.md#C2 — Metrics Engine Architecture] (hybrid topology, determinism rules, uniform envelope)
 - [Source: src/analyze/groups/a-cadence.ts] (the pattern) · [Source: src/analyze/model.ts] · [Source: src/analyze/metric.ts] · [Source: src/analyze/stats.ts] · [Source: src/analyze/registry.ts] · [Source: src/analyze/identity.ts] · [Source: tests/determinism/analysis-determinism.test.ts]
 

@@ -66,7 +66,7 @@ function secretLine(name: string, secret: Secret<string> | undefined): string {
  * order), the injected fields, and the Secrets block (`***` / `(unset)`).
  */
 export function formatShowConfig(config: RunConfig, secrets: ShowConfigSecrets): string {
-  const lines = ["commit-sage — resolved configuration", "", "config:"];
+  const lines = ["commit-whisper — resolved configuration", "", "config:"];
   for (const key of CONFIG_FIELD_KEYS) {
     lines.push(fieldLine(key, config));
   }
