@@ -142,7 +142,7 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: read
-      id-token: write # OIDC trusted publishing + provenance (no NPM_TOKEN needed)
+      id-token: write # OIDC provenance now; trusted publishing once the package exists
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -164,8 +164,20 @@ jobs:
       - name: Build the publishable bundle
         run: npm run build
 
+      # A brand-new package can't be created via OIDC trusted publishing, so the first
+      # release authenticates with the NPM_TOKEN secret (same bootstrap brain-break used).
+      # Once the package exists and a trusted publisher is configured on npmjs.com, the
+      # token can be dropped and OIDC takes over. The guard keeps re-runs idempotent.
       - name: Publish to npm (provenance, public)
-        run: npm publish --provenance --access public
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+        run: |
+          VERSION="$(node -p "require('./package.json').version")"
+          if npm view "commit-whisper@${VERSION}" --registry=https://registry.npmjs.org >/dev/null 2>&1; then
+            echo "commit-whisper@${VERSION} already published — skipping."
+          else
+            npm publish --provenance --access public
+          fi
 
   publish-github-packages:
     name: publish to GitHub Packages
