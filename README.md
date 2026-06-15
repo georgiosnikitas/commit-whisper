@@ -1,5 +1,13 @@
 # commit-sage
 
+[![Quality Gate Status](https://sonarcloud.io/api/project_badges/measure?project=georgiosnikitas_commit-sage&metric=alert_status)](https://sonarcloud.io/summary/overall?id=georgiosnikitas_commit-sage)
+[![CI](https://github.com/georgiosnikitas/commit-sage/actions/workflows/ci.yml/badge.svg)](https://github.com/georgiosnikitas/commit-sage/actions/workflows/ci.yml)
+[![Release](https://github.com/georgiosnikitas/commit-sage/actions/workflows/release.yml/badge.svg?event=push)](https://github.com/georgiosnikitas/commit-sage/actions/workflows/release.yml)
+[![npm](https://img.shields.io/npm/v/commitsage)](https://www.npmjs.com/package/commitsage)
+[![TypeScript](https://img.shields.io/badge/TypeScript-6.x-blue?logo=typescript)](https://www.typescriptlang.org/)
+[![License](https://img.shields.io/github/license/georgiosnikitas/commit-sage)](LICENSE)
+[![Buy Me a Coffee](https://img.shields.io/badge/Buy%20Me%20a%20Coffee-ffdd00?style=flat&logo=buy-me-a-coffee&logoColor=black)](https://buymeacoffee.com/georgiosnikitas)
+
 Deterministic git history analysis with a grounded, bring-your-own-key AI narrative — a
 terminal-native CLI.
 
