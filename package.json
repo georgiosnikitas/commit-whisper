@@ -10,6 +10,8 @@
   },
   "scripts": {
     "build": "tsup",
+    "bundle:sea": "tsup --config tsup.sea.config.ts",
+    "build:sea": "node scripts/build-sea.mjs",
     "test": "vitest run",
     "test:watch": "vitest",
     "typecheck": "tsc --noEmit",

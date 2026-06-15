@@ -15,6 +15,7 @@ jspm_packages/
 
 # Build output / compiled files
 dist/
+dist-sea/
 build/
 out/
 lib/

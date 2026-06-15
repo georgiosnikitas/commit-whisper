@@ -19,6 +19,7 @@ export default [
   {
     ignores: [
       "dist/**",
+      "dist-sea/**",
       "node_modules/**",
       "coverage/**",
       "docs/**",
