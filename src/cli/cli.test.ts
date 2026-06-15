@@ -389,3 +389,80 @@ describe("main — zero-arg launchpad (Story 6.1)", () => {
     expect(lp.calls).toHaveLength(0);
   });
 });
+
+describe("main — operational flags (Story 6.4)", () => {
+  it("--show-config dumps the resolved config to stdout and exits 0 WITHOUT running", async () => {
+    const r = recorder();
+    const cap = captureRun();
+    const code = await main([".", "--show-config", "--max-commits", "5"], {
+      ...BASE,
+      ui: r.ui,
+      run: cap.run,
+      writeStdout: r.writeStdout,
+    });
+    expect(code).toBe(ExitCode.Success);
+    expect(cap.calls).toHaveLength(0); // pipeline never invoked
+    const out = r.stdout.join("");
+    expect(out).toContain("resolved configuration");
+    expect(out).toContain("maxCommits = 5  (flag)");
+  });
+
+  it("--show-config renders a secret env value as *** (never the value)", async () => {
+    const r = recorder();
+    const code = await main([".", "--show-config", "--provider", "openai", "--model", "gpt-4o"], {
+      ...BASE,
+      env: { OPENAI_API_KEY: "sk-supersecret" },
+      ui: r.ui,
+      writeStdout: r.writeStdout,
+    });
+    expect(code).toBe(ExitCode.Success);
+    const out = r.stdout.join("");
+    expect(out).toContain("aiKey = ***");
+    expect(out).not.toContain("sk-supersecret");
+  });
+
+  it("--show-config still dumps when a required field is missing (lenient — the debugging case)", async () => {
+    const r = recorder();
+    const cap = captureRun();
+    // `--ai` makes provider/model required; with none set a normal run throws exit 3.
+    const code = await main([".", "--show-config", "--ai"], {
+      ...BASE,
+      env: {},
+      ui: r.ui,
+      run: cap.run,
+      writeStdout: r.writeStdout,
+    });
+    expect(code).toBe(ExitCode.Success); // dumps, does not throw
+    expect(cap.calls).toHaveLength(0);
+    const out = r.stdout.join("");
+    expect(out).toContain("aiMode = required  (flag)");
+    expect(out).toContain("provider = (unset)");
+  });
+
+  it("--version prints and exits 0 without running", async () => {
+    const cap = captureRun();
+    const code = await main(["--version"], { ...BASE, ui: recorder().ui, run: cap.run });
+    expect(code).toBe(ExitCode.Success);
+    expect(cap.calls).toHaveLength(0);
+  });
+
+  it("--non-interactive runs headless single-shot (gate closed, aiMode defaults off, no auto-open)", async () => {
+    const cap = captureRun();
+    const code = await main(["--non-interactive", "."], { ...BASE, ui: recorder().ui, run: cap.run });
+    expect(code).toBe(ExitCode.Success);
+    expect(cap.calls).toHaveLength(1);
+    expect(cap.calls[0]!.config.aiMode).toBe("off"); // headless default
+    expect(cap.calls[0]!.deps.autoOpen).toBe(false);
+  });
+
+  it("--quiet and --verbose are accepted and still run (exit 0)", async () => {
+    const cap = captureRun();
+    expect(await main([".", "--no-ai", "--quiet"], { ...BASE, ui: recorder().ui, run: cap.run })).toBe(
+      ExitCode.Success,
+    );
+    expect(await main([".", "--no-ai", "--verbose"], { ...BASE, ui: recorder().ui, run: cap.run })).toBe(
+      ExitCode.Success,
+    );
+  });
+});
+

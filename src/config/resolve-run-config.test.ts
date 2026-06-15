@@ -86,6 +86,12 @@ describe("resolveRunConfig — end to end", () => {
     }
   });
 
+  it("lenient mode skips the gap check — resolves with the required field left undefined (Story 6.4)", () => {
+    const cfg = resolveRunConfig(headless({ env: { COMMIT_SAGE_AI_MODE: "required" }, lenient: true }));
+    expect(cfg.aiMode).toBe("required");
+    expect(cfg.provider).toBeUndefined(); // not thrown — `--show-config` can still dump it
+  });
+
   it("passes through an injected entitlement (license gate stand-in)", () => {
     const cfg = resolveRunConfig(headless({ entitlement: { tier: "unlimited" } }));
     expect(cfg.entitlement).toEqual({ tier: "unlimited" });

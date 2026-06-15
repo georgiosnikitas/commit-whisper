@@ -32,6 +32,8 @@ export interface FinalizeContext {
   interactive: boolean;
   analysisTimestamp: IsoDate;
   entitlement: Entitlement;
+  /** Skip the required-field gap check (used by `--show-config` so it can always dump). */
+  lenient?: boolean;
 }
 
 /** Resolve a field's requiredness against the merged config (AI-cluster aware). */
@@ -57,9 +59,11 @@ export function finalizeRunConfig(
   provenance: Provenance,
   ctx: FinalizeContext,
 ): RunConfig {
-  for (const key of CONFIG_FIELD_KEYS) {
-    if (isFieldRequired(key, partial) && partial[key] === undefined) {
-      throw new MissingRequiredConfigError(key, FIELD_SPECS[key].envVar);
+  if (ctx.lenient !== true) {
+    for (const key of CONFIG_FIELD_KEYS) {
+      if (isFieldRequired(key, partial) && partial[key] === undefined) {
+        throw new MissingRequiredConfigError(key, FIELD_SPECS[key].envVar);
+      }
     }
   }
 

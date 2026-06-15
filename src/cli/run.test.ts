@@ -99,6 +99,31 @@ describe("runPipeline — terminal outcomes", () => {
     expect(narrateCalls).toBe(0);
   });
 
+  it("a DEFAULTED headless-off run nudges toward the narrative (info, stderr only) — Story 6.4", async () => {
+    const r = recorder();
+    // No aiMode flag/env ⇒ the resolver DEFAULTS aiMode to off (headless) with provenance "default".
+    const code = await runPipeline(makeConfig({}), {
+      retrieve: async () => EMPTY_HISTORY,
+      ui: r.ui,
+      writeStdout: r.writeStdout,
+    });
+    expect(code).toBe(ExitCode.Success);
+    const nudge = r.infos.find((m) => m.includes("metrics-only"));
+    expect(nudge).toBeDefined();
+    expect(nudge).toContain("AI narrative");
+    expect(r.stdout.join("")).not.toContain("metrics-only — for the AI narrative"); // never on stdout
+  });
+
+  it("an EXPLICIT --no-ai run (provenance flag) emits NO nudge — Story 6.4", async () => {
+    const r = recorder();
+    await runPipeline(makeConfig({ aiMode: "off" }), {
+      retrieve: async () => EMPTY_HISTORY,
+      ui: r.ui,
+      writeStdout: r.writeStdout,
+    });
+    expect(r.infos.some((m) => m.includes("metrics-only — for the AI narrative"))).toBe(false);
+  });
+
   it("fail-open (auto, provider unreachable) → exit 9, ⚠ substrate, up-front warning, doomed narrate skipped", async () => {
     const r = recorder();
     let narrateCalls = 0;

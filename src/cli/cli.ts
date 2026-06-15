@@ -22,16 +22,18 @@ import { Command, CommanderError } from "commander";
 import { readAiKey, readEnvDiagnostics, readEnvLayer, readGitToken, readProcessEnv } from "../config/env.js";
 import { resolveRunConfig } from "../config/resolve-run-config.js";
 import { detectCapability } from "../config/capability.js";
-import type { OutputFormat, PartialRunConfig, Provider } from "../config/run-config.js";
+import type { OutputFormat, PartialRunConfig, Provider, RunConfig } from "../config/run-config.js";
 import type { NarrateConfig } from "../narrate/narrate.port.js";
 import { preflightProvider } from "../narrate/preflight.js";
 import { execFileGitRunner, type GitRunner } from "../retrieve/git.js";
 import { MissingRequiredConfigError, UsageError } from "../shared/errors.js";
-import { ui as defaultUi, type Ui } from "../shared/ui.js";
+import { createUi, resolveColor, resolveLogLevel, type Ui } from "../shared/ui.js";
 import { exitCodeForError, ExitCode, messageForError } from "./exit-codes.js";
 import { runLaunchpad, type LaunchpadState, type Reachability } from "./interactive.js";
 import { readRepoContext } from "./repo-context.js";
 import { runPipeline, type RunDeps } from "./run.js";
+import { formatShowConfig } from "./show-config.js";
+import { VERSION } from "./version.js";
 
 const PROVIDERS: readonly Provider[] = ["ollama", "openai", "gemini", "anthropic", "openai-compatible"];
 const OUTPUT_FORMATS: readonly OutputFormat[] = ["terminal", "html", "markdown", "json"];
@@ -52,6 +54,11 @@ interface CliOptions {
   author?: string;
   since?: string;
   until?: string;
+  // — operational flags (Story 6.4) —
+  showConfig?: boolean; // print the resolved config (+ provenance) and exit
+  nonInteractive?: boolean; // force strict single-shot (the gate closed even in a TTY)
+  verbose?: boolean; // more detailed stderr logging
+  quiet?: boolean; // errors + warnings only on stderr
 }
 
 export interface CliDeps {
@@ -59,6 +66,7 @@ export interface CliDeps {
   env?: NodeJS.ProcessEnv;
   stdinIsTTY?: boolean;
   stdoutIsTTY?: boolean;
+  stderrIsTTY?: boolean;
   analysisTimestamp?: string;
   ui?: Ui;
   writeStdout?: (text: string) => void;
@@ -75,11 +83,20 @@ export interface CliDeps {
 }
 
 export async function main(argv: string[], deps: CliDeps = {}): Promise<number> {
-  const ui = deps.ui ?? defaultUi;
   const env = deps.env ?? readProcessEnv();
   const cwd = deps.cwd ?? process.cwd();
   const stdinIsTTY = deps.stdinIsTTY ?? process.stdin.isTTY;
   const stdoutIsTTY = deps.stdoutIsTTY ?? process.stdout.isTTY;
+  const stderrIsTTY = deps.stderrIsTTY ?? process.stderr.isTTY;
+  // The bootstrap `ui` honours env-only chrome policy (NO_COLOR/FORCE_COLOR,
+  // COMMIT_SAGE_LOG_LEVEL) — used for the 0-arg launchpad and any pre-parse
+  // error. The single-shot run rebuilds a flag-aware `ui` after parsing.
+  const ui =
+    deps.ui ??
+    createUi(process.stderr, {
+      level: resolveLogLevel({ env }),
+      color: resolveColor({ env, isTTY: Boolean(stderrIsTTY) }),
+    });
   try {
     if (argv.length === 0) {
       // The sole interactive entry point: the bare zero-arg command in a TTY
@@ -96,17 +113,59 @@ export async function main(argv: string[], deps: CliDeps = {}): Promise<number> 
 
     const opts = program.opts<CliOptions>();
     const flags = buildFlags(program.args[0], opts);
-    return await resolveAndRun({
-      flags,
-      env,
+    const analysisTimestamp = deps.analysisTimestamp ?? new Date().toISOString();
+
+    // `--show-config`: dump the resolved config + provenance to stdout and exit
+    // WITHOUT running (AC1). Resolved LENIENTLY so it always dumps — even when a
+    // required field is missing (the very thing a user runs it to diagnose);
+    // missing fields render as `(unset)`. Secrets render as `***`.
+    if (opts.showConfig === true) {
+      const config = resolveRunConfig({
+        cwd,
+        env,
+        stdinIsTTY,
+        stdoutIsTTY,
+        nonInteractive: true,
+        analysisTimestamp,
+        flags,
+        lenient: true,
+      });
+      const dump = formatShowConfig(config, {
+        aiKey: readAiKey(env, config.provider),
+        gitPat: readGitToken(env),
+      });
+      writeStdout(deps, `${dump}\n`);
+      return ExitCode.Success;
+    }
+
+    // The run `ui` honours the verbosity flags (`--verbose`/`--quiet`) on top of
+    // the env colour policy — stderr only, never stdout.
+    const runUi =
+      deps.ui ??
+      createUi(process.stderr, {
+        level: resolveLogLevel({ verbose: opts.verbose, quiet: opts.quiet, env }),
+        color: resolveColor({ env, isTTY: Boolean(stderrIsTTY) }),
+      });
+
+    const config = resolveRunConfig({
       cwd,
+      env,
       stdinIsTTY,
       stdoutIsTTY,
-      analysisTimestamp: deps.analysisTimestamp ?? new Date().toISOString(),
-      nonInteractive: true, // STRICT single-shot — never prompts
+      nonInteractive: true, // STRICT single-shot — never prompts (--non-interactive only confirms this)
+      analysisTimestamp,
+      flags,
+    });
+
+    return await runResolved({
+      config,
+      env,
+      stdinIsTTY,
+      stdoutIsTTY,
+      nonInteractive: true, // STRICT single-shot — the gate stays closed
       openAllowed: opts.open !== false, // honoured only when interactive (false here)
       deps,
-      ui,
+      ui: runUi,
     });
   } catch (err) {
     ui.error(messageForError(err));
@@ -116,6 +175,15 @@ export async function main(argv: string[], deps: CliDeps = {}): Promise<number> 
     }
     return exitCodeForError(err);
   }
+}
+
+/** Write to stdout via the injected sink, or `process.stdout`. */
+function writeStdout(deps: CliDeps, text: string): void {
+  if (deps.writeStdout !== undefined) {
+    deps.writeStdout(text);
+    return;
+  }
+  process.stdout.write(text);
 }
 
 interface ResolveAndRunInput {
@@ -133,10 +201,10 @@ interface ResolveAndRunInput {
 }
 
 /**
- * The shared resolve → read-keys → run-pipeline tail used by BOTH the strict
- * single-shot path (`nonInteractive: true`) and the guided interactive run
- * (`nonInteractive: false`, Story 6.2). `autoOpen = interactive && openAllowed`,
- * so single-shot (never interactive) never auto-opens — behaviour-preserving.
+ * Resolve the `RunConfig` from `flags`, then run the pipeline. Used by the
+ * guided interactive run (`nonInteractive: false`, Story 6.2). The single-shot
+ * path resolves the config itself (so `--show-config` can dump it without
+ * running) and calls `runResolved` directly.
  */
 async function resolveAndRun(input: ResolveAndRunInput): Promise<number> {
   const config = resolveRunConfig({
@@ -148,7 +216,37 @@ async function resolveAndRun(input: ResolveAndRunInput): Promise<number> {
     analysisTimestamp: input.analysisTimestamp,
     flags: input.flags,
   });
-  const aiKey = readAiKey(input.env, config.provider);
+  return await runResolved({
+    config,
+    env: input.env,
+    stdinIsTTY: input.stdinIsTTY,
+    stdoutIsTTY: input.stdoutIsTTY,
+    nonInteractive: input.nonInteractive,
+    openAllowed: input.openAllowed,
+    deps: input.deps,
+    ui: input.ui,
+  });
+}
+
+interface RunResolvedInput {
+  config: RunConfig;
+  env: NodeJS.ProcessEnv;
+  stdinIsTTY: boolean | undefined;
+  stdoutIsTTY: boolean | undefined;
+  nonInteractive: boolean;
+  /** Allow HTML auto-open — honoured only when the run resolves interactive. */
+  openAllowed: boolean;
+  deps: CliDeps;
+  ui: Ui;
+}
+
+/**
+ * The read-keys → run-pipeline tail over an ALREADY-RESOLVED config.
+ * `autoOpen = interactive && openAllowed`, so the strict single-shot path (whose
+ * capability gate is closed) never auto-opens — behaviour-preserving.
+ */
+async function runResolved(input: RunResolvedInput): Promise<number> {
+  const aiKey = readAiKey(input.env, input.config.provider);
   const gitToken = readGitToken(input.env); // env-only PAT for a private remote (Story 5.2)
   const { interactive } = detectCapability({
     nonInteractive: input.nonInteractive,
@@ -158,7 +256,7 @@ async function resolveAndRun(input: ResolveAndRunInput): Promise<number> {
   });
   const autoOpen = interactive && input.openAllowed;
   const run = input.deps.run ?? runPipeline;
-  return await run(config, {
+  return await run(input.config, {
     aiKey,
     gitToken,
     ui: input.ui,
@@ -291,11 +389,16 @@ function buildProgram(): Command {
     .option("--author <text>", "only commits whose author name or email contains this text")
     .option("--since <date>", "only commits on or after this date (YYYY-MM-DD)")
     .option("--until <date>", "only commits on or before this date (YYYY-MM-DD)")
+    .option("--show-config", "print the resolved configuration (with provenance) and exit")
+    .option("--non-interactive", "force strict single-shot even in a TTY")
+    .option("--verbose", "more detailed stderr logging")
+    .option("--quiet", "errors and warnings only on stderr")
+    .version(VERSION, "--version", "print the version and exit")
     .allowExcessArguments(false)
     .exitOverride() // the shell owns process exit, not commander
     .configureOutput({
       writeOut: (text) => {
-        process.stderr.write(text); // help is human chrome → stderr (stdout stays machine-only)
+        process.stderr.write(text); // help/version are human chrome → stderr (stdout stays machine-only)
       },
       writeErr: () => {}, // suppressed — the shell surfaces a typed UsageError instead
     });

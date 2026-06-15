@@ -42,6 +42,8 @@ export interface ResolveInput {
   configFile?: PartialRunConfig;
   /** Resolved by the license gate (Epic 7); defaults to Free. */
   entitlement?: Entitlement;
+  /** Skip the required-field gap check so the resolve always succeeds (`--show-config`, Story 6.4). */
+  lenient?: boolean;
 }
 
 export function resolveRunConfig(input: ResolveInput): RunConfig {
@@ -67,5 +69,6 @@ export function resolveRunConfig(input: ResolveInput): RunConfig {
     // Build a fresh default per call — `finalizeRunConfig` deep-freezes the
     // entitlement, so a shared module constant would be permanently frozen.
     entitlement: input.entitlement ?? { tier: "free", commitCap: FREE_TIER_COMMIT_CAP },
+    lenient: input.lenient,
   });
 }

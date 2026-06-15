@@ -87,8 +87,15 @@ export async function runPipeline(config: RunConfig, deps: RunDeps = {}): Promis
   // — Gate band: license (Epic 7, Free no-op) → aiMode-gated preflight —
   const preflightReason = await runPreflight(config, narrateConfig, preflight, deps.fetchImpl, ui);
 
+  // Headless metrics-only nudge (Story 6.4 AC3): when aiMode DEFAULTED to off
+  // (headless/CI), not an explicit `--no-ai`, point the way to the narrative.
+  if (config.aiMode === "off" && config.provenance.aiMode === "default") {
+    ui.info("Running metrics-only — for the AI narrative, run interactively or set a provider key.");
+  }
+
   // — Pipeline —
   const history = await retrieve(config); // RetrieveError → exit 4
+  ui.debug?.(`Retrieved ${history.commits.length} commit(s) from ${history.repoTarget}.`);
   // Narrow the analyzed commit set per the selection inputs BEFORE analyze, so all
   // 32 catalog metrics compute over exactly the selected slice (Story 2.6); the
   // tier cap (Free 100) is composed into the same step and any truncation is
@@ -104,6 +111,7 @@ export async function runPipeline(config: RunConfig, deps: RunDeps = {}): Promis
     mailmap: emptyMailmap(), // real .mailmap ingestion is deferred
   };
   const analysis = analyze(selection.history, ctx); // MetricsError → exit 5
+  ui.debug?.(`Analyzed ${selection.history.commits.length} commit(s); aiMode=${config.aiMode}.`);
 
   const outcome = await narrateOutcome(config, narrateConfig, analysis, narrate, preflightReason);
   const report = reportFromOutcome(analysis, outcome);
