@@ -33,9 +33,14 @@ Report JSON.
 ### 🍺 Homebrew (macOS)
 
 ```bash
+brew trust georgiosnikitas/commit-whisper
 brew tap georgiosnikitas/commit-whisper
 brew install commit-whisper
 ```
+
+> The `brew trust` line is only required when your Homebrew enforces tap trust
+> (`HOMEBREW_REQUIRE_TAP_TRUST`, available in Homebrew 6+). On a default setup you can skip
+> it and run just the `brew tap` + `brew install` steps.
 
 ### 📦 From npm
 

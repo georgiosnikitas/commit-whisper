@@ -150,7 +150,7 @@ export interface LaunchpadDeps {
 }
 
 /** The locked product tagline (brief.md / DESIGN.md). */
-export const LAUNCHPAD_TAGLINE = "commit-whisper · I know what you did last commit";
+export const LAUNCHPAD_TAGLINE = "commit-whisper · 🕵️ I know what you did last commit";
 
 /** The short, copyable cheatsheet printed on Esc/Quit (AC4). */
 export const FLAGS_CHEATSHEET = [
