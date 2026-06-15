@@ -564,7 +564,7 @@ describe("main — license entitlement gate (Story 7.1)", () => {
     const cap = captureRun();
     await main([".", "--no-ai"], {
       ...BASE,
-      resolveEntitlement: async () => ({ tier: "unlimited" }),
+      resolveEntitlement: async () => ({ kind: "resolved", entitlement: { tier: "unlimited" } }),
       ui: recorder().ui,
       run: cap.run,
     });
@@ -575,7 +575,7 @@ describe("main — license entitlement gate (Story 7.1)", () => {
     const r = recorder();
     await main([".", "--show-config"], {
       ...BASE,
-      resolveEntitlement: async () => ({ tier: "single-device" }),
+      resolveEntitlement: async () => ({ kind: "resolved", entitlement: { tier: "single-device" } }),
       ui: r.ui,
       writeStdout: r.writeStdout,
     });
@@ -589,7 +589,7 @@ describe("main — license entitlement gate (Story 7.1)", () => {
       stdinIsTTY: true,
       stdoutIsTTY: true,
       env: {},
-      resolveEntitlement: async () => ({ tier: "single-device" }),
+      resolveEntitlement: async () => ({ kind: "resolved", entitlement: { tier: "single-device" } }),
       gitRunner: repoRunner,
       launchpad: lp.launchpad,
     });
@@ -602,11 +602,88 @@ describe("main — license entitlement gate (Story 7.1)", () => {
     await main([".", "--show-config"], {
       ...BASE,
       env: { COMMIT_SAGE_LICENSE_KEY: "LIC-SUPERSECRET" },
-      resolveEntitlement: async () => ({ tier: "unlimited" }),
+      resolveEntitlement: async () => ({ kind: "resolved", entitlement: { tier: "unlimited" } }),
       ui: r.ui,
       writeStdout: r.writeStdout,
     });
     expect(r.stdout.join("")).not.toContain("LIC-SUPERSECRET");
+  });
+});
+
+describe("main — fail-closed vs degrade-to-Free (Story 7.3)", () => {
+  it("a headless run with an unverified license FAILS CLOSED (exit 8, pipeline never runs) (AC1)", async () => {
+    const cap = captureRun();
+    const r = recorder();
+    const code = await main([".", "--no-ai"], {
+      ...BASE,
+      resolveEntitlement: async () => ({ kind: "unverified", reason: "license revoked" }),
+      ui: r.ui,
+      run: cap.run,
+    });
+    expect(code).toBe(ExitCode.License);
+    expect(cap.calls).toHaveLength(0); // no analysis, no rendering
+  });
+
+  it("the fail-closed message names the license + COMMIT_SAGE_LICENSE_KEY (validate-not-activate) (AC1)", async () => {
+    const r = recorder();
+    await main([".", "--no-ai"], {
+      ...BASE,
+      resolveEntitlement: async () => ({ kind: "unverified", reason: "server unreachable" }),
+      ui: r.ui,
+      run: captureRun().run,
+    });
+    const errorText = r.errors.join("\n");
+    expect(errorText).toContain("server unreachable");
+    expect(errorText).toContain("COMMIT_SAGE_LICENSE_KEY");
+    expect(errorText.toLowerCase()).toContain("validat");
+  });
+
+  it("--show-config stays lenient on an unverified license — dumps tier = free, no fail-closed (AC1 carve-out)", async () => {
+    const r = recorder();
+    const code = await main([".", "--show-config"], {
+      ...BASE,
+      resolveEntitlement: async () => ({ kind: "unverified", reason: "transient" }),
+      ui: r.ui,
+      writeStdout: r.writeStdout,
+    });
+    expect(code).toBe(ExitCode.Success);
+    expect(r.stdout.join("")).toContain("tier = free");
+  });
+
+  it("an interactive run with an unverified license DEGRADES to Free + warns, never refusing (AC2)", async () => {
+    const lp = captureLaunchpad();
+    const r = recorder();
+    const code = await main([], {
+      ...BASE,
+      stdinIsTTY: true,
+      stdoutIsTTY: true,
+      env: {},
+      resolveEntitlement: async () => ({ kind: "unverified", reason: "offline" }),
+      gitRunner: repoRunner,
+      launchpad: lp.launchpad,
+      ui: r.ui,
+    });
+    expect(code).toBe(ExitCode.Success);
+    expect(lp.calls[0]!.state.tier).toBe("free");
+    expect(lp.calls[0]!.state.licensed).toBe(false);
+    expect(r.warns.join("\n")).toContain("Free");
+  });
+
+  it("the headless run never constructs / calls an activator (CI validates, never activates) (AC1)", async () => {
+    const activatorCalls: string[] = [];
+    const cap = captureRun();
+    await main([".", "--no-ai"], {
+      ...BASE,
+      resolveEntitlement: async () => ({ kind: "resolved", entitlement: { tier: "unlimited" } }),
+      activateLicense: async (_env, key) => {
+        activatorCalls.push(key);
+        return { ok: true, tier: "single-device" };
+      },
+      ui: recorder().ui,
+      run: cap.run,
+    });
+    expect(activatorCalls).toHaveLength(0); // the headless path validates, it never activates
+    expect(cap.calls).toHaveLength(1); // the resolved (paid) run proceeds
   });
 });
 
@@ -618,7 +695,7 @@ describe("main — license actions wiring (Story 7.2)", () => {
       stdinIsTTY: true,
       stdoutIsTTY: true,
       env: {},
-      resolveEntitlement: async () => ({ tier: "free", commitCap: 100 }),
+      resolveEntitlement: async () => ({ kind: "resolved", entitlement: { tier: "free", commitCap: 100 } }),
       gitRunner: repoRunner,
       launchpad: lp.launchpad,
     });
@@ -635,7 +712,7 @@ describe("main — license actions wiring (Story 7.2)", () => {
       stdinIsTTY: true,
       stdoutIsTTY: true,
       env: {},
-      resolveEntitlement: async () => ({ tier: "free", commitCap: 100 }),
+      resolveEntitlement: async () => ({ kind: "resolved", entitlement: { tier: "free", commitCap: 100 } }),
       gitRunner: repoRunner,
       launchpad: lp.launchpad,
       activateLicense: async (_env, key) => {
@@ -655,7 +732,7 @@ describe("main — license actions wiring (Story 7.2)", () => {
       stdinIsTTY: true,
       stdoutIsTTY: true,
       env: { COMMIT_SAGE_STORE_URL: "https://my.store/buy" },
-      resolveEntitlement: async () => ({ tier: "free", commitCap: 100 }),
+      resolveEntitlement: async () => ({ kind: "resolved", entitlement: { tier: "free", commitCap: 100 } }),
       gitRunner: repoRunner,
       launchpad: lp.launchpad,
     });

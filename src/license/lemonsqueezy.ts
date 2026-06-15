@@ -91,6 +91,9 @@ function mapValidate(json: LemonSqueezyValidateResponse): LicenseValidation {
     variantId: json.meta?.variant_id,
     activationLimit: json.license_key?.activation_limit,
     activationUsage: json.license_key?.activation_usage,
+    // Carry the server's refusal reason (e.g. "revoked"/"expired") so the gate can
+    // surface it in the fail-closed / degrade message (Story 7.3); null → undefined.
+    error: json.error ?? undefined,
   };
 }
 

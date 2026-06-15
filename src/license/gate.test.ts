@@ -14,17 +14,17 @@ function recordingValidator(result: LicenseValidation) {
 }
 
 describe("resolveEntitlement", () => {
-  it("no key ⇒ Free, and the validator is NEVER called (AC2)", async () => {
+  it("no key ⇒ resolved Free, and the validator is NEVER called (AC2)", async () => {
     const v = recordingValidator({ valid: true, status: "active" });
-    const entitlement = await resolveEntitlement({ validate: v.validate });
-    expect(entitlement).toEqual({ tier: "free", commitCap: 100 });
+    const resolution = await resolveEntitlement({ validate: v.validate });
+    expect(resolution).toEqual({ kind: "resolved", entitlement: { tier: "free", commitCap: 100 } });
     expect(v.calls).toHaveLength(0);
   });
 
-  it("a valid key ⇒ the mapped paid entitlement (no cap)", async () => {
+  it("a valid key ⇒ resolved with the mapped paid entitlement (no cap)", async () => {
     const v = recordingValidator({ valid: true, status: "active", variantName: "Unlimited" });
-    const entitlement = await resolveEntitlement({ licenseKey: "LIC", validate: v.validate });
-    expect(entitlement).toEqual({ tier: "unlimited" });
+    const resolution = await resolveEntitlement({ licenseKey: "LIC", validate: v.validate });
+    expect(resolution).toEqual({ kind: "resolved", entitlement: { tier: "unlimited" } });
     expect(v.calls).toHaveLength(1);
   });
 
@@ -44,39 +44,55 @@ describe("resolveEntitlement", () => {
     expect(v.calls[0]).toEqual({ licenseKey: "LIC", instanceId: undefined });
   });
 
-  it("an invalid / unreachable validation ⇒ Free (the 7.1 degrade baseline)", async () => {
+  it("an invalid / unreachable validation ⇒ unverified, carrying the validator's reason (AC1/AC2)", async () => {
     const invalid = recordingValidator({ valid: false, status: "error", error: "unreachable" });
     expect(await resolveEntitlement({ licenseKey: "LIC", validate: invalid.validate })).toEqual({
-      tier: "free",
-      commitCap: 100,
+      kind: "unverified",
+      reason: "unreachable",
     });
   });
 
-  it("an empty-string key ⇒ Free, no validate call", async () => {
+  it("a valid:false with no error message ⇒ unverified with a fallback reason", async () => {
+    const invalid = recordingValidator({ valid: false, status: "inactive" });
+    const resolution = await resolveEntitlement({ licenseKey: "LIC", validate: invalid.validate });
+    expect(resolution.kind).toBe("unverified");
+    if (resolution.kind === "unverified") {
+      expect(resolution.reason).not.toBe("");
+    }
+  });
+
+  it("a valid:false with an EMPTY / whitespace error ⇒ unverified with the fallback (never a blank reason)", async () => {
+    const blank = recordingValidator({ valid: false, status: "inactive", error: "   " });
+    const resolution = await resolveEntitlement({ licenseKey: "LIC", validate: blank.validate });
+    expect(resolution).toEqual({ kind: "unverified", reason: "Your license could not be verified." });
+  });
+
+  it("an empty-string key ⇒ resolved Free, no validate call", async () => {
     const v = recordingValidator({ valid: true, status: "active" });
     expect(await resolveEntitlement({ licenseKey: "", validate: v.validate })).toEqual({
-      tier: "free",
-      commitCap: 100,
+      kind: "resolved",
+      entitlement: { tier: "free", commitCap: 100 },
     });
     expect(v.calls).toHaveLength(0);
   });
 
-  it("a throwing validate degrades to Free (the gate never throws — launchpad must open)", async () => {
+  it("a throwing validate ⇒ unverified (the gate never throws — the shell owns the decision)", async () => {
     const validate: LicenseValidator = async () => {
       throw new Error("boom");
     };
-    expect(await resolveEntitlement({ licenseKey: "LIC", validate })).toEqual({ tier: "free", commitCap: 100 });
+    const resolution = await resolveEntitlement({ licenseKey: "LIC", validate });
+    expect(resolution.kind).toBe("unverified");
   });
 
-  it("a throwing readInstanceId degrades to Free (the gate never throws)", async () => {
+  it("a throwing readInstanceId ⇒ unverified (the gate never throws)", async () => {
     const v = recordingValidator({ valid: true, status: "active", variantName: "Unlimited" });
-    const entitlement = await resolveEntitlement({
+    const resolution = await resolveEntitlement({
       licenseKey: "LIC",
       validate: v.validate,
       readInstanceId: async () => {
         throw new Error("disk error");
       },
     });
-    expect(entitlement).toEqual({ tier: "free", commitCap: 100 });
+    expect(resolution.kind).toBe("unverified");
   });
 });

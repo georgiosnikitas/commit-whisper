@@ -61,6 +61,16 @@ describe("createLemonSqueezyValidator", () => {
     });
   });
 
+  it("surfaces the server's refusal reason on a valid:false (so the gate can show it) (Story 7.3)", async () => {
+    const { fetchImpl } = fakeFetch({
+      ok: true,
+      json: { valid: false, error: "license has been revoked", license_key: { status: "inactive" } },
+    });
+    const result = await createLemonSqueezyValidator({ fetchImpl })({ licenseKey: "k" });
+    expect(result.valid).toBe(false);
+    expect(result.error).toBe("license has been revoked");
+  });
+
   it("maps a non-ok HTTP response to invalid (never throws)", async () => {
     const { fetchImpl } = fakeFetch({ ok: false, status: 404 });
     const result = await createLemonSqueezyValidator({ fetchImpl })({ licenseKey: "k" });

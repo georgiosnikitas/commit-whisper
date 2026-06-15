@@ -28,7 +28,7 @@ import { detectCapability } from "../config/capability.js";
 import type { Entitlement, OutputFormat, PartialRunConfig, Provider, RunConfig } from "../config/run-config.js";
 import type { NarrateConfig } from "../narrate/narrate.port.js";
 import { preflightProvider } from "../narrate/preflight.js";
-import { resolveEntitlement } from "../license/gate.js";
+import { resolveEntitlement, type EntitlementResolution } from "../license/gate.js";
 import {
   activateLicense,
   deactivateLicense,
@@ -46,9 +46,10 @@ import {
   readCachedLicenseKey,
   writeLicenseCache,
 } from "../license/store.js";
+import { FREE_ENTITLEMENT } from "../license/tiers.js";
 import { execFileGitRunner, type GitRunner } from "../retrieve/git.js";
 import { defaultOpenBrowser } from "./open-browser.js";
-import { MissingRequiredConfigError, UsageError } from "../shared/errors.js";
+import { LicenseError, MissingRequiredConfigError, UsageError } from "../shared/errors.js";
 import { createUi, resolveColor, resolveLogLevel, type Ui } from "../shared/ui.js";
 import { exitCodeForError, ExitCode, messageForError } from "./exit-codes.js";
 import { runLaunchpad, type LaunchpadState, type Reachability } from "./interactive.js";
@@ -104,8 +105,8 @@ export interface CliDeps {
   preflight?: typeof preflightProvider;
   /** Inject the persisted config-file layer (Story 6.5); defaults to reading `~/.commit-sage`. */
   configFile?: PartialRunConfig;
-  /** Inject the resolved license entitlement (Story 7.1); defaults to the online Lemon Squeezy gate. */
-  resolveEntitlement?: (env: NodeJS.ProcessEnv) => Promise<Entitlement>;
+  /** Inject the resolved license outcome (Story 7.1/7.3); defaults to the online Lemon Squeezy gate. */
+  resolveEntitlement?: (env: NodeJS.ProcessEnv) => Promise<EntitlementResolution>;
   /** Inject the launchpad's license-activate action (Story 7.2); defaults to the online activate + cache. */
   activateLicense?: (env: NodeJS.ProcessEnv, licenseKey: string) => Promise<ActivationOutcome>;
   /** Inject the launchpad's license-deactivate action (Story 7.2); defaults to the online deactivate + clear. */
@@ -115,16 +116,51 @@ export interface CliDeps {
 }
 
 /**
- * The default entitlement resolver (Story 7.1 · cached-key read Story 7.2): the
- * online Lemon Squeezy gate. No license key ⇒ Free with no network call; a key
- * (env, else the cached key from a one-time Activate) ⇒ validate + map the tier.
+ * The default license gate (Story 7.1 · cached-key read Story 7.2): the online
+ * Lemon Squeezy validator. No license key ⇒ resolved Free with no network call;
+ * a key (env, else the cached key from a one-time Activate) ⇒ validate + map the
+ * tier; an unconfirmable key ⇒ `unverified` (the shell decides fail-closed vs
+ * degrade, Story 7.3).
  */
-async function defaultResolveEntitlement(env: NodeJS.ProcessEnv): Promise<Entitlement> {
+async function defaultResolveEntitlement(env: NodeJS.ProcessEnv): Promise<EntitlementResolution> {
   return resolveEntitlement({
     licenseKey: readLicenseKey(env) ?? (await readCachedLicenseKey(env)),
     validate: createLemonSqueezyValidator(),
     readInstanceId: () => readActivationInstanceId(env),
   });
+}
+
+/**
+ * The headless fail-closed message (Story 7.3 AC1). Carries the CI
+ * validate-not-activate guidance: the key is supplied via the env var and
+ * validated (never re-activated), so a multi-repo matrix does not exhaust
+ * activations.
+ */
+function licenseFailClosedMessage(reason: string): string {
+  return (
+    `License validation failed: ${reason} ` +
+    "commit-sage did not run because it could not confirm your license. " +
+    "Set a valid COMMIT_SAGE_LICENSE_KEY — in CI the key is validated via the " +
+    "environment variable and never consumes a device activation."
+  );
+}
+
+/** The interactive degrade notice (Story 7.3 AC2) — friendly, never refuses to run. */
+const LICENSE_DEGRADE_NOTICE =
+  "Could not validate your license right now — running under the Free 100-commit cap. " +
+  "Paid features resume once validation succeeds.";
+
+/**
+ * Apply the headless fail-closed policy to a gate outcome (Story 7.3 AC1). An
+ * `unverified` license in a headless/CI run THROWS `LicenseError` (exit 8) —
+ * no analysis, no rendering. A `resolved` outcome yields its entitlement. The
+ * interactive path does NOT use this (it degrades instead — see `runZeroArg`).
+ */
+function entitlementForHeadlessRun(resolution: EntitlementResolution): Entitlement {
+  if (resolution.kind === "unverified") {
+    throw new LicenseError(licenseFailClosedMessage(resolution.reason));
+  }
+  return resolution.entitlement;
 }
 
 /** Default Activate (Story 7.2): activate online + cache the instance id & key. */
@@ -182,15 +218,19 @@ export async function main(argv: string[], deps: CliDeps = {}): Promise<number> 
     // The persisted Settings (Story 6.5) re-enter at the config-file layer; the
     // resolver precedence (defaults < configFile < env < flags) is unchanged.
     const configFile = deps.configFile ?? (await readSettings(env));
-    // Gate band (Story 7.1): validate the license online at startup and resolve
-    // the effective tier into the frozen RunConfig. No key ⇒ Free, no network.
-    const entitlement = await (deps.resolveEntitlement ?? defaultResolveEntitlement)(env);
+    // Gate band (Story 7.1/7.3): resolve the license outcome online at startup.
+    // No key ⇒ resolved Free (no network). An unconfirmable key ⇒ `unverified`,
+    // which the HEADLESS single-shot run fails closed on (exit 8) below — but
+    // `--show-config` stays lenient (it dumps the degraded Free tier).
+    const resolution = await (deps.resolveEntitlement ?? defaultResolveEntitlement)(env);
 
     // `--show-config`: dump the resolved config + provenance to stdout and exit
     // WITHOUT running (AC1). Resolved LENIENTLY so it always dumps — even when a
     // required field is missing (the very thing a user runs it to diagnose);
-    // missing fields render as `(unset)`. Secrets render as `***`.
+    // missing fields render as `(unset)`. Secrets render as `***`. An unverified
+    // license is NOT a fail-closed here — it dumps as the degraded `tier = free`.
     if (opts.showConfig === true) {
+      const entitlement = resolution.kind === "resolved" ? resolution.entitlement : FREE_ENTITLEMENT;
       const config = resolveRunConfig({
         cwd,
         env,
@@ -210,6 +250,11 @@ export async function main(argv: string[], deps: CliDeps = {}): Promise<number> 
       writeStdout(deps, `${dump}\n`);
       return ExitCode.Success;
     }
+
+    // STRICT single-shot is headless: an unverified license FAILS CLOSED (exit 8,
+    // no analysis/rendering) — `entitlementForHeadlessRun` throws `LicenseError`,
+    // which the outer catch maps to its code (AC1). A resolved outcome runs.
+    const entitlement = entitlementForHeadlessRun(resolution);
 
     // The run `ui` honours the verbosity flags (`--verbose`/`--quiet`) on top of
     // the env colour policy — stderr only, never stdout.
@@ -381,7 +426,15 @@ async function runZeroArg(ctx: ZeroArgContext): Promise<number> {
   // configured AI = the persisted Settings overlaid by env, the resolver's
   // precedence) and the real license tier (Story 7.1 — Free if no key/offline).
   const configFile = ctx.deps.configFile ?? (await readSettings(ctx.env));
-  const entitlement = await (ctx.deps.resolveEntitlement ?? defaultResolveEntitlement)(ctx.env);
+  // Gate band (Story 7.1/7.3): the interactive path NEVER fails closed — an
+  // unverified license DEGRADES to the Free cap with a clear notice, so the
+  // launchpad always opens (AC2). The subsequent guided run then surfaces the
+  // existing 2.7 "Analyzed N of M — Free tier cap" line.
+  const resolution = await (ctx.deps.resolveEntitlement ?? defaultResolveEntitlement)(ctx.env);
+  const entitlement = resolution.kind === "resolved" ? resolution.entitlement : FREE_ENTITLEMENT;
+  if (resolution.kind === "unverified") {
+    ctx.ui.warn(LICENSE_DEGRADE_NOTICE);
+  }
   const envLayer = readEnvLayer(ctx.env);
   // config < env: a saved provider/model shows in the header (and cures the
   // no-AI state), but an env var still wins — mirroring the resolver.
