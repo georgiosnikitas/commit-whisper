@@ -2,7 +2,7 @@
 title: commit-sage MENUS
 status: draft
 created: 2026-06-12
-updated: 2026-06-13
+updated: 2026-06-15
 ---
 
 commit-sage MENUS
@@ -82,7 +82,8 @@ predict the outcome before pressing Enter.
   │   ○  Help / show all flags
   │
   │   ○  Activate license               enter your license key
-  │   ○  Buy / Restore license          opens the store in your browser
+  │   ○  Buy a license                  opens the store in your browser
+  │   ○  Restore a purchase             opens your Lemon Squeezy orders
   │   ○  Buy Me a Coffee
   │
   └  ↑↓ move · ↵ select · esc quit
@@ -106,7 +107,8 @@ Identical layout; the header carries the `⚠ AI not configured` flag. The Analy
   │   ○  Help / show all flags
   │
   │   ○  Activate license               enter your license key
-  │   ○  Buy / Restore license          opens the store in your browser
+  │   ○  Buy a license                  opens the store in your browser
+  │   ○  Restore a purchase             opens your Lemon Squeezy orders
   │   ○  Buy Me a Coffee
   │
   └  ↑↓ move · ↵ select · esc quit
@@ -114,7 +116,7 @@ Identical layout; the header carries the `⚠ AI not configured` flag. The Analy
 
 ### State: licensed
 
-Coffee, Activate, and Buy/Restore retire; **Deactivate** appears. The menu gets quieter as
+Coffee, Activate, Buy, and Restore retire; **Deactivate** appears. The menu gets quieter as
 the user gets more committed.
 
 ```
@@ -150,7 +152,8 @@ Menu item reference
 | Status / doctor | ORIENT | always | Read-only readiness diagnostic |
 | Help / show all flags | ORIENT | always | Full flag reference (same content as `--help`) |
 | Activate license | LICENSE | unlicensed | Enter a license key to bind this device |
-| Buy / Restore license | LICENSE | unlicensed | Open the store in the browser (buy new or recover a purchase) |
+| Buy a license | LICENSE | unlicensed | Open the store in the browser (checkout) |
+| Restore a purchase | LICENSE | unlicensed | Open the customer's Lemon Squeezy orders to recover a key |
 | Buy Me a Coffee | LICENSE | unlicensed only | Open the voluntary support link |
 | Deactivate license | LICENSE | licensed | Free this device's activation so the license can move |
 | Quit | — | always | Esc/quit; clean exit + short flags cheatsheet |
@@ -316,7 +319,7 @@ only — never their values**.
 ```
   ◆  Status / doctor
   │
-  ◇  License     Free            100-commit cap · Buy/Restore to unlock
+  ◇  License     Free            100-commit cap · Buy a license to unlock
   ◇  AI          ⚠ not configured
   │              provider   — not set
   │              model      — not set
@@ -350,10 +353,11 @@ only — never their values**.
 Licensing screens
 -----------------
 
-Three items; they split by **where the work happens**. Buy/Restore sends the user to the
-web (purchase or recover a key); Activate brings them back to paste it; Deactivate frees the
-device. The natural returning-user loop is **Buy/Restore → get key from the store →
-Activate**.
+Four items; they split by **where the work happens**. **Buy** sends the user to the store
+(checkout) and **Restore** to their Lemon Squeezy orders (recover a key) — both browser
+hand-offs; **Activate** brings them back to paste the key; **Deactivate** frees the device.
+The natural returning-user loop is **Buy → get key from the store → Activate** (or **Restore
+→ find key in your orders → Activate**).
 
 ### Activate license (the only in-terminal key entry)
 
@@ -364,7 +368,7 @@ The license key is **not a secret** — it is entered in-app and may be cached.
   │
   ◇  License key    ____________________________
   │
-  │   ⓘ Find your key in the store (Buy / Restore) or your purchase email.
+  │   ⓘ Find your key in the store (Buy a license) or your Lemon Squeezy orders (Restore a purchase).
   │
   └  ↵ activate · esc menu
 ```
@@ -373,15 +377,25 @@ On success: validates online, caches the activation-instance id under `~/.commit
 returns to the launchpad now showing the paid tier. On a definitive invalid/revoked key, it
 says so plainly and stays on this screen.
 
-### Buy / Restore license
+### Buy a license / Restore a purchase
 
-A one-shot browser hand-off — no in-terminal screen, no in-app checkout (payment and account
-lookup always live in the browser).
+Two one-shot browser hand-offs — no in-terminal screen, no in-app checkout (payment and
+account lookup always live in the browser). **Buy** opens the store/checkout; **Restore**
+opens the customer's Lemon Squeezy orders to recover an existing key. Both URLs are
+deployment-overridable (`COMMIT_SAGE_STORE_URL` / `COMMIT_SAGE_RESTORE_URL`); on an
+open failure the URL is printed plainly so it stays copyable (never a dead-end).
 
 ```
   ◆  Opening the store in your browser…
-  │   commit-sage never handles payment. Buy a new license or look up an
-  │   existing purchase, then return and choose “Activate license”.
+  │   commit-sage never handles payment — checkout happens in your browser.
+  │   After buying, return and choose “Activate license”.
+  └  ↵ menu
+```
+
+```
+  ◆  Opening your Lemon Squeezy orders in your browser…
+  │   commit-sage never handles payment. Find your license key in your
+  │   Lemon Squeezy orders, then return and choose “Activate license”.
   └  ↵ menu
 ```
 
@@ -415,9 +429,10 @@ flagged to John (PRD) and Winston (architecture):
 2. **Settings *writes* non-secret config** to `~/.commit-sage`. The architecture's resolver
    currently only *reads* this file; a write path is new (non-secret fields only, never a
    key). → Winston (config-write path).
-3. **Licensing split:** key entry lives **only** under **Activate**; **Buy / Restore** is a
-   browser hand-off (buy or recover). This revises FR-16's "restore consumes the license
-   key" and FR-14's "Buy/Restore = buy or restore from key." → John (FR-14, FR-16).
+3. **Licensing split:** key entry lives **only** under **Activate**; **Buy** and **Restore**
+   are separate browser hand-offs (checkout vs. recover-from-orders). This revises FR-16's
+   "restore consumes the license key" and FR-14's "Buy/Restore = buy or restore from key."
+   → John (FR-14, FR-16).
 4. **Persistent header readiness line** on every interactive screen — an addition beyond the
    standalone Status/doctor view. → now also authored in EXPERIENCE.md (Component Patterns),
    so the experience spine and this composition agree.

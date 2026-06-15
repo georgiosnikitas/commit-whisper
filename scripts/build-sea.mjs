@@ -20,17 +20,17 @@ import { execFileSync } from "node:child_process";
 import { copyFileSync, chmodSync, existsSync, mkdirSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 
+import { postjectArgsFor, seaPlanFor, SEA_FUSE } from "./sea-plan.mjs";
+
 const OUT_DIR = "dist-sea";
 const BUNDLE = join(OUT_DIR, "commit-sage.cjs");
 const BLOB = join(OUT_DIR, "sea-prep.blob");
 const SEA_CONFIG = "sea-config.json";
-/** The standard Node SEA sentinel fuse (see the Node SEA docs). */
-const SEA_FUSE = "NODE_SEA_FUSE_fce680ab2cc467b6e072b8b5df1996b2";
 
-const platform = process.platform; // "darwin" | "linux" | "win32" | …
-const isWindows = platform === "win32";
-const isMac = platform === "darwin";
-const binaryName = isWindows ? "commit-sage.exe" : "commit-sage";
+// The full per-platform build plan (binary name, signing, chmod, npx shell,
+// Mach-O segment) — pure + unit-tested in tests/sea-plan.test.ts.
+const plan = seaPlanFor(process.platform);
+const { isWindows, isMac, binaryName } = plan;
 const binaryPath = join(OUT_DIR, binaryName);
 
 // The node runtime that becomes the binary base. Must be an OFFICIAL Node.js
@@ -118,19 +118,8 @@ if (isMac) {
 }
 
 step("5/7 Inject the blob with postject");
-const postjectArgs = [
-  "--yes",
-  "postject",
-  binaryPath,
-  "NODE_SEA_BLOB",
-  BLOB,
-  "--sentinel-fuse",
-  SEA_FUSE,
-];
-if (isMac) {
-  // The Mach-O binary needs a dedicated segment to hold the blob.
-  postjectArgs.push("--macho-segment-name", "NODE_SEA");
-}
+// The Mach-O segment (macOS) is folded into the plan-built arg vector.
+const postjectArgs = postjectArgsFor({ platform: process.platform, binaryPath, blobPath: BLOB });
 run("npx", postjectArgs, { shell: isWindows });
 
 if (isMac) {

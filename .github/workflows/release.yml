@@ -1,0 +1,136 @@
+# Build the Node SEA single-executable binaries for macOS, Linux, and Windows
+# (Story 7.4 — the release CI matrix). Each runner builds + smoke-tests its own
+# native binary, then uploads it as an artifact. On a `v*` tag, a final job
+# attaches all three to the GitHub Release.
+#
+# Why this works on CI without the local Homebrew workaround: `actions/setup-node`
+# installs an OFFICIAL Node.js build (from nodejs.org), which embeds the SEA fuse
+# sentinel — so `scripts/build-sea.mjs` uses `process.execPath` directly (no
+# COMMIT_SAGE_SEA_NODE override needed).
+name: release-binaries
+
+on:
+  workflow_dispatch: {} # manual runs (build artifacts without a tag)
+  push:
+    tags:
+      - "v*" # a version tag triggers a full build + release attach
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    name: gate (typecheck · lint · unit tests)
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up an official Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Typecheck · lint · unit tests
+        run: |
+          npm run typecheck
+          npm run lint
+          npm test
+
+  build:
+    name: build (${{ matrix.os }})
+    needs: test
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [macos-latest, ubuntu-latest, windows-latest]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - name: Checkout (full history for the git-analysis smoke test)
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up an official Node.js (has the SEA fuse)
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build the SEA binary
+        run: npm run build:sea
+
+      - name: Smoke-test the packaged binary
+        shell: bash
+        run: |
+          set -euo pipefail
+          BIN="dist-sea/commit-sage"
+          [ "$RUNNER_OS" = "Windows" ] && BIN="dist-sea/commit-sage.exe"
+          echo "--- version ---"
+          "./$BIN" --version
+          echo "--- help (ANSI / commander) ---"
+          "./$BIN" --help > /dev/null
+          echo "--- git shell-out + analysis from the binary (AC2) ---"
+          # Write to a file (NOT a pipe): `grep -q` would close the pipe early and
+          # SIGPIPE the still-writing binary → exit 141 → pipefail fails a valid build.
+          "./$BIN" . --no-ai --format json -o report.json
+          grep -q '"schemaVersion"' report.json
+          rm -f report.json
+          echo "OK: the binary analyzed this repo via the system git shell-out."
+
+      - name: Name the binary per platform/arch
+        id: name
+        shell: bash
+        run: |
+          set -euo pipefail
+          case "$RUNNER_OS" in
+            Linux)   OS=linux ;;
+            macOS)   OS=macos ;;
+            Windows) OS=windows ;;
+            *)       OS="$(echo "$RUNNER_OS" | tr '[:upper:]' '[:lower:]')" ;;
+          esac
+          ARCH="$(echo "$RUNNER_ARCH" | tr '[:upper:]' '[:lower:]')" # x64 | arm64
+          EXT=""
+          [ "$RUNNER_OS" = "Windows" ] && EXT=".exe"
+          ASSET="commit-sage-${OS}-${ARCH}${EXT}"
+          cp "dist-sea/commit-sage${EXT}" "$ASSET"
+          echo "asset=$ASSET" >> "$GITHUB_OUTPUT"
+
+      - name: Upload the binary artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ steps.name.outputs.asset }}
+          path: ${{ steps.name.outputs.asset }}
+          if-no-files-found: error
+
+  release:
+    name: attach binaries to the release
+    needs: build
+    if: startsWith(github.ref, 'refs/tags/')
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write # create/upload to the GitHub Release
+    steps:
+      - name: Download all platform binaries
+        uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+          merge-multiple: true
+
+      - name: Attach to the GitHub Release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          TAG="${GITHUB_REF_NAME}"
+          # Create the release if a tag was pushed without one, else reuse it.
+          gh release view "$TAG" --repo "$GITHUB_REPOSITORY" \
+            || gh release create "$TAG" --repo "$GITHUB_REPOSITORY" --generate-notes
+          gh release upload "$TAG" artifacts/* --repo "$GITHUB_REPOSITORY" --clobber

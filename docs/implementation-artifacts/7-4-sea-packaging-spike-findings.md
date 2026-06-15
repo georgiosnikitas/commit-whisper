@@ -56,11 +56,11 @@ COMMIT_SAGE_SEA_NODE=/path/to/official/bin/node npm run build:sea
 
 | Platform | Status | Notes |
 |---|---|---|
-| **macOS** (darwin/arm64) | ✅ **Verified here** | Requires `codesign --remove-signature` before inject and an ad-hoc `codesign --sign -` after (else Gatekeeper kills it). postject needs `--macho-segment-name NODE_SEA`. |
-| **Linux** (x64/arm64) | 📋 Recipe ready, run on a Linux runner | Simplest case: copy node → postject (no segment name, no signing) → `chmod +x`. No code-signing step. Expected to "just work" — git is the system `git`, all deps are pure JS. |
-| **Windows** (x64) | 📋 Recipe ready, run on a Windows runner | Output `commit-sage.exe`; postject with no macho segment; optional Authenticode `signtool` (Defender SmartScreen may warn for an unsigned binary). The build script branches on `process.platform` and uses a shell so `npx.cmd` resolves. |
+| **macOS** (darwin/arm64) | ✅ **Verified locally** + CI matrix | Requires `codesign --remove-signature` before inject and an ad-hoc `codesign --sign -` after (else Gatekeeper kills it). postject needs `--macho-segment-name NODE_SEA`. |
+| **Linux** (x64) | 🤖 Built by the release CI matrix | Simplest case: copy node → postject (no segment name, no signing) → `chmod +x`. No code-signing step. git is the system `git`, all deps are pure JS. |
+| **Windows** (x64) | 🤖 Built by the release CI matrix | Output `commit-sage.exe`; postject with no macho segment; optional Authenticode `signtool` (Defender SmartScreen may warn for an unsigned binary). The build script branches on `process.platform` and uses a shell so `npx.cmd` resolves. |
 
-The script is platform-aware (`process.platform` → binary name, mac signing, mac segment), so the SAME `npm run build:sea` is the per-OS command in a release matrix.
+The script is platform-aware (`process.platform` → binary name, mac signing, mac segment), so the SAME `npm run build:sea` is the per-OS command. The release matrix at [.github/workflows/release.yml](../../.github/workflows/release.yml) builds + smoke-tests + uploads all three binaries (and, on a `v*` tag, attaches them to the GitHub Release). On GitHub-hosted runners `actions/setup-node` provides an OFFICIAL Node build (with the SEA fuse), so no `COMMIT_SAGE_SEA_NODE` override is needed there. The per-platform branching is unit-tested in [tests/sea-plan.test.ts](../../tests/sea-plan.test.ts).
 
 ---
 
@@ -89,7 +89,7 @@ Both keep the **no-native-bindings** guarantee (git stays a system shell-out) an
 
 ## Out of scope (post-spike follow-ups)
 
-- A `.github/workflows` **release matrix** that actually builds + uploads macOS/Linux/Windows binaries (needs the three OS runners).
+- A `.github/workflows` **release matrix** — ✅ **now delivered**: [.github/workflows/release.yml](../../.github/workflows/release.yml) builds + smoke-tests + uploads macOS/Linux/Windows binaries (and attaches them to the Release on a `v*` tag).
 - **Distribution signing/notarization** (Apple Developer ID + notarytool; Windows Authenticode with a real cert) — beyond the ad-hoc self-sign needed to run locally.
 - **Distribution channels** (Homebrew tap, winget, Scoop, apt, an install script).
 - **Startup optimization** (`useSnapshot`/`useCodeCache: true`) and **binary slimming**.
