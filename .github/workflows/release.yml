@@ -134,3 +134,36 @@ jobs:
           gh release view "$TAG" --repo "$GITHUB_REPOSITORY" \
             || gh release create "$TAG" --repo "$GITHUB_REPOSITORY" --generate-notes
           gh release upload "$TAG" artifacts/* --repo "$GITHUB_REPOSITORY" --clobber
+
+  publish-npm:
+    name: publish to npm
+    needs: build
+    if: startsWith(github.ref, 'refs/tags/')
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write # OIDC trusted publishing + provenance (no NPM_TOKEN needed)
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js (npm registry)
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          registry-url: "https://registry.npmjs.org"
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      # Trusted publishing (OIDC) needs a recent npm; the Node 22 default ships an older one.
+      - name: Upgrade npm (trusted publishing support)
+        run: npm install -g npm@latest
+
+      - name: Build the publishable bundle
+        run: npm run build
+
+      - name: Publish to npm (provenance, public)
+        run: npm publish --provenance --access public
+

@@ -18,6 +18,20 @@ Report JSON.
 - npm (bundled with Node.js)
 - A system `git` on `PATH` (retrieval shells out to it)
 
+## Install
+
+```bash
+# Run without installing
+npx commitsage .
+
+# Or install globally (adds the `commit-sage` command to your PATH)
+npm install -g commitsage
+commit-sage .
+```
+
+Prebuilt single-file binaries for macOS, Linux, and Windows (no Node.js required)
+are attached to each [GitHub Release](https://github.com/georgiosnikitas/commit-sage/releases).
+
 ## Getting started (development)
 
 ```bash
@@ -60,4 +74,6 @@ enforced by ESLint.
 
 ## License
 
-UNLICENSED — all rights reserved (commercial product; license terms TBD).
+[MIT](LICENSE) © Georgios Nikitas. The CLI and its source are MIT-licensed; paid
+tiers are enforced at runtime via an online license check (BYOK AI keys and git
+tokens stay on your machine).

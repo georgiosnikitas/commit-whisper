@@ -8,4 +8,6 @@ export default defineConfig({
   clean: true,
   sourcemap: true,
   dts: false,
+  // Make the published `dist/index.js` a runnable CLI (the npm `bin` target).
+  banner: { js: "#!/usr/bin/env node" },
 });
