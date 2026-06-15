@@ -434,9 +434,30 @@ describe("formatStatusReport (AC1, AC2)", () => {
     expect(report).toContain("100-commit cap");
     expect(report).toContain("AI          ollama (llama3)");
     expect(report).toContain("✓ reachable");
-    expect(report).toContain("✓ OPENAI_API_KEY     set");
-    expect(report).toContain("✗ COMMIT_WHISPER_GIT_TOKEN     missing");
+    expect(report).toMatch(/✓ OPENAI_API_KEY {2,}set/);
+    expect(report).toMatch(/✗ COMMIT_WHISPER_GIT_TOKEN {2,}missing/);
     expect(report).toContain("Repository  ✓ ~/work/payments-api (main)");
+  });
+
+  it("aligns the env state column and the primary value column", () => {
+    const report = formatStatusReport(FREE_CONFIGURED, ENV_OK, { kind: "reachable" });
+    const lines = report.split("\n");
+    // The set/missing words share one column even though the var names differ in length.
+    const envStateCols = lines
+      .filter((l) => /^ {2}[✓✗] /.test(l))
+      .map((l) => l.search(/\b(?:set|missing)\b/));
+    expect(envStateCols).toHaveLength(2);
+    expect(new Set(envStateCols).size).toBe(1);
+    // License / AI / status / Repository values begin in one straight vertical column.
+    const valueCol = (prefix: string, value: string): number =>
+      lines.find((l) => l.startsWith(prefix))!.indexOf(value);
+    const primaryCols = [
+      valueCol("License", "Free"),
+      valueCol("AI ", "ollama"),
+      valueCol("Repository", "✓"),
+      lines.find((l) => l.trimStart().startsWith("status"))!.indexOf("✓ reachable"),
+    ];
+    expect(new Set(primaryCols).size).toBe(1);
   });
 
   it("shows the failure reason when the provider is unreachable", () => {

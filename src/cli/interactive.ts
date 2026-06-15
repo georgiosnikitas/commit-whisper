@@ -269,38 +269,54 @@ export function buildLaunchpadOptions(state: LaunchpadState): LaunchpadOption[] 
 
 // ── Status / doctor (Story 6.3) ─────────────────────────────────────────────
 
+/**
+ * Column where the primary Status/doctor values begin — the longest label
+ * ("Repository", 10) plus a 2-space gutter — so the License / AI / status /
+ * Repository values line up in one straight vertical column.
+ */
+const STATUS_LABEL_WIDTH = 12;
+
+/** Left-justify a Status/doctor label to the shared value column. */
+function statusLabel(text: string): string {
+  return text.padEnd(STATUS_LABEL_WIDTH);
+}
+
 /** The reachability status line for the AI block. */
 function reachabilityLine(reachability: Reachability): string {
   switch (reachability.kind) {
     case "reachable":
-      return "  status     ✓ reachable";
+      return `${statusLabel("  status")}✓ reachable`;
     case "unreachable":
-      return `  status     ⚠ unreachable — ${reachability.reason}`;
+      return `${statusLabel("  status")}⚠ unreachable — ${reachability.reason}`;
     default:
-      return "  status     ⚠ not configured";
+      return `${statusLabel("  status")}⚠ not configured`;
   }
 }
 
 /** The AI block: configured provider/model (or the not-configured warning) + the reachability line. */
 function aiBlock(state: LaunchpadState, reachability: Reachability): string[] {
-  return [`AI          ${aiSegment(state)}`, reachabilityLine(reachability)];
+  return [`${statusLabel("AI")}${aiSegment(state)}`, reachabilityLine(reachability)];
 }
 
 /** The Environment block: each var by NAME + set/missing glyph + word (never color alone), never a value. */
 function environmentBlock(envVars: EnvVarStatus[]): string[] {
-  const lines = ["Environment"];
-  for (const v of envVars) {
-    const mark = v.set ? "✓" : "✗";
+  // Align the set/missing words into one column: pad every "glyph NAME" prefix
+  // to the longest plus a 2-space gutter (the var names vary in length).
+  const prefixes = envVars.map((v) => `  ${v.set ? "✓" : "✗"} ${v.name}`);
+  const stateColumn = Math.max(0, ...prefixes.map((p) => p.length)) + 2;
+  const rows = envVars.map((v, i) => {
     const state = v.set ? "set" : "missing";
     const note = v.note === undefined ? "" : `   (${v.note})`;
-    lines.push(`  ${mark} ${v.name}     ${state}${note}`);
-  }
-  return lines;
+    return `${prefixes[i].padEnd(stateColumn)}${state}${note}`;
+  });
+  return ["Environment", ...rows];
 }
 
 /** The Repository block: label + branch, or the not-a-repo notice. */
 function repositoryLine(state: LaunchpadState): string {
-  return state.isRepo ? `Repository  ✓ ${cwdSegment(state)}` : "Repository  — not a git repo";
+  return state.isRepo
+    ? `${statusLabel("Repository")}✓ ${cwdSegment(state)}`
+    : `${statusLabel("Repository")}— not a git repo`;
 }
 
 /**
@@ -318,7 +334,7 @@ export function formatStatusReport(
   const lines = [
     "Status / doctor",
     "",
-    `License     ${TIER_LABEL[state.tier]}${capNote}`,
+    `${statusLabel("License")}${TIER_LABEL[state.tier]}${capNote}`,
     ...aiBlock(state, reachability),
     ...environmentBlock(envVars),
     repositoryLine(state),
