@@ -7,7 +7,7 @@
 # installs an OFFICIAL Node.js build (from nodejs.org), which embeds the SEA fuse
 # sentinel — so `scripts/build-sea.mjs` uses `process.execPath` directly (no
 # COMMIT_WHISPER_SEA_NODE override needed).
-name: release-binaries
+name: Release
 
 on:
   workflow_dispatch: {} # manual runs (build artifacts without a tag)
