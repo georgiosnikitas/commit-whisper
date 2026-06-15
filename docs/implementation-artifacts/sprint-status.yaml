@@ -118,8 +118,8 @@ development_status:
   # ═══════════════════════════════════════════════════════════════
   # EPIC 7: Licensing & Distribution
   # ═══════════════════════════════════════════════════════════════
-  epic-7: backlog
-  7-1-online-license-validation-and-tier-resolution: backlog
+  epic-7: in-progress
+  7-1-online-license-validation-and-tier-resolution: done
   7-2-activate-deactivate-and-buy-restore: backlog
   7-3-fail-closed-vs-degrade-to-free-and-ci-validate-not-activate: backlog
   7-4-node-sea-packaging-spike: backlog

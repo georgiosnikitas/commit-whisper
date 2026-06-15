@@ -19,13 +19,16 @@
 
 import { Command, CommanderError } from "commander";
 
-import { readAiKey, readEnvDiagnostics, readEnvLayer, readGitToken, readProcessEnv } from "../config/env.js";
+import { readAiKey, readEnvDiagnostics, readEnvLayer, readGitToken, readLicenseKey, readProcessEnv } from "../config/env.js";
 import { readSettings, writeSettings } from "../config/config-store.js";
 import { resolveRunConfig } from "../config/resolve-run-config.js";
 import { detectCapability } from "../config/capability.js";
-import type { OutputFormat, PartialRunConfig, Provider, RunConfig } from "../config/run-config.js";
+import type { Entitlement, OutputFormat, PartialRunConfig, Provider, RunConfig } from "../config/run-config.js";
 import type { NarrateConfig } from "../narrate/narrate.port.js";
 import { preflightProvider } from "../narrate/preflight.js";
+import { resolveEntitlement } from "../license/gate.js";
+import { createLemonSqueezyValidator } from "../license/lemonsqueezy.js";
+import { readActivationInstanceId } from "../license/store.js";
 import { execFileGitRunner, type GitRunner } from "../retrieve/git.js";
 import { MissingRequiredConfigError, UsageError } from "../shared/errors.js";
 import { createUi, resolveColor, resolveLogLevel, type Ui } from "../shared/ui.js";
@@ -83,6 +86,20 @@ export interface CliDeps {
   preflight?: typeof preflightProvider;
   /** Inject the persisted config-file layer (Story 6.5); defaults to reading `~/.commit-sage`. */
   configFile?: PartialRunConfig;
+  /** Inject the resolved license entitlement (Story 7.1); defaults to the online Lemon Squeezy gate. */
+  resolveEntitlement?: (env: NodeJS.ProcessEnv) => Promise<Entitlement>;
+}
+
+/**
+ * The default entitlement resolver (Story 7.1): the online Lemon Squeezy gate.
+ * No license key ⇒ Free with no network call; a key ⇒ validate + map the tier.
+ */
+async function defaultResolveEntitlement(env: NodeJS.ProcessEnv): Promise<Entitlement> {
+  return resolveEntitlement({
+    licenseKey: readLicenseKey(env),
+    validate: createLemonSqueezyValidator(),
+    readInstanceId: () => readActivationInstanceId(env),
+  });
 }
 
 export async function main(argv: string[], deps: CliDeps = {}): Promise<number> {
@@ -120,6 +137,9 @@ export async function main(argv: string[], deps: CliDeps = {}): Promise<number> 
     // The persisted Settings (Story 6.5) re-enter at the config-file layer; the
     // resolver precedence (defaults < configFile < env < flags) is unchanged.
     const configFile = deps.configFile ?? (await readSettings(env));
+    // Gate band (Story 7.1): validate the license online at startup and resolve
+    // the effective tier into the frozen RunConfig. No key ⇒ Free, no network.
+    const entitlement = await (deps.resolveEntitlement ?? defaultResolveEntitlement)(env);
 
     // `--show-config`: dump the resolved config + provenance to stdout and exit
     // WITHOUT running (AC1). Resolved LENIENTLY so it always dumps — even when a
@@ -135,6 +155,7 @@ export async function main(argv: string[], deps: CliDeps = {}): Promise<number> 
         analysisTimestamp,
         flags,
         configFile,
+        entitlement,
         lenient: true,
       });
       const dump = formatShowConfig(config, {
@@ -163,6 +184,7 @@ export async function main(argv: string[], deps: CliDeps = {}): Promise<number> 
       analysisTimestamp,
       flags,
       configFile,
+      entitlement,
     });
 
     return await runResolved({
@@ -206,6 +228,8 @@ interface ResolveAndRunInput {
   openAllowed: boolean;
   /** The persisted config-file layer (Story 6.5). */
   configFile?: PartialRunConfig;
+  /** The resolved license entitlement (Story 7.1). */
+  entitlement?: Entitlement;
   deps: CliDeps;
   ui: Ui;
 }
@@ -226,6 +250,7 @@ async function resolveAndRun(input: ResolveAndRunInput): Promise<number> {
     analysisTimestamp: input.analysisTimestamp,
     flags: input.flags,
     configFile: input.configFile,
+    entitlement: input.entitlement,
   });
   return await runResolved({
     config,
@@ -307,11 +332,11 @@ async function runZeroArg(ctx: ZeroArgContext): Promise<number> {
     return ExitCode.Usage;
   }
 
-  // The launchpad does no I/O: resolve the header snapshot here (the configured
-  // AI = the persisted Settings overlaid by env, the resolver's precedence) and
-  // hand it over already resolved. Tier is Free / unlicensed until the Epic 7
-  // license gate supplies the real entitlement.
+  // The launchpad does no I/O of its own: resolve the header snapshot here (the
+  // configured AI = the persisted Settings overlaid by env, the resolver's
+  // precedence) and the real license tier (Story 7.1 — Free if no key/offline).
   const configFile = ctx.deps.configFile ?? (await readSettings(ctx.env));
+  const entitlement = await (ctx.deps.resolveEntitlement ?? defaultResolveEntitlement)(ctx.env);
   const envLayer = readEnvLayer(ctx.env);
   // config < env: a saved provider/model shows in the header (and cures the
   // no-AI state), but an env var still wins — mirroring the resolver.
@@ -322,8 +347,8 @@ async function runZeroArg(ctx: ZeroArgContext): Promise<number> {
   };
   const repo = await readRepoContext(ctx.deps.gitRunner ?? execFileGitRunner, ctx.cwd);
   const state: LaunchpadState = {
-    tier: "free",
-    licensed: false,
+    tier: entitlement.tier,
+    licensed: entitlement.tier !== "free",
     provider: aiLayer.provider,
     llmModel: aiLayer.llmModel,
     cwdLabel: collapseHome(ctx.cwd, ctx.env.HOME),
@@ -346,6 +371,7 @@ async function runZeroArg(ctx: ZeroArgContext): Promise<number> {
         nonInteractive: false,
         openAllowed: true,
         configFile,
+        entitlement,
         deps: ctx.deps,
         ui: ctx.ui,
       });

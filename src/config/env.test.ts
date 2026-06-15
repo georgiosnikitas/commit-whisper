@@ -1,6 +1,6 @@
 import { describe, it, expect } from "vitest";
 
-import { readAiKey, readEnvDiagnostics, readGitToken, readEnvLayer } from "./env.js";
+import { readAiKey, readEnvDiagnostics, readGitToken, readEnvLayer, readLicenseKey } from "./env.js";
 import { Secret } from "../shared/secret.js";
 
 describe("readEnvLayer", () => {
@@ -198,5 +198,16 @@ describe("readEnvDiagnostics (Story 6.3)", () => {
   it("never includes a secret value — names + booleans only", () => {
     const serialized = JSON.stringify(readEnvDiagnostics({ OPENAI_API_KEY: "sk-supersecret" }, "openai"));
     expect(serialized).not.toContain("sk-supersecret");
+  });
+});
+
+describe("readLicenseKey (Story 7.1)", () => {
+  it("reads COMMIT_SAGE_LICENSE_KEY, trimmed", () => {
+    expect(readLicenseKey({ COMMIT_SAGE_LICENSE_KEY: "  LIC-123  " })).toBe("LIC-123");
+  });
+
+  it("is undefined when unset or blank", () => {
+    expect(readLicenseKey({})).toBeUndefined();
+    expect(readLicenseKey({ COMMIT_SAGE_LICENSE_KEY: "   " })).toBeUndefined();
   });
 });

@@ -165,6 +165,17 @@ export function readGitToken(env: NodeJS.ProcessEnv): Secret<string> | undefined
   return wrapKey(token);
 }
 
+/**
+ * Read the license key from the environment (Story 7.1). The license key is a
+ * CREDENTIAL, not a user secret (architecture I3): it is NOT wrapped in `Secret`
+ * (it may be cached/entered in-app), but it never enters `RunConfig`,
+ * `--show-config`, or any log — only the gate reads it, and only the resolved
+ * `entitlement` crosses the hexagonal boundary. `undefined` ⇒ the Free tier.
+ */
+export function readLicenseKey(env: NodeJS.ProcessEnv): string | undefined {
+  return str(env.COMMIT_SAGE_LICENSE_KEY);
+}
+
 /** One environment variable's diagnostic status — NAME + presence only, never the value. */
 export interface EnvVarStatus {
   name: string;

@@ -553,4 +553,62 @@ describe("main — Settings config-file layer (Story 6.5)", () => {
   });
 });
 
+describe("main — license entitlement gate (Story 7.1)", () => {
+  it("the default (no key) resolves the Free entitlement with the 100-commit cap (no network)", async () => {
+    const cap = captureRun();
+    await main([".", "--no-ai"], { ...BASE, env: {}, ui: recorder().ui, run: cap.run });
+    expect(cap.calls[0]!.config.entitlement).toEqual({ tier: "free", commitCap: 100 });
+  });
+
+  it("an injected entitlement flows into the resolved RunConfig (paid tier, no cap)", async () => {
+    const cap = captureRun();
+    await main([".", "--no-ai"], {
+      ...BASE,
+      resolveEntitlement: async () => ({ tier: "unlimited" }),
+      ui: recorder().ui,
+      run: cap.run,
+    });
+    expect(cap.calls[0]!.config.entitlement).toEqual({ tier: "unlimited" });
+  });
+
+  it("--show-config reflects the resolved tier", async () => {
+    const r = recorder();
+    await main([".", "--show-config"], {
+      ...BASE,
+      resolveEntitlement: async () => ({ tier: "single-device" }),
+      ui: r.ui,
+      writeStdout: r.writeStdout,
+    });
+    expect(r.stdout.join("")).toContain("tier = single-device");
+  });
+
+  it("a paid entitlement makes the 0-arg launchpad header show the real tier + licensed", async () => {
+    const lp = captureLaunchpad();
+    await main([], {
+      ...BASE,
+      stdinIsTTY: true,
+      stdoutIsTTY: true,
+      env: {},
+      resolveEntitlement: async () => ({ tier: "single-device" }),
+      gitRunner: repoRunner,
+      launchpad: lp.launchpad,
+    });
+    expect(lp.calls[0]!.state.tier).toBe("single-device");
+    expect(lp.calls[0]!.state.licensed).toBe(true);
+  });
+
+  it("the license key never appears in a --show-config dump", async () => {
+    const r = recorder();
+    await main([".", "--show-config"], {
+      ...BASE,
+      env: { COMMIT_SAGE_LICENSE_KEY: "LIC-SUPERSECRET" },
+      resolveEntitlement: async () => ({ tier: "unlimited" }),
+      ui: r.ui,
+      writeStdout: r.writeStdout,
+    });
+    expect(r.stdout.join("")).not.toContain("LIC-SUPERSECRET");
+  });
+});
+
+
 
