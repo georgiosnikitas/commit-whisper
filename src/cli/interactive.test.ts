@@ -14,6 +14,7 @@ import {
   NO_AI_FIX,
   NO_AI_INTERSTITIAL,
   runLaunchpad,
+  SETTINGS_SAVED_NOTE,
   type GuidedPrompts,
   type LaunchpadAction,
   type LaunchpadDeps,
@@ -22,6 +23,7 @@ import {
   type Reachability,
 } from "./interactive.js";
 import type { EnvVarStatus } from "../config/env.js";
+import type { SettingsData } from "../config/config-store.js";
 import type { OutputFormat, PartialRunConfig } from "../config/run-config.js";
 import { ExitCode } from "./exit-codes.js";
 
@@ -166,9 +168,9 @@ describe("runLaunchpad (AC1, AC4)", () => {
 
   it("a not-yet-built action shows a calm placeholder and loops back to the menu", async () => {
     const out = captureStream();
-    const sel = scriptedSelect(["settings", "quit"]);
+    const sel = scriptedSelect(["activate", "quit"]);
     await runLaunchpad({ state: FREE_CONFIGURED, helpText: "HELP", output: out.stream, select: sel.select });
-    expect(out.text()).toContain("Settings is coming soon.");
+    expect(out.text()).toContain("License activation is coming soon.");
     expect(sel.calls()).toBe(2);
   });
 
@@ -190,9 +192,15 @@ describe("runLaunchpad (AC1, AC4)", () => {
 // ── Story 6.2: guided prompts + command echo ────────────────────────────────
 
 /** A scripted guided-prompt primitive: returns each text answer in turn, then the formats. */
-function scriptedPrompts(script: { texts?: (string | null)[]; formats?: OutputFormat[] | null }) {
+function scriptedPrompts(script: {
+  texts?: (string | null)[];
+  formats?: OutputFormat[] | null;
+  selects?: (string | null)[];
+}) {
   let ti = 0;
+  let si = 0;
   const textMessages: string[] = [];
+  const selectMessages: string[] = [];
   const prompts: GuidedPrompts = {
     async text(opts) {
       textMessages.push(opts.message);
@@ -205,8 +213,13 @@ function scriptedPrompts(script: { texts?: (string | null)[]; formats?: OutputFo
       }
       return script.formats;
     },
+    async selectOne(opts) {
+      selectMessages.push(opts.message);
+      const next = script.selects?.[si++];
+      return next ?? null;
+    },
   };
-  return { prompts, textMessages };
+  return { prompts, textMessages, selectMessages };
 }
 
 function captureAnalysis() {
@@ -568,6 +581,156 @@ describe("no-AI interstitial on Analyze (AC3 — teach, never wall)", () => {
     });
     expect(out.text()).toContain(NO_AI_FIX);
     expect(scripted.textMessages).toHaveLength(0); // the URL prompt never ran
+  });
+});
+
+// ── Story 6.5: Settings ─────────────────────────────────────────────────────
+
+function captureSave() {
+  const saved: SettingsData[] = [];
+  const saveSettings = async (data: SettingsData): Promise<string> => {
+    saved.push(data);
+    return "/home/alice/.commit-sage/config.json";
+  };
+  return { saved, saveSettings };
+}
+
+describe("runSettings via runLaunchpad (Story 6.5)", () => {
+  it("collects a cloud provider + model + format and saves exactly those non-secret fields", async () => {
+    const out = captureStream();
+    const sel = scriptedSelect(["settings", "quit"]);
+    const save = captureSave();
+    // provider=openai (cloud → no base URL prompt), format=html
+    const scripted = scriptedPrompts({ texts: ["gpt-4o", "", ""], selects: ["openai", "html"] });
+    await runLaunchpad({
+      state: FREE_CONFIGURED,
+      helpText: "HELP",
+      output: out.stream,
+      select: sel.select,
+      prompts: scripted.prompts,
+      saveSettings: save.saveSettings,
+    });
+    expect(save.saved).toHaveLength(1);
+    expect(save.saved[0]).toEqual({ provider: "openai", llmModel: "gpt-4o", outputFormats: ["html"] });
+    expect(out.text()).toContain("✓ Saved to /home/alice/.commit-sage/config.json");
+    expect(out.text()).toContain(SETTINGS_SAVED_NOTE);
+    expect(sel.calls()).toBe(2); // looped back to the menu
+  });
+
+  it("prompts the base URL for ollama / openai-compatible and persists it", async () => {
+    const out = captureStream();
+    const sel = scriptedSelect(["settings", "quit"]);
+    const save = captureSave();
+    // provider=ollama → a base URL text prompt appears; model="", baseUrl, tz="", limit=""
+    const scripted = scriptedPrompts({
+      texts: ["llama3", "http://localhost:11434", "", ""],
+      selects: ["ollama", "terminal"],
+    });
+    await runLaunchpad({
+      state: FREE_CONFIGURED,
+      helpText: "HELP",
+      output: out.stream,
+      select: sel.select,
+      prompts: scripted.prompts,
+      saveSettings: save.saveSettings,
+    });
+    expect(save.saved[0]).toEqual({
+      provider: "ollama",
+      llmModel: "llama3",
+      llmBaseUrl: "http://localhost:11434",
+      outputFormats: ["terminal"],
+    });
+    expect(scripted.textMessages).toContain("Base URL");
+  });
+
+  it("does NOT prompt a base URL for a cloud provider", async () => {
+    const out = captureStream();
+    const sel = scriptedSelect(["settings", "quit"]);
+    const save = captureSave();
+    const scripted = scriptedPrompts({ texts: ["", "", ""], selects: ["gemini", "json"] });
+    await runLaunchpad({
+      state: FREE_CONFIGURED,
+      helpText: "HELP",
+      output: out.stream,
+      select: sel.select,
+      prompts: scripted.prompts,
+      saveSettings: save.saveSettings,
+    });
+    expect(scripted.textMessages).not.toContain("Base URL");
+    expect(save.saved[0]).toEqual({ provider: "gemini", outputFormats: ["json"] });
+  });
+
+  it("a cancel at the provider prompt saves nothing and returns to the menu", async () => {
+    const out = captureStream();
+    const sel = scriptedSelect(["settings", "quit"]);
+    const save = captureSave();
+    const scripted = scriptedPrompts({ selects: [null] }); // cancel immediately
+    await runLaunchpad({
+      state: FREE_CONFIGURED,
+      helpText: "HELP",
+      output: out.stream,
+      select: sel.select,
+      prompts: scripted.prompts,
+      saveSettings: save.saveSettings,
+    });
+    expect(save.saved).toHaveLength(0);
+    expect(sel.calls()).toBe(2);
+  });
+
+  it("never prompts for a secret (no key/token field)", async () => {
+    const out = captureStream();
+    const sel = scriptedSelect(["settings", "quit"]);
+    const scripted = scriptedPrompts({ texts: ["", "", ""], selects: ["openai", "terminal"] });
+    await runLaunchpad({
+      state: FREE_CONFIGURED,
+      helpText: "HELP",
+      output: out.stream,
+      select: sel.select,
+      prompts: scripted.prompts,
+      saveSettings: captureSave().saveSettings,
+    });
+    const allMessages = [...scripted.textMessages, ...scripted.selectMessages].join(" ");
+    expect(/key|token|secret/i.test(allMessages)).toBe(false);
+  });
+
+  it("a saveSettings failure degrades gracefully and keeps the menu alive (never dead-ends)", async () => {
+    const out = captureStream();
+    const sel = scriptedSelect(["settings", "quit"]);
+    const scripted = scriptedPrompts({ texts: ["", "", ""], selects: ["openai", "terminal"] });
+    const code = await runLaunchpad({
+      state: FREE_CONFIGURED,
+      helpText: "HELP",
+      output: out.stream,
+      select: sel.select,
+      prompts: scripted.prompts,
+      saveSettings: async () => {
+        throw new Error("disk full");
+      },
+    });
+    expect(code).toBe(ExitCode.Success); // reached Quit cleanly
+    expect(out.text()).toContain("⚠ Could not save settings: disk full");
+    expect(sel.calls()).toBe(2); // looped back to the menu
+  });
+
+  it("a loadSettings failure starts Settings from blank (never dead-ends)", async () => {
+    const out = captureStream();
+    const sel = scriptedSelect(["settings", "quit"]);
+    const save = captureSave();
+    // ollama → texts: model, baseUrl, tz, limit ; selects: provider, format
+    const scripted = scriptedPrompts({ texts: ["", "http://x", "", ""], selects: ["ollama", "terminal"] });
+    const code = await runLaunchpad({
+      state: FREE_CONFIGURED,
+      helpText: "HELP",
+      output: out.stream,
+      select: sel.select,
+      prompts: scripted.prompts,
+      loadSettings: async () => {
+        throw new Error("corrupt config");
+      },
+      saveSettings: save.saveSettings,
+    });
+    expect(code).toBe(ExitCode.Success);
+    expect(save.saved).toHaveLength(1); // proceeded despite the load failure
   });
 });
 

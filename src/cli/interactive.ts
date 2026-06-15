@@ -28,6 +28,7 @@ import { Writable } from "node:stream";
 import { isCancel, multiselect as clackMultiselect, select as clackSelect, text as clackText } from "@clack/prompts";
 
 import type { EnvVarStatus } from "../config/env.js";
+import type { SettingsData } from "../config/config-store.js";
 import type { OutputFormat, PartialRunConfig, Provider, Tier } from "../config/run-config.js";
 import { ExitCode } from "./exit-codes.js";
 
@@ -87,10 +88,18 @@ export interface GuidedMultiselectOptions {
   initialValues?: OutputFormat[];
 }
 
+/** A single-select prompt's options (the Settings provider + default-format pickers). */
+export interface GuidedSelectOneOptions {
+  message: string;
+  options: { value: string; label: string; hint?: string }[];
+  initialValue?: string;
+}
+
 /** The injected guided-prompt primitives (cancel → `null`, mirroring `LaunchpadSelect`). */
 export interface GuidedPrompts {
   text(opts: GuidedTextOptions): Promise<string | null>;
   multiselect(opts: GuidedMultiselectOptions): Promise<OutputFormat[] | null>;
+  selectOne(opts: GuidedSelectOneOptions): Promise<string | null>;
 }
 
 /** Provider reachability for the Status/doctor view (Story 6.3). */
@@ -120,6 +129,10 @@ export interface LaunchpadDeps {
   envDiagnostics?: EnvVarStatus[];
   /** The async provider reachability probe for Status/doctor; injected by `cli/`. */
   probeReachability?: ProbeReachability;
+  /** Load the persisted Settings (Story 6.5); injected by `cli/`. Absent ⇒ Settings starts blank. */
+  loadSettings?: () => Promise<SettingsData>;
+  /** Persist the Settings (Story 6.5) — returns the saved path; injected by `cli/`. Absent ⇒ Settings is read-only. */
+  saveSettings?: (data: SettingsData) => Promise<string>;
 }
 
 /** The locked product tagline (brief.md / DESIGN.md). */
@@ -163,10 +176,9 @@ const TIER_LABEL: Record<Tier, string> = {
 
 /** Calm placeholders for the rows whose actions land in later stories (Settings 6.5 · license Epic 7). */
 const COMING_SOON: Record<
-  Exclude<LaunchpadAction, "help" | "quit" | "analyze-cwd" | "analyze-remote" | "status">,
+  Exclude<LaunchpadAction, "help" | "quit" | "analyze-cwd" | "analyze-remote" | "status" | "settings">,
   string
 > = {
-  settings: "Settings is coming soon.",
   activate: "License activation is coming soon.",
   "buy-restore": "Buy / Restore is coming soon.",
   coffee: "Buy Me a Coffee — link coming soon.",
@@ -180,6 +192,25 @@ const OUTPUT_FORMAT_OPTIONS: { value: OutputFormat; label: string }[] = [
   { value: "markdown", label: "markdown" },
   { value: "json", label: "json" },
 ];
+
+/** The provider picker rows for Settings (the closed enum; Ollama leads as the zero-cost local path). */
+const PROVIDER_OPTIONS: { value: string; label: string; hint?: string }[] = [
+  { value: "ollama", label: "Ollama", hint: "local, free" },
+  { value: "openai", label: "OpenAI" },
+  { value: "gemini", label: "Gemini" },
+  { value: "anthropic", label: "Anthropic" },
+  { value: "openai-compatible", label: "OpenAI-compatible" },
+];
+
+/** Providers that need a base URL (local / custom endpoints). */
+const BASE_URL_PROVIDERS = new Set<string>(["ollama", "openai-compatible"]);
+
+/** The closing note after a Settings save — names the env-only key path + the Ollama must-be-running caveat. */
+export const SETTINGS_SAVED_NOTE = [
+  "Ollama runs locally — no key needed, but it must be running:",
+  "  `ollama serve`, then `ollama pull <model>`. Saving selects it; it doesn't start it.",
+  "For a cloud provider, set its key in your environment (e.g. OPENAI_API_KEY) — never entered here.",
+].join("\n");
 
 function aiSegment(state: LaunchpadState): string {
   if (state.provider === undefined) {
@@ -434,6 +465,15 @@ function clackGuidedPrompts(output: Writable): GuidedPrompts {
       });
       return isCancel(result) ? null : result;
     },
+    async selectOne(opts) {
+      const result = await clackSelect<string>({
+        message: opts.message,
+        options: opts.options,
+        initialValue: opts.initialValue,
+        output,
+      });
+      return isCancel(result) ? null : result;
+    },
   };
 }
 
@@ -566,6 +606,117 @@ async function runStatusDoctor(deps: LaunchpadDeps, output: Writable): Promise<v
 }
 
 /**
+ * The Settings screen (Story 6.5): collect the NON-SECRET everyday choices —
+ * provider (closed enum), model, base URL (only for ollama / openai-compatible),
+ * default output format, timezone, max-commits — and persist them via the
+ * injected `saveSettings` (atomic write). A cancel at any prompt saves nothing.
+ * No secret is ever collected — a cloud key stays env-only (named in the note).
+ */
+async function runSettings(deps: LaunchpadDeps, output: Writable): Promise<void> {
+  const prompts = deps.prompts ?? clackGuidedPrompts(output);
+  // A load failure must never end the interactive session — start from blank.
+  let current: SettingsData = {};
+  if (deps.loadSettings !== undefined) {
+    try {
+      current = await deps.loadSettings();
+    } catch {
+      current = {};
+    }
+  }
+
+  const provider = await prompts.selectOne({
+    message: "AI provider",
+    options: PROVIDER_OPTIONS,
+    initialValue: current.provider,
+  });
+  if (provider === null) {
+    return;
+  }
+
+  const model = await prompts.text({ message: "Model (optional)", placeholder: "e.g. llama3 / gpt-4o" });
+  if (model === null) {
+    return;
+  }
+
+  let baseUrl: string | null = "";
+  if (BASE_URL_PROVIDERS.has(provider)) {
+    baseUrl = await prompts.text({
+      message: "Base URL",
+      placeholder: "e.g. http://localhost:11434",
+    });
+    if (baseUrl === null) {
+      return;
+    }
+  }
+
+  const format = await prompts.selectOne({
+    message: "Default output format",
+    options: OUTPUT_FORMAT_OPTIONS.map((o) => ({ value: o.value, label: o.label })),
+    initialValue: current.outputFormats?.[0],
+  });
+  if (format === null) {
+    return;
+  }
+
+  const timezone = await prompts.text({ message: "Timezone (optional)", placeholder: "e.g. UTC / Europe/Athens" });
+  if (timezone === null) {
+    return;
+  }
+
+  const limitRaw = await prompts.text({
+    message: "Default max-commits (optional)",
+    placeholder: "blank = all history",
+    validate: (v) => errorOf(interpretLimit(v)),
+  });
+  if (limitRaw === null) {
+    return;
+  }
+
+  const data = assembleSettings({ provider, model, baseUrl, format, timezone, limitRaw });
+  if (deps.saveSettings === undefined) {
+    return;
+  }
+  // A write failure must never end the interactive session — report it and
+  // return to the menu (the never-dead-end posture, like 6.3's probe guard).
+  try {
+    const path = await deps.saveSettings(data);
+    writeLine(output, `✓ Saved to ${path}`);
+    writeLine(output, SETTINGS_SAVED_NOTE);
+  } catch (err) {
+    writeLine(output, `⚠ Could not save settings: ${err instanceof Error ? err.message : "write failed"}`);
+  }
+}
+
+/** Assemble a non-secret `SettingsData` from the collected Settings answers (omitting blanks). */
+function assembleSettings(input: {
+  provider: string;
+  model: string;
+  baseUrl: string;
+  format: string;
+  timezone: string;
+  limitRaw: string;
+}): SettingsData {
+  const data: SettingsData = { provider: input.provider as Provider, outputFormats: [input.format as OutputFormat] };
+  const model = input.model.trim();
+  if (model !== "") {
+    data.llmModel = model;
+  }
+  const baseUrl = input.baseUrl.trim();
+  if (baseUrl !== "") {
+    data.llmBaseUrl = baseUrl;
+  }
+  const timezone = input.timezone.trim();
+  if (timezone !== "") {
+    data.timezone = timezone;
+  }
+  const limit = interpretLimit(input.limitRaw);
+  if ("maxCommits" in limit && limit.maxCommits !== undefined) {
+    data.maxCommits = limit.maxCommits;
+  }
+  return data;
+}
+
+/**
  * Render the launchpad and loop until the user quits (AC1, AC4). Returns
  * `ExitCode.Success` on a clean Esc/Quit. The header is written once; the menu
  * re-prompts after each non-terminal action.
@@ -594,6 +745,10 @@ export async function runLaunchpad(deps: LaunchpadDeps): Promise<number> {
     }
     if (action === "status") {
       await runStatusDoctor(deps, output);
+      continue;
+    }
+    if (action === "settings") {
+      await runSettings(deps, output);
       continue;
     }
     writeLine(output, COMING_SOON[action]);

@@ -466,3 +466,91 @@ describe("main — operational flags (Story 6.4)", () => {
   });
 });
 
+describe("main — Settings config-file layer (Story 6.5)", () => {
+  it("a saved setting flows into the resolved config at configFile provenance", async () => {
+    const cap = captureRun();
+    await main([".", "--no-ai"], {
+      ...BASE,
+      configFile: { maxCommits: 25, timezone: "Europe/Athens" },
+      ui: recorder().ui,
+      run: cap.run,
+    });
+    expect(cap.calls[0]!.config.maxCommits).toBe(25);
+    expect(cap.calls[0]!.config.provenance.maxCommits).toBe("configFile");
+    expect(cap.calls[0]!.config.timezone).toBe("Europe/Athens");
+    expect(cap.calls[0]!.config.provenance.timezone).toBe("configFile");
+  });
+
+  it("an env var overrides a saved setting (config < env)", async () => {
+    const cap = captureRun();
+    await main([".", "--no-ai"], {
+      ...BASE,
+      env: { COMMIT_SAGE_MAX_COMMITS: "99" },
+      configFile: { maxCommits: 25 },
+      ui: recorder().ui,
+      run: cap.run,
+    });
+    expect(cap.calls[0]!.config.maxCommits).toBe(99);
+    expect(cap.calls[0]!.config.provenance.maxCommits).toBe("env");
+  });
+
+  it("a flag overrides both a saved setting and an env var (config < env < flag)", async () => {
+    const cap = captureRun();
+    await main([".", "--no-ai", "--max-commits", "7"], {
+      ...BASE,
+      env: { COMMIT_SAGE_MAX_COMMITS: "99" },
+      configFile: { maxCommits: 25 },
+      ui: recorder().ui,
+      run: cap.run,
+    });
+    expect(cap.calls[0]!.config.maxCommits).toBe(7);
+    expect(cap.calls[0]!.config.provenance.maxCommits).toBe("flag");
+  });
+
+  it("--show-config reflects a saved setting with configFile provenance", async () => {
+    const r = recorder();
+    await main([".", "--show-config"], {
+      ...BASE,
+      configFile: { provider: "ollama", llmModel: "llama3" },
+      ui: r.ui,
+      writeStdout: r.writeStdout,
+    });
+    const out = r.stdout.join("");
+    expect(out).toContain("provider = ollama  (configFile)");
+    expect(out).toContain("llmModel = llama3  (configFile)");
+  });
+
+  it("a saved ollama provider shows in the 0-arg launchpad header (cures the no-AI state)", async () => {
+    const lp = captureLaunchpad();
+    await main([], {
+      ...BASE,
+      stdinIsTTY: true,
+      stdoutIsTTY: true,
+      env: {},
+      configFile: { provider: "ollama", llmModel: "llama3" },
+      gitRunner: repoRunner,
+      launchpad: lp.launchpad,
+    });
+    expect(lp.calls[0]!.state.provider).toBe("ollama");
+    expect(lp.calls[0]!.state.llmModel).toBe("llama3");
+    expect(typeof lp.calls[0]!.saveSettings).toBe("function");
+    expect(typeof lp.calls[0]!.loadSettings).toBe("function");
+  });
+
+  it("an env provider still beats a saved provider in the header (config < env)", async () => {
+    const lp = captureLaunchpad();
+    await main([], {
+      ...BASE,
+      stdinIsTTY: true,
+      stdoutIsTTY: true,
+      env: { COMMIT_SAGE_PROVIDER: "openai", COMMIT_SAGE_LLM_MODEL: "gpt-4o" },
+      configFile: { provider: "ollama", llmModel: "llama3" },
+      gitRunner: repoRunner,
+      launchpad: lp.launchpad,
+    });
+    expect(lp.calls[0]!.state.provider).toBe("openai");
+    expect(lp.calls[0]!.state.llmModel).toBe("gpt-4o");
+  });
+});
+
+

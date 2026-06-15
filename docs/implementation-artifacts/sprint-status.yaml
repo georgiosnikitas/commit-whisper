@@ -107,12 +107,12 @@ development_status:
   # ═══════════════════════════════════════════════════════════════
   # EPIC 6: Interactive Experience
   # ═══════════════════════════════════════════════════════════════
-  epic-6: in-progress
+  epic-6: done
   6-1-launchpad-menu: done
   6-2-guided-prompts-and-command-echo: done
   6-3-status-doctor-view-and-first-run-no-ai-guidance: done
   6-4-operational-flags: done
-  6-5-settings-configure-ai-and-defaults: backlog
+  6-5-settings-configure-ai-and-defaults: done
   epic-6-retrospective: optional
 
   # ═══════════════════════════════════════════════════════════════

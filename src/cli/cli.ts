@@ -20,6 +20,7 @@
 import { Command, CommanderError } from "commander";
 
 import { readAiKey, readEnvDiagnostics, readEnvLayer, readGitToken, readProcessEnv } from "../config/env.js";
+import { readSettings, writeSettings } from "../config/config-store.js";
 import { resolveRunConfig } from "../config/resolve-run-config.js";
 import { detectCapability } from "../config/capability.js";
 import type { OutputFormat, PartialRunConfig, Provider, RunConfig } from "../config/run-config.js";
@@ -80,6 +81,8 @@ export interface CliDeps {
   launchpad?: typeof runLaunchpad;
   /** Inject a fake provider preflight for the Status/doctor probe; defaults to the real `preflightProvider`. */
   preflight?: typeof preflightProvider;
+  /** Inject the persisted config-file layer (Story 6.5); defaults to reading `~/.commit-sage`. */
+  configFile?: PartialRunConfig;
 }
 
 export async function main(argv: string[], deps: CliDeps = {}): Promise<number> {
@@ -114,6 +117,9 @@ export async function main(argv: string[], deps: CliDeps = {}): Promise<number> 
     const opts = program.opts<CliOptions>();
     const flags = buildFlags(program.args[0], opts);
     const analysisTimestamp = deps.analysisTimestamp ?? new Date().toISOString();
+    // The persisted Settings (Story 6.5) re-enter at the config-file layer; the
+    // resolver precedence (defaults < configFile < env < flags) is unchanged.
+    const configFile = deps.configFile ?? (await readSettings(env));
 
     // `--show-config`: dump the resolved config + provenance to stdout and exit
     // WITHOUT running (AC1). Resolved LENIENTLY so it always dumps — even when a
@@ -128,6 +134,7 @@ export async function main(argv: string[], deps: CliDeps = {}): Promise<number> 
         nonInteractive: true,
         analysisTimestamp,
         flags,
+        configFile,
         lenient: true,
       });
       const dump = formatShowConfig(config, {
@@ -155,6 +162,7 @@ export async function main(argv: string[], deps: CliDeps = {}): Promise<number> 
       nonInteractive: true, // STRICT single-shot — never prompts (--non-interactive only confirms this)
       analysisTimestamp,
       flags,
+      configFile,
     });
 
     return await runResolved({
@@ -196,6 +204,8 @@ interface ResolveAndRunInput {
   nonInteractive: boolean;
   /** Allow HTML auto-open — honoured only when the run resolves interactive. */
   openAllowed: boolean;
+  /** The persisted config-file layer (Story 6.5). */
+  configFile?: PartialRunConfig;
   deps: CliDeps;
   ui: Ui;
 }
@@ -215,6 +225,7 @@ async function resolveAndRun(input: ResolveAndRunInput): Promise<number> {
     nonInteractive: input.nonInteractive,
     analysisTimestamp: input.analysisTimestamp,
     flags: input.flags,
+    configFile: input.configFile,
   });
   return await runResolved({
     config,
@@ -296,10 +307,19 @@ async function runZeroArg(ctx: ZeroArgContext): Promise<number> {
     return ExitCode.Usage;
   }
 
-  // The launchpad does no I/O: resolve the header snapshot here (env-configured
-  // AI, repo context) and hand it over already resolved. Tier is Free / unlicensed
-  // until the Epic 7 license gate supplies the real entitlement.
-  const aiLayer = readEnvLayer(ctx.env);
+  // The launchpad does no I/O: resolve the header snapshot here (the configured
+  // AI = the persisted Settings overlaid by env, the resolver's precedence) and
+  // hand it over already resolved. Tier is Free / unlicensed until the Epic 7
+  // license gate supplies the real entitlement.
+  const configFile = ctx.deps.configFile ?? (await readSettings(ctx.env));
+  const envLayer = readEnvLayer(ctx.env);
+  // config < env: a saved provider/model shows in the header (and cures the
+  // no-AI state), but an env var still wins — mirroring the resolver.
+  const aiLayer = {
+    provider: envLayer.provider ?? configFile.provider,
+    llmModel: envLayer.llmModel ?? configFile.llmModel,
+    llmBaseUrl: envLayer.llmBaseUrl ?? configFile.llmBaseUrl,
+  };
   const repo = await readRepoContext(ctx.deps.gitRunner ?? execFileGitRunner, ctx.cwd);
   const state: LaunchpadState = {
     tier: "free",
@@ -325,6 +345,7 @@ async function runZeroArg(ctx: ZeroArgContext): Promise<number> {
         analysisTimestamp: ctx.deps.analysisTimestamp ?? new Date().toISOString(),
         nonInteractive: false,
         openAllowed: true,
+        configFile,
         deps: ctx.deps,
         ui: ctx.ui,
       });
@@ -358,6 +379,8 @@ async function runZeroArg(ctx: ZeroArgContext): Promise<number> {
     gitTokenConfigured: readGitToken(ctx.env) !== undefined,
     envDiagnostics,
     probeReachability,
+    loadSettings: () => readSettings(ctx.env),
+    saveSettings: (data) => writeSettings(ctx.env, data),
   });
 }
 
