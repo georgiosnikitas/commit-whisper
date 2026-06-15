@@ -27,6 +27,7 @@ import { Writable } from "node:stream";
 
 import { isCancel, multiselect as clackMultiselect, select as clackSelect, text as clackText } from "@clack/prompts";
 
+import type { EnvVarStatus } from "../config/env.js";
 import type { OutputFormat, PartialRunConfig, Provider, Tier } from "../config/run-config.js";
 import { ExitCode } from "./exit-codes.js";
 
@@ -92,6 +93,15 @@ export interface GuidedPrompts {
   multiselect(opts: GuidedMultiselectOptions): Promise<OutputFormat[] | null>;
 }
 
+/** Provider reachability for the Status/doctor view (Story 6.3). */
+export type Reachability =
+  | { kind: "not-configured" }
+  | { kind: "reachable" }
+  | { kind: "unreachable"; reason: string };
+
+/** The injected async reachability probe (cli wraps `preflightProvider`). */
+export type ProbeReachability = () => Promise<Reachability>;
+
 export interface LaunchpadDeps {
   state: LaunchpadState;
   /** The full flag reference (commander's help text), shown by "Help / show all flags". */
@@ -106,6 +116,10 @@ export interface LaunchpadDeps {
   runAnalysis?: (flags: PartialRunConfig) => Promise<number>;
   /** Whether a git token is set in the environment (for the AC3 private-remote hint). */
   gitTokenConfigured?: boolean;
+  /** Env-var presence diagnostics for Status/doctor (names + booleans only); injected by `cli/`. */
+  envDiagnostics?: EnvVarStatus[];
+  /** The async provider reachability probe for Status/doctor; injected by `cli/`. */
+  probeReachability?: ProbeReachability;
 }
 
 /** The locked product tagline (brief.md / DESIGN.md). */
@@ -121,19 +135,38 @@ export const FLAGS_CHEATSHEET = [
   "  --help                     the full flag reference",
 ].join("\n");
 
+/**
+ * The shared first-run-no-AI fix copy (Story 6.3, AC2 + AC3): names the cloud
+ * env-var path AND the zero-cost local Ollama path (with its must-be-running
+ * note). commit-sage narrates every run, so a provider is required — these are
+ * the two concrete cures.
+ */
+export const NO_AI_FIX = [
+  "Two zero-config paths:",
+  "  • Local & free — run Ollama, then set COMMIT_SAGE_PROVIDER=ollama.",
+  "    It must be running: `ollama serve`, then `ollama pull <model>`.",
+  "    Nothing leaves your machine.",
+  "  • Cloud — set a provider key in your environment, e.g. OPENAI_API_KEY",
+  "    (commit-sage never stores keys).",
+].join("\n");
+
+/** The calm no-AI interstitial shown when an Analyze action is chosen with no provider (AC3 — teach, never wall). */
+export const NO_AI_INTERSTITIAL = ["Analysis needs an AI provider — every run narrates with an LLM.", NO_AI_FIX].join(
+  "\n",
+);
+
 const TIER_LABEL: Record<Tier, string> = {
   free: "Free",
   "single-device": "Single-device",
   unlimited: "Unlimited",
 };
 
-/** Calm placeholders for the rows whose actions land in later stories (Status 6.3 · Settings 6.5 · license Epic 7). */
+/** Calm placeholders for the rows whose actions land in later stories (Settings 6.5 · license Epic 7). */
 const COMING_SOON: Record<
-  Exclude<LaunchpadAction, "help" | "quit" | "analyze-cwd" | "analyze-remote">,
+  Exclude<LaunchpadAction, "help" | "quit" | "analyze-cwd" | "analyze-remote" | "status">,
   string
 > = {
   settings: "Settings is coming soon.",
-  status: "Status / doctor is coming soon.",
   activate: "License activation is coming soon.",
   "buy-restore": "Buy / Restore is coming soon.",
   coffee: "Buy Me a Coffee — link coming soon.",
@@ -197,6 +230,68 @@ export function buildLaunchpadOptions(state: LaunchpadState): LaunchpadOption[] 
   }
   options.push({ value: "quit", label: "Quit", hint: "esc" });
   return options;
+}
+
+// ── Status / doctor (Story 6.3) ─────────────────────────────────────────────
+
+/** The reachability status line for the AI block. */
+function reachabilityLine(reachability: Reachability): string {
+  switch (reachability.kind) {
+    case "reachable":
+      return "  status     ✓ reachable";
+    case "unreachable":
+      return `  status     ⚠ unreachable — ${reachability.reason}`;
+    default:
+      return "  status     ⚠ not configured";
+  }
+}
+
+/** The AI block: configured provider/model (or the not-configured warning) + the reachability line. */
+function aiBlock(state: LaunchpadState, reachability: Reachability): string[] {
+  return [`AI          ${aiSegment(state)}`, reachabilityLine(reachability)];
+}
+
+/** The Environment block: each var by NAME + set/missing glyph + word (never color alone), never a value. */
+function environmentBlock(envVars: EnvVarStatus[]): string[] {
+  const lines = ["Environment"];
+  for (const v of envVars) {
+    const mark = v.set ? "✓" : "✗";
+    const state = v.set ? "set" : "missing";
+    const note = v.note === undefined ? "" : `   (${v.note})`;
+    lines.push(`  ${mark} ${v.name}     ${state}${note}`);
+  }
+  return lines;
+}
+
+/** The Repository block: label + branch, or the not-a-repo notice. */
+function repositoryLine(state: LaunchpadState): string {
+  return state.isRepo ? `Repository  ✓ ${cwdSegment(state)}` : "Repository  — not a git repo";
+}
+
+/**
+ * The read-only Status/doctor report (Story 6.3, AC1/AC2). Line-oriented (the
+ * calm 6.1/6.2 posture). Distinguishes *configured* from *reachable* (the probe
+ * result), reports env vars by NAME + set/missing only, and — when no provider
+ * is configured — names the concrete fix (AC2: `OPENAI_API_KEY` / Ollama).
+ */
+export function formatStatusReport(
+  state: LaunchpadState,
+  envVars: EnvVarStatus[],
+  reachability: Reachability,
+): string {
+  const capNote = state.tier === "free" ? "            100-commit cap" : "";
+  const lines = [
+    "Status / doctor",
+    "",
+    `License     ${TIER_LABEL[state.tier]}${capNote}`,
+    ...aiBlock(state, reachability),
+    ...environmentBlock(envVars),
+    repositoryLine(state),
+  ];
+  if (reachability.kind === "not-configured") {
+    lines.push("", NO_AI_FIX);
+  }
+  return lines.join("\n");
 }
 
 // ── Guided run: pure command echo + input interpreters (Story 6.2) ──────────
@@ -412,6 +507,14 @@ async function collectGuidedInputs(prompts: GuidedPrompts): Promise<PartialRunCo
  * dead-end.
  */
 async function runGuidedAnalyze(deps: LaunchpadDeps, mode: "cwd" | "remote", output: Writable): Promise<void> {
+  // Story 6.3 AC3 (teach, never wall): with no provider configured, a guided run
+  // would resolve aiMode `auto` and hard-fail (exit 3). Pre-empt that with the
+  // calm no-AI interstitial — the row stays enabled, the user is taught the fix.
+  if (deps.state.provider === undefined) {
+    writeLine(output, NO_AI_INTERSTITIAL);
+    return;
+  }
+
   const prompts = deps.prompts ?? clackGuidedPrompts(output);
 
   let target = ".";
@@ -444,6 +547,25 @@ async function runGuidedAnalyze(deps: LaunchpadDeps, mode: "cwd" | "remote", out
 }
 
 /**
+ * Render the read-only Status/doctor view (Story 6.3, AC1). Probes reachability
+ * only when a provider is configured (selection alone is not reachability);
+ * otherwise reports `not-configured` and the formatter appends the fix (AC2).
+ */
+async function runStatusDoctor(deps: LaunchpadDeps, output: Writable): Promise<void> {
+  let reachability: Reachability = { kind: "not-configured" };
+  if (deps.state.provider !== undefined && deps.probeReachability !== undefined) {
+    try {
+      reachability = await deps.probeReachability();
+    } catch (err) {
+      // A probe throw must never end the interactive session — degrade to an
+      // unreachable verdict and stay in the menu (the never-dead-end posture).
+      reachability = { kind: "unreachable", reason: err instanceof Error ? err.message : "probe failed" };
+    }
+  }
+  writeLine(output, formatStatusReport(deps.state, deps.envDiagnostics ?? [], reachability));
+}
+
+/**
  * Render the launchpad and loop until the user quits (AC1, AC4). Returns
  * `ExitCode.Success` on a clean Esc/Quit. The header is written once; the menu
  * re-prompts after each non-terminal action.
@@ -468,6 +590,10 @@ export async function runLaunchpad(deps: LaunchpadDeps): Promise<number> {
     }
     if (action === "analyze-cwd" || action === "analyze-remote") {
       await runGuidedAnalyze(deps, action === "analyze-cwd" ? "cwd" : "remote", output);
+      continue;
+    }
+    if (action === "status") {
+      await runStatusDoctor(deps, output);
       continue;
     }
     writeLine(output, COMING_SOON[action]);

@@ -1,6 +1,6 @@
 import { describe, it, expect } from "vitest";
 
-import { readAiKey, readGitToken, readEnvLayer } from "./env.js";
+import { readAiKey, readEnvDiagnostics, readGitToken, readEnvLayer } from "./env.js";
 import { Secret } from "../shared/secret.js";
 
 describe("readEnvLayer", () => {
@@ -153,5 +153,50 @@ describe("readGitToken (Story 5.2)", () => {
     expect(String(token)).toBe("***");
     expect(JSON.stringify({ token })).toBe('{"token":"***"}');
     expect(token?.reveal()).toBe("ghp_supersecret"); // only via the explicit accessor
+  });
+});
+
+describe("readEnvDiagnostics (Story 6.3)", () => {
+  it("names the provider's key var with its presence, plus the git token row", () => {
+    const diags = readEnvDiagnostics({ OPENAI_API_KEY: "sk-x" }, "openai");
+    expect(diags).toEqual([
+      { name: "OPENAI_API_KEY", set: true },
+      { name: "COMMIT_SAGE_GIT_TOKEN", set: false, note: "only needed for private remotes" },
+    ]);
+  });
+
+  it("maps each cloud provider to its native key var", () => {
+    expect(readEnvDiagnostics({}, "anthropic")[0]).toEqual({ name: "ANTHROPIC_API_KEY", set: false });
+    expect(readEnvDiagnostics({}, "gemini")[0]).toEqual({ name: "GOOGLE_GENERATIVE_AI_API_KEY", set: false });
+  });
+
+  it("honors the gemini GEMINI_API_KEY alias for the set flag", () => {
+    expect(readEnvDiagnostics({ GEMINI_API_KEY: "g" }, "gemini")[0]).toEqual({
+      name: "GOOGLE_GENERATIVE_AI_API_KEY",
+      set: true,
+    });
+  });
+
+  it("omits the AI-key row for local Ollama (no key needed)", () => {
+    const diags = readEnvDiagnostics({}, "ollama");
+    expect(diags.map((d) => d.name)).toEqual(["COMMIT_SAGE_GIT_TOKEN"]);
+  });
+
+  it("names OPENAI_API_KEY (with real presence) when no provider is configured", () => {
+    expect(readEnvDiagnostics({ OPENAI_API_KEY: "sk" }, undefined)[0]).toEqual({
+      name: "OPENAI_API_KEY",
+      set: true,
+    });
+    expect(readEnvDiagnostics({}, undefined)[0]).toEqual({ name: "OPENAI_API_KEY", set: false });
+  });
+
+  it("reports the git token row set when any git token var is present (incl. fallback)", () => {
+    const gitRow = readEnvDiagnostics({ GITHUB_TOKEN: "gh" }, "ollama").at(-1);
+    expect(gitRow).toEqual({ name: "COMMIT_SAGE_GIT_TOKEN", set: true, note: "only needed for private remotes" });
+  });
+
+  it("never includes a secret value — names + booleans only", () => {
+    const serialized = JSON.stringify(readEnvDiagnostics({ OPENAI_API_KEY: "sk-supersecret" }, "openai"));
+    expect(serialized).not.toContain("sk-supersecret");
   });
 });

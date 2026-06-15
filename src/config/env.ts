@@ -165,6 +165,52 @@ export function readGitToken(env: NodeJS.ProcessEnv): Secret<string> | undefined
   return wrapKey(token);
 }
 
+/** One environment variable's diagnostic status — NAME + presence only, never the value. */
+export interface EnvVarStatus {
+  name: string;
+  set: boolean;
+  note?: string;
+}
+
+/** The AI-key environment variable a given provider reads (none for local Ollama). */
+function aiKeyEnvVar(provider: Provider | undefined): string | undefined {
+  switch (provider) {
+    case "anthropic":
+      return "ANTHROPIC_API_KEY";
+    case "gemini":
+      return "GOOGLE_GENERATIVE_AI_API_KEY";
+    case "ollama":
+      return undefined; // local — no key needed
+    default:
+      // openai / openai-compatible, and the "no provider configured" first-run case,
+      // all point at OPENAI_API_KEY (the canonical cloud example named in the fix).
+      return "OPENAI_API_KEY";
+  }
+}
+
+/**
+ * Diagnostics for the Status/doctor view (Story 6.3): the env vars relevant to
+ * the current provider, reported by NAME + set/missing only — never the value.
+ * `set` is derived from the SAME `readAiKey`/`readGitToken` logic those keys
+ * already use, so the displayed presence can never drift from the real key
+ * resolution (e.g. the gemini `GEMINI_API_KEY` alias, the git-token host
+ * fallbacks). For "no provider configured", the AI row names `OPENAI_API_KEY`
+ * with its real presence so a user who already exported a key still sees `✓`.
+ */
+export function readEnvDiagnostics(env: NodeJS.ProcessEnv, provider: Provider | undefined): EnvVarStatus[] {
+  const diagnostics: EnvVarStatus[] = [];
+  const keyVar = aiKeyEnvVar(provider);
+  if (keyVar !== undefined) {
+    diagnostics.push({ name: keyVar, set: readAiKey(env, provider ?? "openai") !== undefined });
+  }
+  diagnostics.push({
+    name: "COMMIT_SAGE_GIT_TOKEN",
+    set: readGitToken(env) !== undefined,
+    note: "only needed for private remotes",
+  });
+  return diagnostics;
+}
+
 /**
  * The single ambient `process.env` accessor (Story 1.8). The CLI shell
  * (`cli/`, `index.ts`) is forbidden by the hexagonal lint boundary from naming

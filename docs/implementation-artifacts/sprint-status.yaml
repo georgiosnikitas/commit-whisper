@@ -110,7 +110,7 @@ development_status:
   epic-6: in-progress
   6-1-launchpad-menu: done
   6-2-guided-prompts-and-command-echo: done
-  6-3-status-doctor-view-and-first-run-no-ai-guidance: backlog
+  6-3-status-doctor-view-and-first-run-no-ai-guidance: done
   6-4-operational-flags: backlog
   6-5-settings-configure-ai-and-defaults: backlog
   epic-6-retrospective: optional

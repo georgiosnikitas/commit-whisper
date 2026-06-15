@@ -342,6 +342,39 @@ describe("main — zero-arg launchpad (Story 6.1)", () => {
     expect(r.errors.join(" ")).toContain("Required configuration");
   });
 
+  it("wires Status/doctor diagnostics (env-var names) + a reachability probe into the launchpad (Story 6.3)", async () => {
+    const lp = captureLaunchpad();
+    await main([], {
+      ...BASE,
+      stdinIsTTY: true,
+      stdoutIsTTY: true,
+      env: { COMMIT_SAGE_PROVIDER: "openai", COMMIT_SAGE_LLM_MODEL: "gpt-4o" },
+      gitRunner: repoRunner,
+      launchpad: lp.launchpad,
+    });
+    const names = (lp.calls[0]!.envDiagnostics ?? []).map((d) => d.name);
+    expect(names).toContain("OPENAI_API_KEY");
+    expect(names).toContain("COMMIT_SAGE_GIT_TOKEN");
+    expect(typeof lp.calls[0]!.probeReachability).toBe("function");
+  });
+
+  it("the wired reachability probe maps the injected preflight result (Story 6.3)", async () => {
+    const lp = captureLaunchpad();
+    await main([], {
+      ...BASE,
+      stdinIsTTY: true,
+      stdoutIsTTY: true,
+      env: { COMMIT_SAGE_PROVIDER: "ollama", COMMIT_SAGE_LLM_MODEL: "llama3" },
+      gitRunner: repoRunner,
+      launchpad: lp.launchpad,
+      preflight: async () => ({ reachable: false, reason: "Ollama responded with HTTP 500." }),
+    });
+    expect(await lp.calls[0]!.probeReachability!()).toEqual({
+      kind: "unreachable",
+      reason: "Ollama responded with HTTP 500.",
+    });
+  });
+
   it("a CI env is non-interactive even at a TTY — 0 args fails fast and skips the launchpad", async () => {
     const lp = captureLaunchpad();
     const code = await main([], {

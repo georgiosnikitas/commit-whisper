@@ -19,15 +19,17 @@
 
 import { Command, CommanderError } from "commander";
 
-import { readAiKey, readEnvLayer, readGitToken, readProcessEnv } from "../config/env.js";
+import { readAiKey, readEnvDiagnostics, readEnvLayer, readGitToken, readProcessEnv } from "../config/env.js";
 import { resolveRunConfig } from "../config/resolve-run-config.js";
 import { detectCapability } from "../config/capability.js";
 import type { OutputFormat, PartialRunConfig, Provider } from "../config/run-config.js";
+import type { NarrateConfig } from "../narrate/narrate.port.js";
+import { preflightProvider } from "../narrate/preflight.js";
 import { execFileGitRunner, type GitRunner } from "../retrieve/git.js";
 import { MissingRequiredConfigError, UsageError } from "../shared/errors.js";
 import { ui as defaultUi, type Ui } from "../shared/ui.js";
 import { exitCodeForError, ExitCode, messageForError } from "./exit-codes.js";
-import { runLaunchpad, type LaunchpadState } from "./interactive.js";
+import { runLaunchpad, type LaunchpadState, type Reachability } from "./interactive.js";
 import { readRepoContext } from "./repo-context.js";
 import { runPipeline, type RunDeps } from "./run.js";
 
@@ -68,6 +70,8 @@ export interface CliDeps {
   gitRunner?: GitRunner;
   /** Inject a fake launchpad to isolate the 0-arg shell wiring; defaults to the real `runLaunchpad`. */
   launchpad?: typeof runLaunchpad;
+  /** Inject a fake provider preflight for the Status/doctor probe; defaults to the real `preflightProvider`. */
+  preflight?: typeof preflightProvider;
 }
 
 export async function main(argv: string[], deps: CliDeps = {}): Promise<number> {
@@ -232,12 +236,30 @@ async function runZeroArg(ctx: ZeroArgContext): Promise<number> {
     }
   };
 
+  // Status/doctor diagnostics (Story 6.3): the env-var presence list (names only)
+  // and an async reachability probe wrapping `preflightProvider`. `aiMode: "auto"`
+  // forces a real probe regardless of the user's resolved mode.
+  const envDiagnostics = readEnvDiagnostics(ctx.env, aiLayer.provider);
+  const probeReachability = async (): Promise<Reachability> => {
+    const narrateConfig: NarrateConfig = {
+      aiMode: "auto",
+      provider: aiLayer.provider,
+      llmModel: aiLayer.llmModel,
+      llmBaseUrl: aiLayer.llmBaseUrl,
+      aiKey: readAiKey(ctx.env, aiLayer.provider),
+    };
+    const result = await (ctx.deps.preflight ?? preflightProvider)(narrateConfig, {});
+    return result.reachable ? { kind: "reachable" } : { kind: "unreachable", reason: result.reason };
+  };
+
   const launchpad = ctx.deps.launchpad ?? runLaunchpad;
   return await launchpad({
     state,
     helpText: buildProgram().helpInformation(),
     runAnalysis,
     gitTokenConfigured: readGitToken(ctx.env) !== undefined,
+    envDiagnostics,
+    probeReachability,
   });
 }
 
