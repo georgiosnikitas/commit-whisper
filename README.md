@@ -26,19 +26,62 @@ Report JSON.
 - npm (bundled with Node.js)
 - A system `git` on `PATH` (retrieval shells out to it)
 
-## Install
+## 🚀 Installation
+
+### 🍺 Homebrew (macOS)
 
 ```bash
-# Run without installing
-npx commitsage .
+brew tap georgiosnikitas/commit-sage
+brew install commit-sage
+```
 
-# Or install globally (adds the `commit-sage` command to your PATH)
+### 📦 From npm
+
+```bash
 npm install -g commitsage
+```
+
+Or run it once without installing:
+
+```bash
+npx commitsage .
+```
+
+### 📦 From GitHub Packages
+
+```bash
+npm install -g @georgiosnikitas/commit-sage --registry=https://npm.pkg.github.com
+```
+
+> **Note:** GitHub Packages requires authentication even for public packages. Add a
+> [personal access token](https://github.com/settings/tokens) with `read:packages` scope
+> to your `~/.npmrc`:
+>
+> ```
+> //npm.pkg.github.com/:_authToken=YOUR_TOKEN
+> ```
+
+### 💾 Prebuilt binaries (no Node.js required)
+
+Self-contained executables for macOS, Linux, and Windows are attached to each
+[GitHub Release](https://github.com/georgiosnikitas/commit-sage/releases).
+
+After installing via Homebrew, npm, GitHub Packages, or a prebuilt binary, run it from
+anywhere:
+
+```bash
 commit-sage .
 ```
 
-Prebuilt single-file binaries for macOS, Linux, and Windows (no Node.js required)
-are attached to each [GitHub Release](https://github.com/georgiosnikitas/commit-sage/releases).
+### 🛠️ From source
+
+```bash
+git clone https://github.com/georgiosnikitas/commit-sage.git
+cd commit-sage
+npm install
+npm run build
+node dist/index.js .
+```
 
 ## Getting started (development)
 

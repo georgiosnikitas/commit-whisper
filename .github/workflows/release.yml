@@ -167,3 +167,39 @@ jobs:
       - name: Publish to npm (provenance, public)
         run: npm publish --provenance --access public
 
+  publish-github-packages:
+    name: publish to GitHub Packages
+    needs: build
+    if: startsWith(github.ref, 'refs/tags/')
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write # publish to the repo's GitHub Packages registry
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js (GitHub Packages registry)
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          registry-url: "https://npm.pkg.github.com"
+          scope: "@georgiosnikitas"
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build the publishable bundle
+        run: npm run build
+
+      # GitHub Packages requires a scoped name owned by the org/user. Rename only
+      # the in-CI package.json (npm keeps the unscoped `commitsage` name) before publishing.
+      - name: Scope the package for GitHub Packages
+        run: npm pkg set name="@georgiosnikitas/commit-sage"
+
+      - name: Publish to GitHub Packages
+        run: npm publish --access public
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
