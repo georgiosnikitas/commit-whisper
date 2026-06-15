@@ -9,7 +9,7 @@ import {
 /** A fake `fetch` that records the request and returns a canned JSON response. */
 function fakeFetch(response: { ok: boolean; status?: number; json?: unknown }) {
   const calls: { url: string; init: RequestInit }[] = [];
-  const fetchImpl = (async (url: string | URL | Request, init?: RequestInit) => {
+  const fetchImpl = (async (url: string | URL, init?: RequestInit) => {
     calls.push({ url: String(url), init: init ?? {} });
     return {
       ok: response.ok,
@@ -30,15 +30,15 @@ describe("createLemonSqueezyValidator", () => {
   it("POSTs to /v1/licenses/validate with only the license key (privacy — AC3)", async () => {
     const { fetchImpl, calls } = fakeFetch({ ok: true, json: { valid: true } });
     await createLemonSqueezyValidator({ fetchImpl })({ licenseKey: "LIC-KEY" });
-    expect(calls[0]!.url).toBe("https://api.lemonsqueezy.com/v1/licenses/validate");
-    expect(calls[0]!.init.method).toBe("POST");
-    expect(bodyParams(calls[0]!.init)).toEqual({ license_key: "LIC-KEY" });
+    expect(calls[0].url).toBe("https://api.lemonsqueezy.com/v1/licenses/validate");
+    expect(calls[0].init.method).toBe("POST");
+    expect(bodyParams(calls[0].init)).toEqual({ license_key: "LIC-KEY" });
   });
 
   it("includes the instance id (device identifier) when provided — and nothing else", async () => {
     const { fetchImpl, calls } = fakeFetch({ ok: true, json: { valid: true } });
     await createLemonSqueezyValidator({ fetchImpl })({ licenseKey: "LIC-KEY", instanceId: "inst-1" });
-    expect(bodyParams(calls[0]!.init)).toEqual({ license_key: "LIC-KEY", instance_id: "inst-1" });
+    expect(bodyParams(calls[0].init)).toEqual({ license_key: "LIC-KEY", instance_id: "inst-1" });
   });
 
   it("maps a valid response (status + variant)", async () => {
@@ -91,7 +91,7 @@ describe("createLemonSqueezyValidator", () => {
   it("respects a custom apiBase (trimming a trailing slash)", async () => {
     const { fetchImpl, calls } = fakeFetch({ ok: true, json: { valid: true } });
     await createLemonSqueezyValidator({ fetchImpl, apiBase: "https://example.test/" })({ licenseKey: "k" });
-    expect(calls[0]!.url).toBe("https://example.test/v1/licenses/validate");
+    expect(calls[0].url).toBe("https://example.test/v1/licenses/validate");
   });
 });
 
@@ -99,8 +99,8 @@ describe("createLemonSqueezyActivator (Story 7.2)", () => {
   it("POSTs to /v1/licenses/activate with only license_key + instance_name", async () => {
     const { fetchImpl, calls } = fakeFetch({ ok: true, json: { activated: true, instance: { id: "inst-9" } } });
     await createLemonSqueezyActivator({ fetchImpl })({ licenseKey: "LIC-KEY", instanceName: "my-laptop" });
-    expect(calls[0]!.url).toBe("https://api.lemonsqueezy.com/v1/licenses/activate");
-    expect(bodyParams(calls[0]!.init)).toEqual({ license_key: "LIC-KEY", instance_name: "my-laptop" });
+    expect(calls[0].url).toBe("https://api.lemonsqueezy.com/v1/licenses/activate");
+    expect(bodyParams(calls[0].init)).toEqual({ license_key: "LIC-KEY", instance_name: "my-laptop" });
   });
 
   it("maps a successful activation (instance id + variant)", async () => {
@@ -133,8 +133,8 @@ describe("createLemonSqueezyDeactivator (Story 7.2)", () => {
   it("POSTs to /v1/licenses/deactivate with only license_key + instance_id", async () => {
     const { fetchImpl, calls } = fakeFetch({ ok: true, json: { deactivated: true } });
     await createLemonSqueezyDeactivator({ fetchImpl })({ licenseKey: "LIC-KEY", instanceId: "inst-9" });
-    expect(calls[0]!.url).toBe("https://api.lemonsqueezy.com/v1/licenses/deactivate");
-    expect(bodyParams(calls[0]!.init)).toEqual({ license_key: "LIC-KEY", instance_id: "inst-9" });
+    expect(calls[0].url).toBe("https://api.lemonsqueezy.com/v1/licenses/deactivate");
+    expect(bodyParams(calls[0].init)).toEqual({ license_key: "LIC-KEY", instance_id: "inst-9" });
   });
 
   it("maps a successful deactivation", async () => {

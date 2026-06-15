@@ -20,10 +20,10 @@ const DORMANT_GAP_SECONDS = 14 * 24 * 3600; // [ASSUMPTION] 14 days
 
 /** Reduce-based min/max (avoids `Math.min(...arr)` argument-spread overflow on large repos). */
 function minOf(values: readonly number[]): number {
-  return values.reduce((m, v) => (v < m ? v : m), values[0]);
+  return values.reduce((m, v) => Math.min(v, m), values[0]);
 }
 function maxOf(values: readonly number[]): number {
-  return values.reduce((m, v) => (v > m ? v : m), values[0]);
+  return values.reduce((m, v) => Math.max(v, m), values[0]);
 }
 
 export const VOLUME: MetricSpec = { id: "a-commit-volume", group: "A", title: "Commit volume over time" };

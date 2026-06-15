@@ -15,9 +15,7 @@ function probeRunner(): { runner: GitRunner; firstSub: () => string | undefined;
   let first: string | undefined;
   let cloneExtraEnv: Record<string, string> | undefined;
   const runner: GitRunner = async (args, options) => {
-    if (first === undefined) {
-      first = subcommand(args);
-    }
+    first ??= subcommand(args);
     if (subcommand(args) === "clone") {
       cloneExtraEnv = options.extraEnv;
     }
@@ -47,7 +45,7 @@ function subcommand(args: readonly string[]): string | undefined {
 }
 
 const workspace: TempWorkspaceDeps = {
-  mkdtemp: () => "/tmp/commit-whisper-DISPATCH",
+  mkdtemp: () => "/work/commit-whisper-DISPATCH",
   rmrf: () => {},
   signals: { once: () => {}, removeListener: () => {}, exit: () => {} },
 };

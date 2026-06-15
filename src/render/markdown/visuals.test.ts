@@ -62,7 +62,7 @@ describe("textBars", () => {
   it("escapes a hostile label so it cannot break the block", () => {
     const out = textBars([{ label: "a|b<i>", value: 3 }]);
     expect(out).not.toContain("<i>");
-    expect(out).toContain("a\\|b&lt;i&gt;");
+    expect(out).toContain(String.raw`a\|b&lt;i&gt;`);
   });
 
   it("max ≤ 0 is safe (all-empty bars, no crash)", () => {

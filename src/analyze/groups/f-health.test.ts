@@ -145,9 +145,9 @@ describe("strengthsWeaknesses", () => {
     const v = strengthsWeaknesses(byId(healthySources()), ctx()).value as {
       strengths: { name: string; subScore: number }[]; weaknesses: { name: string; subScore: number }[];
     };
-    expect(v.strengths[0]!.subScore).toBe(100); // a 100-scoring dimension leads
-    expect(v.weaknesses[0]!.name).toBe("Collaboration Breadth"); // 60, the lowest
-    expect(v.weaknesses[0]!.subScore).toBe(60);
+    expect(v.strengths[0].subScore).toBe(100); // a 100-scoring dimension leads
+    expect(v.weaknesses[0].name).toBe("Collaboration Breadth"); // 60, the lowest
+    expect(v.weaknesses[0].subScore).toBe(60);
   });
 
   it("is not_available when nothing can be ranked", () => {

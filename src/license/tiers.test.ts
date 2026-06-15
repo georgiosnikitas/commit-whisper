@@ -13,7 +13,7 @@ describe("tierForVariantName", () => {
     expect(tierForVariantName("Automation")).toBe("unlimited");
     expect(tierForVariantName("Single Device")).toBe("single-device");
     expect(tierForVariantName("Mystery")).toBe("single-device");
-    expect(tierForVariantName(undefined)).toBe("single-device");
+    expect(tierForVariantName()).toBe("single-device");
   });
 
   it("maps the real product variants (Commit Stage Single → single-device, Commit Stage Unlimited → unlimited)", () => {
@@ -35,7 +35,7 @@ describe("tierForValidation", () => {
 
   it("maps a valid but unknown variant to single-device (a valid key is at least Single-device)", () => {
     expect(tierForValidation(valid("Mystery Plan"))).toBe("single-device");
-    expect(tierForValidation(valid(undefined))).toBe("single-device");
+    expect(tierForValidation(valid())).toBe("single-device");
   });
 
   it("maps an invalid validation to free (defensive)", () => {

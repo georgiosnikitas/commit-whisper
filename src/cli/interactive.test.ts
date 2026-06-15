@@ -264,7 +264,7 @@ describe("formatEquivalentCommand (AC2)", () => {
   it("shell-quotes a target with whitespace or metacharacters (faithful, paste-safe)", () => {
     expect(formatEquivalentCommand("/a path/repo", {})).toBe("commit-whisper '/a path/repo'");
     expect(formatEquivalentCommand("https://h/x?a=1&b=2", {})).toBe("commit-whisper 'https://h/x?a=1&b=2'");
-    expect(formatEquivalentCommand("/o'reilly", {})).toBe("commit-whisper '/o'\\''reilly'");
+    expect(formatEquivalentCommand("/o'reilly", {})).toBe(String.raw`commit-whisper '/o'\''reilly'`);
   });
 
   it("leaves a normal URL or path bare", () => {
@@ -497,16 +497,16 @@ describe("formatStatusReport (AC1, AC2)", () => {
   });
 });
 
-describe("runStatusDoctor via runLaunchpad (AC1)", () => {
-  function probe(result: Reachability) {
-    let calls = 0;
-    const probeReachability = async (): Promise<Reachability> => {
-      calls++;
-      return result;
-    };
-    return { probeReachability, calls: (): number => calls };
-  }
+function probe(result: Reachability) {
+  let calls = 0;
+  const probeReachability = async (): Promise<Reachability> => {
+    calls++;
+    return result;
+  };
+  return { probeReachability, calls: (): number => calls };
+}
 
+describe("runStatusDoctor via runLaunchpad (AC1)", () => {
   it("probes reachability when a provider is configured and renders it, then loops back", async () => {
     const out = captureStream();
     const sel = scriptedSelect(["status", "quit"]);

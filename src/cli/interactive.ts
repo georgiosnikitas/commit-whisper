@@ -386,7 +386,8 @@ function quoteArg(value: string): string {
   if (value !== "" && /^[A-Za-z0-9_./:@%+=-]+$/.test(value)) {
     return value;
   }
-  return `'${value.replace(/'/g, "'\\''")}'`;
+  const escaped = value.replaceAll("'", String.raw`'\''`);
+  return `'${escaped}'`;
 }
 
 /**

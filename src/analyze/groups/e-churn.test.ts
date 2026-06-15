@@ -179,7 +179,7 @@ describe("largeChangeEvents", () => {
     const v = largeChangeEvents(model(small), ctx()).value as { events: { churn: number }[]; largeChangeCount: number };
     expect(v.largeChangeCount).toBe(0);
     expect(v.events).toHaveLength(1); // the small commit is still the top change event
-    expect(v.events[0]!.churn).toBe(5);
+    expect(v.events[0].churn).toBe(5);
   });
 });
 

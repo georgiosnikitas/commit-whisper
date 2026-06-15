@@ -17,7 +17,7 @@ describe("isRemoteTarget", () => {
     expect(isRemoteTarget("./relative")).toBe(false);
     expect(isRemoteTarget("../up")).toBe(false);
     expect(isRemoteTarget("~/projects/repo")).toBe(false);
-    expect(isRemoteTarget("C:\\Users\\me\\repo")).toBe(false);
+    expect(isRemoteTarget(String.raw`C:\Users\me\repo`)).toBe(false);
   });
 
   it("an empty string and a flag-looking string are not remote (never reach `git clone` as an option)", () => {

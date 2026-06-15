@@ -86,10 +86,10 @@ function wordCount(text: string): number {
  * its own precondition even if a future caller forgets the empty-history guard.
  */
 function minOf(values: readonly number[]): number {
-  return values.length === 0 ? 0 : values.reduce((m, v) => (v < m ? v : m), values[0]);
+  return values.length === 0 ? 0 : values.reduce((m, v) => Math.min(v, m), values[0]);
 }
 function maxOf(values: readonly number[]): number {
-  return values.length === 0 ? 0 : values.reduce((m, v) => (v > m ? v : m), values[0]);
+  return values.length === 0 ? 0 : values.reduce((m, v) => Math.max(v, m), values[0]);
 }
 
 /** Percentage of `part` in `total`, rounded (2 dp); `0` when the total is zero. */

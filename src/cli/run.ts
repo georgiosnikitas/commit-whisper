@@ -120,18 +120,7 @@ export async function runPipeline(config: RunConfig, deps: RunDeps = {}): Promis
   // LLM call) and emit each to its planned destination (Story 4.4). The default
   // ["terminal"] selection is one stdout target — back-compatible with 1.8. —
   const targets = planOutputs(config.outputFormats, config.outputPath); // UsageError (2) on ambiguous path
-  let htmlFilePath: string | undefined;
-  for (const target of targets) {
-    const text = renderOne(report, target);
-    if (target.destination.kind === "stdout") {
-      writeStdout(text.endsWith("\n") ? text : `${text}\n`);
-    } else {
-      await writeOne(writeFile, target.destination.path, text, target.format, ui);
-      if (target.format === "html") {
-        htmlFilePath = target.destination.path; // the showpiece to auto-open (at most one)
-      }
-    }
-  }
+  const htmlFilePath = await emitOutputs(report, targets, { writeStdout, writeFile, ui });
 
   // — Auto-open the written HTML in a browser (Story 4.5) — only when the shell
   // enabled it (interactive && !--no-open) and an HTML FILE was actually written.
@@ -142,6 +131,30 @@ export async function runPipeline(config: RunConfig, deps: RunDeps = {}): Promis
   }
 
   return report.degraded ? ExitCode.Degraded : ExitCode.Success;
+}
+
+/**
+ * Render every planned target from the ONE report and emit each to its destination
+ * (Story 4.4); returns the written HTML path (if any) for the optional auto-open.
+ */
+async function emitOutputs(
+  report: ReturnType<typeof reportFromOutcome>,
+  targets: readonly OutputTarget[],
+  io: { writeStdout: (text: string) => void; writeFile: WriteFile; ui: Ui },
+): Promise<string | undefined> {
+  let htmlFilePath: string | undefined;
+  for (const target of targets) {
+    const text = renderOne(report, target);
+    if (target.destination.kind === "stdout") {
+      io.writeStdout(text.endsWith("\n") ? text : `${text}\n`);
+    } else {
+      await writeOne(io.writeFile, target.destination.path, text, target.format, io.ui);
+      if (target.format === "html") {
+        htmlFilePath = target.destination.path; // the showpiece to auto-open (at most one)
+      }
+    }
+  }
+  return htmlFilePath;
 }
 
 /** Render one target's format, mapping any renderer throw to a `RenderError` (exit 7). */

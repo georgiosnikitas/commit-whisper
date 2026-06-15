@@ -59,14 +59,14 @@ describe("main — strict single-shot wiring", () => {
     const code = await main([".", "--no-ai"], { ...BASE, ui: r.ui, run: cap.run, writeStdout: r.writeStdout });
     expect(code).toBe(ExitCode.Success);
     expect(cap.calls).toHaveLength(1);
-    expect(cap.calls[0]!.config.aiMode).toBe("off");
-    expect(cap.calls[0]!.config.repoTarget).toBe(".");
+    expect(cap.calls[0].config.aiMode).toBe("off");
+    expect(cap.calls[0].config.repoTarget).toBe(".");
   });
 
   it("injects the resolved clock (never reads it inside the pipeline)", async () => {
     const cap = captureRun();
     await main([".", "--no-ai"], { ...BASE, ui: recorder().ui, run: cap.run });
-    expect(cap.calls[0]!.config.analysisTimestamp).toBe("2026-01-01T00:00:00.000Z");
+    expect(cap.calls[0].config.analysisTimestamp).toBe("2026-01-01T00:00:00.000Z");
   });
 
   it("reads the env-only LLM key and injects it into the pipeline deps", async () => {
@@ -77,7 +77,7 @@ describe("main — strict single-shot wiring", () => {
       ui: recorder().ui,
       run: cap.run,
     });
-    expect(cap.calls[0]!.deps.aiKey?.reveal()).toBe("secret-key");
+    expect(cap.calls[0].deps.aiKey?.reveal()).toBe("secret-key");
   });
 
   it("reads the env-only git PAT into the pipeline deps (Story 5.2)", async () => {
@@ -88,14 +88,14 @@ describe("main — strict single-shot wiring", () => {
       ui: recorder().ui,
       run: cap.run,
     });
-    expect(cap.calls[0]!.deps.gitToken?.reveal()).toBe("ghp_tok");
+    expect(cap.calls[0].deps.gitToken?.reveal()).toBe("ghp_tok");
   });
 
   it("a run with no git token still succeeds — absence is never an error (Story 5.2)", async () => {
     const cap = captureRun();
     const code = await main([".", "--no-ai"], { ...BASE, env: {}, ui: recorder().ui, run: cap.run });
     expect(code).toBe(ExitCode.Success);
-    expect(cap.calls[0]!.deps.gitToken).toBeUndefined();
+    expect(cap.calls[0].deps.gitToken).toBeUndefined();
   });
 });
 
@@ -106,7 +106,7 @@ describe("main — commit-selection flags (Story 2.6)", () => {
       [".", "--no-ai", "--no-merges", "--max-commits", "100", "--author", "alice", "--since", "2024-01-01", "--until", "2024-12-31"],
       { ...BASE, ui: recorder().ui, run: cap.run },
     );
-    const config = cap.calls[0]!.config;
+    const config = cap.calls[0].config;
     expect(config.noMerges).toBe(true);
     expect(config.maxCommits).toBe(100);
     expect(config.authorFilter).toBe("alice");
@@ -117,7 +117,7 @@ describe("main — commit-selection flags (Story 2.6)", () => {
   it("leaves noMerges at its default (false) when --no-merges is absent", async () => {
     const cap = captureRun();
     await main([".", "--no-ai"], { ...BASE, ui: recorder().ui, run: cap.run });
-    expect(cap.calls[0]!.config.noMerges).toBe(false);
+    expect(cap.calls[0].config.noMerges).toBe(false);
   });
 
   it("rejects a non-positive-integer --max-commits with a usage error (exit 2)", async () => {
@@ -143,8 +143,8 @@ describe("main — commit-selection flags (Story 2.6)", () => {
   it("accepts a well-formed --since date (and a full ISO timestamp)", async () => {
     const cap = captureRun();
     await main([".", "--no-ai", "--since", "2024-01-01", "--until", "2024-12-31T23:59:59Z"], { ...BASE, ui: recorder().ui, run: cap.run });
-    expect(cap.calls[0]!.config.startDate).toBe("2024-01-01");
-    expect(cap.calls[0]!.config.endDate).toBe("2024-12-31T23:59:59Z");
+    expect(cap.calls[0].config.startDate).toBe("2024-01-01");
+    expect(cap.calls[0].config.endDate).toBe("2024-12-31T23:59:59Z");
   });
 });
 
@@ -152,7 +152,7 @@ describe("main — output format flags (Story 4.4)", () => {
   it("resolves --format json,html and --output into the config", async () => {
     const cap = captureRun();
     await main([".", "--no-ai", "--format", "json", "--output", "report.json"], { ...BASE, ui: recorder().ui, run: cap.run });
-    const config = cap.calls[0]!.config;
+    const config = cap.calls[0].config;
     expect(config.outputFormats).toEqual(["json"]);
     expect(config.outputPath).toBe("report.json");
   });
@@ -160,19 +160,19 @@ describe("main — output format flags (Story 4.4)", () => {
   it("parses a comma-separated --format list, de-duped and order-preserving", async () => {
     const cap = captureRun();
     await main([".", "--no-ai", "--format", "terminal,html,json,html"], { ...BASE, ui: recorder().ui, run: cap.run });
-    expect(cap.calls[0]!.config.outputFormats).toEqual(["terminal", "html", "json"]);
+    expect(cap.calls[0].config.outputFormats).toEqual(["terminal", "html", "json"]);
   });
 
   it("accepts -o as the --output alias and '-' for stdout", async () => {
     const cap = captureRun();
     await main([".", "--no-ai", "--format", "json", "-o", "-"], { ...BASE, ui: recorder().ui, run: cap.run });
-    expect(cap.calls[0]!.config.outputPath).toBe("-");
+    expect(cap.calls[0].config.outputPath).toBe("-");
   });
 
   it("defaults outputFormats to ['terminal'] when --format is absent", async () => {
     const cap = captureRun();
     await main([".", "--no-ai"], { ...BASE, ui: recorder().ui, run: cap.run });
-    expect(cap.calls[0]!.config.outputFormats).toEqual(["terminal"]);
+    expect(cap.calls[0].config.outputFormats).toEqual(["terminal"]);
   });
 
   it("rejects an unknown --format token with a usage error naming the valid set", async () => {
@@ -187,7 +187,7 @@ describe("main — HTML auto-open decision (Story 4.5)", () => {
   it("strict single-shot is non-interactive → autoOpen is false even for --format html", async () => {
     const cap = captureRun();
     await main([".", "--no-ai", "--format", "html"], { ...BASE, ui: recorder().ui, run: cap.run });
-    expect(cap.calls[0]!.deps.autoOpen).toBe(false); // AC3: headless never auto-opens
+    expect(cap.calls[0].deps.autoOpen).toBe(false); // AC3: headless never auto-opens
   });
 
   it("--no-open keeps autoOpen false (even were the terminal interactive)", async () => {
@@ -199,7 +199,7 @@ describe("main — HTML auto-open decision (Story 4.5)", () => {
       ui: recorder().ui,
       run: cap.run,
     });
-    expect(cap.calls[0]!.deps.autoOpen).toBe(false); // AC2: --no-open suppresses
+    expect(cap.calls[0].deps.autoOpen).toBe(false); // AC2: --no-open suppresses
   });
 
   it("an interactive TTY without --no-open would enable autoOpen — but single-shot forces non-interactive", async () => {
@@ -213,7 +213,7 @@ describe("main — HTML auto-open decision (Story 4.5)", () => {
       ui: recorder().ui,
       run: cap.run,
     });
-    expect(cap.calls[0]!.deps.autoOpen).toBe(false);
+    expect(cap.calls[0].deps.autoOpen).toBe(false);
   });
 });
 
@@ -270,14 +270,14 @@ describe("main — zero-arg launchpad (Story 6.1)", () => {
     });
     expect(code).toBe(ExitCode.Success);
     expect(lp.calls).toHaveLength(1);
-    const state: LaunchpadState = lp.calls[0]!.state;
+    const state: LaunchpadState = lp.calls[0].state;
     expect(state.provider).toBe("ollama");
     expect(state.llmModel).toBe("llama3");
     expect(state.branch).toBe("feature-x");
     expect(state.isRepo).toBe(true);
     expect(state.tier).toBe("free");
     expect(state.licensed).toBe(false);
-    expect(lp.calls[0]!.helpText.length).toBeGreaterThan(0);
+    expect(lp.calls[0].helpText.length).toBeGreaterThan(0);
   });
 
   it("wires a guided-run executor and the git-token presence flag into the launchpad (Story 6.2)", async () => {
@@ -290,8 +290,8 @@ describe("main — zero-arg launchpad (Story 6.1)", () => {
       gitRunner: repoRunner,
       launchpad: withToken.launchpad,
     });
-    expect(typeof withToken.calls[0]!.runAnalysis).toBe("function");
-    expect(withToken.calls[0]!.gitTokenConfigured).toBe(true);
+    expect(typeof withToken.calls[0].runAnalysis).toBe("function");
+    expect(withToken.calls[0].gitTokenConfigured).toBe(true);
 
     const noToken = captureLaunchpad();
     await main([], {
@@ -302,7 +302,7 @@ describe("main — zero-arg launchpad (Story 6.1)", () => {
       gitRunner: repoRunner,
       launchpad: noToken.launchpad,
     });
-    expect(noToken.calls[0]!.gitTokenConfigured).toBe(false);
+    expect(noToken.calls[0].gitTokenConfigured).toBe(false);
   });
 
   it("the wired guided executor resolves aiMode=auto and runs the pipeline with the collected flags", async () => {
@@ -317,12 +317,12 @@ describe("main — zero-arg launchpad (Story 6.1)", () => {
       launchpad: lp.launchpad,
       run: cap.run,
     });
-    const code = await lp.calls[0]!.runAnalysis!({ repoTarget: ".", maxCommits: 7 });
+    const code = await lp.calls[0].runAnalysis!({ repoTarget: ".", maxCommits: 7 });
     expect(code).toBe(ExitCode.Success);
     expect(cap.calls).toHaveLength(1);
-    expect(cap.calls[0]!.config.aiMode).toBe("auto"); // interactive default
-    expect(cap.calls[0]!.config.maxCommits).toBe(7);
-    expect(cap.calls[0]!.config.repoTarget).toBe(".");
+    expect(cap.calls[0].config.aiMode).toBe("auto"); // interactive default
+    expect(cap.calls[0].config.maxCommits).toBe(7);
+    expect(cap.calls[0].config.repoTarget).toBe(".");
   });
 
   it("a guided run with no AI configured surfaces the typed error gracefully (no throw, back to menu)", async () => {
@@ -337,7 +337,7 @@ describe("main — zero-arg launchpad (Story 6.1)", () => {
       launchpad: lp.launchpad,
       ui: r.ui,
     });
-    const code = await lp.calls[0]!.runAnalysis!({ repoTarget: "." });
+    const code = await lp.calls[0].runAnalysis!({ repoTarget: "." });
     expect(code).toBe(ExitCode.MissingInput); // caught, named, not thrown into the menu
     expect(r.errors.join(" ")).toContain("Required configuration");
   });
@@ -352,10 +352,10 @@ describe("main — zero-arg launchpad (Story 6.1)", () => {
       gitRunner: repoRunner,
       launchpad: lp.launchpad,
     });
-    const names = (lp.calls[0]!.envDiagnostics ?? []).map((d) => d.name);
+    const names = (lp.calls[0].envDiagnostics ?? []).map((d) => d.name);
     expect(names).toContain("OPENAI_API_KEY");
     expect(names).toContain("COMMIT_WHISPER_GIT_TOKEN");
-    expect(typeof lp.calls[0]!.probeReachability).toBe("function");
+    expect(typeof lp.calls[0].probeReachability).toBe("function");
   });
 
   it("the wired reachability probe maps the injected preflight result (Story 6.3)", async () => {
@@ -369,7 +369,7 @@ describe("main — zero-arg launchpad (Story 6.1)", () => {
       launchpad: lp.launchpad,
       preflight: async () => ({ reachable: false, reason: "Ollama responded with HTTP 500." }),
     });
-    expect(await lp.calls[0]!.probeReachability!()).toEqual({
+    expect(await lp.calls[0].probeReachability!()).toEqual({
       kind: "unreachable",
       reason: "Ollama responded with HTTP 500.",
     });
@@ -451,8 +451,8 @@ describe("main — operational flags (Story 6.4)", () => {
     const code = await main(["--non-interactive", "."], { ...BASE, ui: recorder().ui, run: cap.run });
     expect(code).toBe(ExitCode.Success);
     expect(cap.calls).toHaveLength(1);
-    expect(cap.calls[0]!.config.aiMode).toBe("off"); // headless default
-    expect(cap.calls[0]!.deps.autoOpen).toBe(false);
+    expect(cap.calls[0].config.aiMode).toBe("off"); // headless default
+    expect(cap.calls[0].deps.autoOpen).toBe(false);
   });
 
   it("--quiet and --verbose are accepted and still run (exit 0)", async () => {
@@ -475,10 +475,10 @@ describe("main — Settings config-file layer (Story 6.5)", () => {
       ui: recorder().ui,
       run: cap.run,
     });
-    expect(cap.calls[0]!.config.maxCommits).toBe(25);
-    expect(cap.calls[0]!.config.provenance.maxCommits).toBe("configFile");
-    expect(cap.calls[0]!.config.timezone).toBe("Europe/Athens");
-    expect(cap.calls[0]!.config.provenance.timezone).toBe("configFile");
+    expect(cap.calls[0].config.maxCommits).toBe(25);
+    expect(cap.calls[0].config.provenance.maxCommits).toBe("configFile");
+    expect(cap.calls[0].config.timezone).toBe("Europe/Athens");
+    expect(cap.calls[0].config.provenance.timezone).toBe("configFile");
   });
 
   it("an env var overrides a saved setting (config < env)", async () => {
@@ -490,8 +490,8 @@ describe("main — Settings config-file layer (Story 6.5)", () => {
       ui: recorder().ui,
       run: cap.run,
     });
-    expect(cap.calls[0]!.config.maxCommits).toBe(99);
-    expect(cap.calls[0]!.config.provenance.maxCommits).toBe("env");
+    expect(cap.calls[0].config.maxCommits).toBe(99);
+    expect(cap.calls[0].config.provenance.maxCommits).toBe("env");
   });
 
   it("a flag overrides both a saved setting and an env var (config < env < flag)", async () => {
@@ -503,8 +503,8 @@ describe("main — Settings config-file layer (Story 6.5)", () => {
       ui: recorder().ui,
       run: cap.run,
     });
-    expect(cap.calls[0]!.config.maxCommits).toBe(7);
-    expect(cap.calls[0]!.config.provenance.maxCommits).toBe("flag");
+    expect(cap.calls[0].config.maxCommits).toBe(7);
+    expect(cap.calls[0].config.provenance.maxCommits).toBe("flag");
   });
 
   it("--show-config reflects a saved setting with configFile provenance", async () => {
@@ -531,10 +531,10 @@ describe("main — Settings config-file layer (Story 6.5)", () => {
       gitRunner: repoRunner,
       launchpad: lp.launchpad,
     });
-    expect(lp.calls[0]!.state.provider).toBe("ollama");
-    expect(lp.calls[0]!.state.llmModel).toBe("llama3");
-    expect(typeof lp.calls[0]!.saveSettings).toBe("function");
-    expect(typeof lp.calls[0]!.loadSettings).toBe("function");
+    expect(lp.calls[0].state.provider).toBe("ollama");
+    expect(lp.calls[0].state.llmModel).toBe("llama3");
+    expect(typeof lp.calls[0].saveSettings).toBe("function");
+    expect(typeof lp.calls[0].loadSettings).toBe("function");
   });
 
   it("an env provider still beats a saved provider in the header (config < env)", async () => {
@@ -548,8 +548,8 @@ describe("main — Settings config-file layer (Story 6.5)", () => {
       gitRunner: repoRunner,
       launchpad: lp.launchpad,
     });
-    expect(lp.calls[0]!.state.provider).toBe("openai");
-    expect(lp.calls[0]!.state.llmModel).toBe("gpt-4o");
+    expect(lp.calls[0].state.provider).toBe("openai");
+    expect(lp.calls[0].state.llmModel).toBe("gpt-4o");
   });
 });
 
@@ -557,7 +557,7 @@ describe("main — license entitlement gate (Story 7.1)", () => {
   it("the default (no key) resolves the Free entitlement with the 100-commit cap (no network)", async () => {
     const cap = captureRun();
     await main([".", "--no-ai"], { ...BASE, env: {}, ui: recorder().ui, run: cap.run });
-    expect(cap.calls[0]!.config.entitlement).toEqual({ tier: "free", commitCap: 100 });
+    expect(cap.calls[0].config.entitlement).toEqual({ tier: "free", commitCap: 100 });
   });
 
   it("an injected entitlement flows into the resolved RunConfig (paid tier, no cap)", async () => {
@@ -568,7 +568,7 @@ describe("main — license entitlement gate (Story 7.1)", () => {
       ui: recorder().ui,
       run: cap.run,
     });
-    expect(cap.calls[0]!.config.entitlement).toEqual({ tier: "unlimited" });
+    expect(cap.calls[0].config.entitlement).toEqual({ tier: "unlimited" });
   });
 
   it("--show-config reflects the resolved tier", async () => {
@@ -593,8 +593,8 @@ describe("main — license entitlement gate (Story 7.1)", () => {
       gitRunner: repoRunner,
       launchpad: lp.launchpad,
     });
-    expect(lp.calls[0]!.state.tier).toBe("single-device");
-    expect(lp.calls[0]!.state.licensed).toBe(true);
+    expect(lp.calls[0].state.tier).toBe("single-device");
+    expect(lp.calls[0].state.licensed).toBe(true);
   });
 
   it("the license key never appears in a --show-config dump", async () => {
@@ -664,8 +664,8 @@ describe("main — fail-closed vs degrade-to-Free (Story 7.3)", () => {
       ui: r.ui,
     });
     expect(code).toBe(ExitCode.Success);
-    expect(lp.calls[0]!.state.tier).toBe("free");
-    expect(lp.calls[0]!.state.licensed).toBe(false);
+    expect(lp.calls[0].state.tier).toBe("free");
+    expect(lp.calls[0].state.licensed).toBe(false);
     expect(r.warns.join("\n")).toContain("Free");
   });
 
@@ -699,9 +699,9 @@ describe("main — license actions wiring (Story 7.2)", () => {
       gitRunner: repoRunner,
       launchpad: lp.launchpad,
     });
-    expect(typeof lp.calls[0]!.activateLicense).toBe("function");
-    expect(typeof lp.calls[0]!.deactivateLicense).toBe("function");
-    expect(typeof lp.calls[0]!.openUrl).toBe("function");
+    expect(typeof lp.calls[0].activateLicense).toBe("function");
+    expect(typeof lp.calls[0].deactivateLicense).toBe("function");
+    expect(typeof lp.calls[0].openUrl).toBe("function");
   });
 
   it("the wired activate closure delegates to the injected action", async () => {
@@ -720,7 +720,7 @@ describe("main — license actions wiring (Story 7.2)", () => {
         return { ok: true, tier: "single-device" };
       },
     });
-    const outcome = await lp.calls[0]!.activateLicense!("LIC-XYZ");
+    const outcome = await lp.calls[0].activateLicense!("LIC-XYZ");
     expect(calls).toEqual([{ key: "LIC-XYZ" }]);
     expect(outcome).toEqual({ ok: true, tier: "single-device" });
   });
@@ -736,7 +736,7 @@ describe("main — license actions wiring (Story 7.2)", () => {
       gitRunner: repoRunner,
       launchpad: lp.launchpad,
     });
-    expect(lp.calls[0]!.storeUrl).toBe("https://my.store/buy");
+    expect(lp.calls[0].storeUrl).toBe("https://my.store/buy");
   });
 
   it("a COMMIT_WHISPER_RESTORE_URL override flows into the launchpad restoreUrl", async () => {
@@ -750,7 +750,7 @@ describe("main — license actions wiring (Story 7.2)", () => {
       gitRunner: repoRunner,
       launchpad: lp.launchpad,
     });
-    expect(lp.calls[0]!.restoreUrl).toBe("https://my.orders/x");
+    expect(lp.calls[0].restoreUrl).toBe("https://my.orders/x");
   });
 });
 

@@ -381,17 +381,17 @@ describe("runPipeline — multi-format output dispatch (Story 4.4)", () => {
   });
 });
 
-describe("runPipeline — HTML auto-open (Story 4.5)", () => {
-  /** A recorder that also captures injected file writes + browser opens. */
-  function openRecorder() {
-    const base = writeRecorder();
-    const opened: string[] = [];
-    const openBrowser = async (target: string): Promise<void> => {
-      opened.push(target);
-    };
-    return { ...base, opened, openBrowser };
-  }
+/** A recorder that also captures injected file writes + browser opens. */
+function openRecorder() {
+  const base = writeRecorder();
+  const opened: string[] = [];
+  const openBrowser = async (target: string): Promise<void> => {
+    opened.push(target);
+  };
+  return { ...base, opened, openBrowser };
+}
 
+describe("runPipeline — HTML auto-open (Story 4.5)", () => {
   it("autoOpen + an HTML file → opens it once + a stderr 'Opened' line", async () => {
     const r = openRecorder();
     const code = await runPipeline(makeConfig({ aiMode: "off", outputFormats: ["html"] }), {

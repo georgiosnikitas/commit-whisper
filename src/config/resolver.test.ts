@@ -1,7 +1,6 @@
 import { describe, it, expect } from "vitest";
 
 import { mergeLayers, type Layers } from "./resolver.js";
-import type { PartialRunConfig } from "./run-config.js";
 
 const empty: Layers = { defaults: {}, configFile: {}, env: {}, flags: {} };
 
@@ -61,7 +60,7 @@ describe("mergeLayers — precedence", () => {
     const layers: Layers = {
       ...empty,
       defaults: { maxCommits: 50 },
-      flags: { maxCommits: undefined } as PartialRunConfig,
+      flags: { maxCommits: undefined },
     };
     const { config, provenance } = mergeLayers(layers);
     expect(config.maxCommits).toBe(50);

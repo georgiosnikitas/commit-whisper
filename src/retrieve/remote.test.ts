@@ -68,7 +68,7 @@ function fakeWorkspace(): { deps: TempWorkspaceDeps; removed: string[] } {
   return {
     removed,
     deps: {
-      mkdtemp: () => "/tmp/commit-whisper-AAAA",
+      mkdtemp: () => "/work/commit-whisper-AAAA",
       rmrf: (dir) => {
         removed.push(dir);
       },
@@ -89,7 +89,7 @@ describe("createRemoteRetrieve — AC1 clone-into-temp + read", () => {
     expect(clone).toContain("clone");
     expect(clone).toContain("--"); // end-of-options guard before the url
     expect(clone).toContain("https://github.com/owner/repo"); // the url is ONE argv element
-    expect(clone).toContain("/tmp/commit-whisper-AAAA/repo"); // dest under the temp dir
+    expect(clone).toContain("/work/commit-whisper-AAAA/repo"); // dest under the temp dir
     // The history is read FROM the clone, but LABELLED with the URL (not the temp path).
     expect(history.repoTarget).toBe("https://github.com/owner/repo");
     expect(history.commits).toHaveLength(1);
@@ -100,7 +100,7 @@ describe("createRemoteRetrieve — AC1 clone-into-temp + read", () => {
     const { runner } = fakeRunner();
     const ws = fakeWorkspace();
     await createRemoteRetrieve(runner, ws.deps)(cfg("https://github.com/owner/repo"));
-    expect(ws.removed).toEqual(["/tmp/commit-whisper-AAAA"]);
+    expect(ws.removed).toEqual(["/work/commit-whisper-AAAA"]);
   });
 });
 
@@ -141,7 +141,7 @@ describe("createRemoteRetrieve — private-remote auth (Story 5.2)", () => {
     expect((err as RetrieveError).message).toMatch(/scope|permission/i);
     expect((err as RetrieveError).message).toContain("COMMIT_WHISPER_GIT_TOKEN");
     expect((err as RetrieveError).message).not.toContain(TOKEN); // never leaks the token
-    expect(ws.removed).toEqual(["/tmp/commit-whisper-AAAA"]); // still cleaned up
+    expect(ws.removed).toEqual(["/work/commit-whisper-AAAA"]); // still cleaned up
   });
 
   it("an auth-rejected clone WITHOUT a token → a set-the-var error", async () => {
@@ -171,19 +171,19 @@ describe("createRemoteRetrieve — private-remote auth (Story 5.2)", () => {
   });
 });
 
-describe("createRemoteRetrieve — classified failures + no-retry (Story 5.3)", () => {
-  function failing(stderr: string): { runner: GitRunner; cloneCalls: () => number } {
-    let cloneCalls = 0;
-    const runner: GitRunner = async (args) => {
-      if (subcommand(args) === "clone") {
-        cloneCalls += 1;
-        throw Object.assign(new Error("clone failed"), { stderr });
-      }
-      throw new Error(`unexpected git args: ${args.join(" ")}`);
-    };
-    return { runner, cloneCalls: () => cloneCalls };
-  }
+function failing(stderr: string): { runner: GitRunner; cloneCalls: () => number } {
+  let cloneCalls = 0;
+  const runner: GitRunner = async (args) => {
+    if (subcommand(args) === "clone") {
+      cloneCalls += 1;
+      throw Object.assign(new Error("clone failed"), { stderr });
+    }
+    throw new Error(`unexpected git args: ${args.join(" ")}`);
+  };
+  return { runner, cloneCalls: () => cloneCalls };
+}
 
+describe("createRemoteRetrieve — classified failures + no-retry (Story 5.3)", () => {
   it("a network failure → a network-worded RetrieveError", async () => {
     const { runner } = failing("fatal: unable to access: Could not resolve host: example.invalid");
     const ws = fakeWorkspace();
@@ -218,7 +218,7 @@ describe("createRemoteRetrieve — classified failures + no-retry (Story 5.3)", 
       const { runner } = failing(stderr);
       const ws = fakeWorkspace();
       await createRemoteRetrieve(runner, ws.deps)(cfg("https://x/repo")).catch(() => {});
-      expect(ws.removed).toEqual(["/tmp/commit-whisper-AAAA"]);
+      expect(ws.removed).toEqual(["/work/commit-whisper-AAAA"]);
     }
   });
 });
@@ -234,7 +234,7 @@ describe("createRemoteRetrieve — clone failure + cleanup (Story 5.1)", () => {
     await expect(
       createRemoteRetrieve(runner, ws.deps)(cfg("https://github.com/owner/missing")),
     ).rejects.toBeInstanceOf(RetrieveError);
-    expect(ws.removed).toEqual(["/tmp/commit-whisper-AAAA"]); // cleaned despite the failure
+    expect(ws.removed).toEqual(["/work/commit-whisper-AAAA"]); // cleaned despite the failure
   });
 
   it("a post-clone read error names the URL, never the disposable temp path", async () => {
@@ -250,7 +250,7 @@ describe("createRemoteRetrieve — clone failure + cleanup (Story 5.1)", () => {
     const ws = fakeWorkspace();
     await expect(
       createRemoteRetrieve(runner, ws.deps)(cfg("https://github.com/owner/repo")),
-    ).rejects.toThrowError(/https:\/\/github\.com\/owner\/repo/); // the URL, not /tmp/commit-whisper-AAAA
-    expect(ws.removed).toEqual(["/tmp/commit-whisper-AAAA"]);
+    ).rejects.toThrowError(/https:\/\/github\.com\/owner\/repo/); // the URL, not /work/commit-whisper-AAAA
+    expect(ws.removed).toEqual(["/work/commit-whisper-AAAA"]);
   });
 });

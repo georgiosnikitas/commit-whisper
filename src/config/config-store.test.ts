@@ -59,7 +59,7 @@ describe("configHome / configFilePath", () => {
   });
 
   it("falls back to USERPROFILE (Windows) when HOME is unset", () => {
-    expect(configHome({ USERPROFILE: "C:\\Users\\bob" })).toContain("bob");
+    expect(configHome({ USERPROFILE: String.raw`C:\Users\bob` })).toContain("bob");
   });
 });
 

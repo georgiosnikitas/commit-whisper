@@ -82,9 +82,9 @@ describe("assembleReport", () => {
     expect(report.analysis).not.toBe(analysis);
     expect(report.narrative).not.toBe(narrative);
     // A later mutation of the caller's objects leaves the assembled report untouched.
-    analysis.metrics[0]!.title = "MUTATED";
+    analysis.metrics[0].title = "MUTATED";
     narrative.summary.headline = "MUTATED";
-    expect(report.analysis.metrics[0]!.title).toBe("Commit volume");
+    expect(report.analysis.metrics[0].title).toBe("Commit volume");
     expect(report.narrative?.summary.headline).toBe("Steady.");
   });
 });

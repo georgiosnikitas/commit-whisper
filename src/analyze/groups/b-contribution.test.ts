@@ -11,8 +11,7 @@ import {
 } from "./b-contribution.js";
 import { buildModel, type AnalysisContext } from "../model.js";
 import { emptyMailmap } from "../identity.js";
-import type { RepoHistory } from "../../retrieve/retrieve.port.js";
-import type { RawCommit } from "../../retrieve/retrieve.port.js";
+import type { RepoHistory, RawCommit } from "../../retrieve/retrieve.port.js";
 
 // Fixed analysis time → deterministic active/new/departed windows.
 // active/onboard cutoff = 2024-03-03 (90d); depart cutoff = 2023-12-04 (180d).

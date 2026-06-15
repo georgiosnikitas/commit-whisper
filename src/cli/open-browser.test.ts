@@ -23,7 +23,7 @@ describe("browserCommand — platform → argv mapping", () => {
   });
 
   it("a hostile path is a single argv element — never interpolated into a command (injection-safe)", () => {
-    const evil = "/tmp/a b; rm -rf ~ && $(touch pwned).html";
+    const evil = "/work/a b; rm -rf ~ && $(touch pwned).html";
     for (const platform of ["darwin", "win32", "linux"] as const) {
       const { args } = browserCommand(platform, evil);
       // The full path appears verbatim as ONE array element (execFile passes it as a

@@ -140,7 +140,7 @@ describe("MetricSchema", () => {
   it("rejects a non-finite metric value (NaN/Infinity would JSON.stringify to null)", () => {
     // These are exactly the numbers that survive in memory but corrupt to `null`
     // on serialization — the read-back validation must refuse them up front.
-    for (const value of [NaN, Infinity, -Infinity]) {
+    for (const value of [Number.NaN, Infinity, -Infinity]) {
       expect(MetricSchema.safeParse({ id: "x", group: "A", title: "t", status: "computed", value }).success).toBe(false);
     }
     // A nested non-finite number is rejected just the same.
