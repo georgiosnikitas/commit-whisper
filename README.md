@@ -8,6 +8,8 @@
 [![License](https://img.shields.io/github/license/georgiosnikitas/commit-whisper)](LICENSE)
 [![Buy Me a Coffee](https://img.shields.io/badge/Buy%20Me%20a%20Coffee-ffdd00?style=flat&logo=buy-me-a-coffee&logoColor=black)](https://buymeacoffee.com/georgiosnikitas)
 
+> 🕵️ **I know what you did last commit.**
+
 Deterministic git history analysis with a grounded, bring-your-own-key AI narrative — a
 terminal-native CLI.
 
