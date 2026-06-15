@@ -213,3 +213,93 @@ jobs:
         env:
           NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
+  update-homebrew-tap:
+    name: update the Homebrew tap
+    needs: publish-npm # the npm tarball must exist on the registry first
+    if: startsWith(github.ref, 'refs/tags/')
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read # the tap repo is written via HOMEBREW_TAP_TOKEN, not GITHUB_TOKEN
+    steps:
+      - name: Extract the version from the tag
+        id: version
+        run: echo "version=${GITHUB_REF_NAME#v}" >> "$GITHUB_OUTPUT"
+
+      - name: Checksum the published npm tarball
+        id: sha
+        run: |
+          set -euo pipefail
+          VERSION="${GITHUB_REF_NAME#v}"
+          TARBALL="https://registry.npmjs.org/commit-whisper/-/commit-whisper-${VERSION}.tgz"
+          # publish-npm has run, but the registry CDN can lag a few seconds — retry briefly.
+          SHA256=""
+          for _ in $(seq 1 10); do
+            if SHA256="$(curl -fsSL "$TARBALL" | shasum -a 256 | awk '{print $1}')" && [ -n "$SHA256" ]; then
+              break
+            fi
+            sleep 6
+          done
+          EMPTY="e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+          if [ -z "$SHA256" ] || [ "$SHA256" = "$EMPTY" ]; then
+            echo "ERROR: could not fetch/checksum commit-whisper@${VERSION} from npm" >&2
+            exit 1
+          fi
+          echo "sha256=${SHA256}" >> "$GITHUB_OUTPUT"
+
+      - name: Check out the Homebrew tap
+        uses: actions/checkout@v4
+        with:
+          repository: georgiosnikitas/homebrew-commit-whisper
+          token: ${{ secrets.HOMEBREW_TAP_TOKEN }}
+
+      - name: Regenerate the formula from the npm tarball
+        env:
+          VERSION: ${{ steps.version.outputs.version }}
+          SHA256: ${{ steps.sha.outputs.sha256 }}
+        run: |
+          set -euo pipefail
+          mkdir -p Formula
+          cat > Formula/commit-whisper.rb << 'HEAD_EOF'
+          # Homebrew formula for commit-whisper — installs the published npm tarball and
+          # runs on Homebrew's Node.js. Regenerated on every release by CI.
+          class CommitWhisper < Formula
+            desc "Deterministic git history analysis with a grounded, BYOK AI narrative"
+            homepage "https://github.com/georgiosnikitas/commit-whisper"
+          HEAD_EOF
+          cat >> Formula/commit-whisper.rb << DYNAMIC_EOF
+            url "https://registry.npmjs.org/commit-whisper/-/commit-whisper-${VERSION}.tgz"
+            sha256 "${SHA256}"
+          DYNAMIC_EOF
+          cat >> Formula/commit-whisper.rb << 'TAIL_EOF'
+            license "MIT"
+
+            depends_on "node"
+
+            def install
+              system "npm", "install", *std_npm_args
+              bin.install_symlink Dir["#{libexec}/bin/*"]
+            end
+
+            test do
+              assert_match version.to_s, shell_output("#{bin}/commit-whisper --version")
+            end
+          end
+          TAIL_EOF
+          echo "--- regenerated formula ---"
+          cat Formula/commit-whisper.rb
+
+      - name: Commit and push the updated formula
+        env:
+          VERSION: ${{ steps.version.outputs.version }}
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add Formula/commit-whisper.rb
+          if git diff --staged --quiet; then
+            echo "Formula already current — nothing to commit."
+          else
+            git commit -m "commit-whisper ${VERSION}"
+            git push
+          fi
+
