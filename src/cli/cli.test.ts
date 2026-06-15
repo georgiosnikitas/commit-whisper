@@ -738,6 +738,20 @@ describe("main — license actions wiring (Story 7.2)", () => {
     });
     expect(lp.calls[0]!.storeUrl).toBe("https://my.store/buy");
   });
+
+  it("a COMMIT_SAGE_RESTORE_URL override flows into the launchpad restoreUrl", async () => {
+    const lp = captureLaunchpad();
+    await main([], {
+      ...BASE,
+      stdinIsTTY: true,
+      stdoutIsTTY: true,
+      env: { COMMIT_SAGE_RESTORE_URL: "https://my.orders/x" },
+      resolveEntitlement: async () => ({ kind: "resolved", entitlement: { tier: "free", commitCap: 100 } }),
+      gitRunner: repoRunner,
+      launchpad: lp.launchpad,
+    });
+    expect(lp.calls[0]!.restoreUrl).toBe("https://my.orders/x");
+  });
 });
 
 

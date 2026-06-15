@@ -5,6 +5,7 @@ import { describe, it, expect } from "vitest";
 import {
   buildLaunchpadOptions,
   DEFAULT_COFFEE_URL,
+  DEFAULT_RESTORE_URL,
   DEFAULT_STORE_URL,
   FLAGS_CHEATSHEET,
   formatEquivalentCommand,
@@ -102,21 +103,23 @@ describe("buildLaunchpadOptions (AC1, AC3)", () => {
     expect(values.at(-1)).toBe("quit");
   });
 
-  it("when unlicensed: shows Activate, Buy/Restore, Buy Me a Coffee — and no Deactivate", () => {
+  it("when unlicensed: shows Activate, Buy, Restore, Buy Me a Coffee — and no Deactivate", () => {
     const values = buildLaunchpadOptions({ ...FREE_CONFIGURED, licensed: false }).map((o) => o.value);
     expect(values).toContain("activate");
-    expect(values).toContain("buy-restore");
+    expect(values).toContain("buy");
+    expect(values).toContain("restore");
     expect(values).toContain("coffee");
     expect(values).not.toContain("deactivate");
   });
 
-  it("when licensed: shows Deactivate — and retires Activate/Buy-Restore/Coffee", () => {
+  it("when licensed: shows Deactivate — and retires Activate/Buy/Restore/Coffee", () => {
     const values = buildLaunchpadOptions({ ...FREE_CONFIGURED, licensed: true, tier: "single-device" }).map(
       (o) => o.value,
     );
     expect(values).toContain("deactivate");
     expect(values).not.toContain("activate");
-    expect(values).not.toContain("buy-restore");
+    expect(values).not.toContain("buy");
+    expect(values).not.toContain("restore");
     expect(values).not.toContain("coffee");
   });
 
@@ -728,7 +731,7 @@ describe("runSettings via runLaunchpad (Story 6.5)", () => {
   });
 });
 
-// ── Story 7.2: license screens (activate / deactivate / buy-restore / coffee) ──
+// ── Story 7.2: license screens (activate / deactivate / buy / restore / coffee) ──
 
 const LICENSED: LaunchpadState = { ...FREE_CONFIGURED, tier: "single-device", licensed: true };
 
@@ -842,10 +845,10 @@ describe("runDeactivate via runLaunchpad (AC3)", () => {
   });
 });
 
-describe("buy-restore / coffee browser hand-offs (AC1)", () => {
-  it("Buy / Restore opens the store URL with the no-payment note", async () => {
+describe("buy / restore / coffee browser hand-offs (AC1)", () => {
+  it("Buy opens the store URL with the no-payment note", async () => {
     const out = captureStream();
-    const sel = scriptedSelect(["buy-restore", "quit"]);
+    const sel = scriptedSelect(["buy", "quit"]);
     const opened: string[] = [];
     await runLaunchpad({
       state: FREE_CONFIGURED,
@@ -857,6 +860,23 @@ describe("buy-restore / coffee browser hand-offs (AC1)", () => {
       },
     });
     expect(opened).toEqual([DEFAULT_STORE_URL]);
+    expect(out.text()).toContain("commit-sage never handles payment");
+  });
+
+  it("Restore opens the orders URL with the no-payment note", async () => {
+    const out = captureStream();
+    const sel = scriptedSelect(["restore", "quit"]);
+    const opened: string[] = [];
+    await runLaunchpad({
+      state: FREE_CONFIGURED,
+      helpText: "HELP",
+      output: out.stream,
+      select: sel.select,
+      openUrl: async (url) => {
+        opened.push(url);
+      },
+    });
+    expect(opened).toEqual([DEFAULT_RESTORE_URL]);
     expect(out.text()).toContain("commit-sage never handles payment");
   });
 
@@ -876,9 +896,9 @@ describe("buy-restore / coffee browser hand-offs (AC1)", () => {
     expect(opened).toEqual([DEFAULT_COFFEE_URL]);
   });
 
-  it("an injected store/coffee URL overrides the default", async () => {
+  it("an injected store URL overrides the Buy default", async () => {
     const out = captureStream();
-    const sel = scriptedSelect(["buy-restore", "quit"]);
+    const sel = scriptedSelect(["buy", "quit"]);
     const opened: string[] = [];
     await runLaunchpad({
       state: FREE_CONFIGURED,
@@ -893,9 +913,26 @@ describe("buy-restore / coffee browser hand-offs (AC1)", () => {
     expect(opened).toEqual(["https://custom.store/x"]);
   });
 
+  it("an injected restore URL overrides the Restore default", async () => {
+    const out = captureStream();
+    const sel = scriptedSelect(["restore", "quit"]);
+    const opened: string[] = [];
+    await runLaunchpad({
+      state: FREE_CONFIGURED,
+      helpText: "HELP",
+      output: out.stream,
+      select: sel.select,
+      restoreUrl: "https://custom.orders/x",
+      openUrl: async (url) => {
+        opened.push(url);
+      },
+    });
+    expect(opened).toEqual(["https://custom.orders/x"]);
+  });
+
   it("a browser-open failure still prints the URL (copyable — never a dead-end)", async () => {
     const out = captureStream();
-    const sel = scriptedSelect(["buy-restore", "quit"]);
+    const sel = scriptedSelect(["buy", "quit"]);
     await runLaunchpad({
       state: FREE_CONFIGURED,
       helpText: "HELP",

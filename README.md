@@ -8,7 +8,7 @@ metrics (no AI), and — when a provider is configured — adds a grounded AI na
 coaching report. It renders to HTML, Markdown, terminal, and JSON from a single canonical
 Report JSON.
 
-> Status: early development (walking skeleton). See
+> Status: v1 — all seven epics delivered. See
 > [docs/planning-artifacts/](docs/planning-artifacts/) for the PRD, architecture, epics, and
 > UX design.
 
@@ -31,6 +31,8 @@ npm test         # run the test suite (vitest)
 | Script | Purpose |
 | --- | --- |
 | `npm run build` | Bundle `src/` to `dist/` via tsup (ESM, Node 22 target). |
+| `npm run bundle:sea` | Bundle `src/sea-entry.ts` to a single self-contained CJS file in `dist-sea/`. |
+| `npm run build:sea` | Build a Node SEA single-executable binary (see [the 7.4 spike findings](docs/implementation-artifacts/7-4-sea-packaging-spike-findings.md)). |
 | `npm test` | Run the test suite once (`vitest run`). |
 | `npm run test:watch` | Run vitest in watch mode. |
 | `npm run typecheck` | Type-check with `tsc --noEmit` (strict, nodenext). |

@@ -510,6 +510,7 @@ async function runZeroArg(ctx: ZeroArgContext): Promise<number> {
     deactivateLicense: () => (ctx.deps.deactivateLicense ?? defaultDeactivateLicense)(ctx.env),
     openUrl: ctx.deps.openUrl ?? defaultOpenBrowser,
     storeUrl: readUrl(ctx.env.COMMIT_SAGE_STORE_URL),
+    restoreUrl: readUrl(ctx.env.COMMIT_SAGE_RESTORE_URL),
     coffeeUrl: readUrl(ctx.env.COMMIT_SAGE_COFFEE_URL),
   });
 }

@@ -41,7 +41,8 @@ export type LaunchpadAction =
   | "status"
   | "help"
   | "activate"
-  | "buy-restore"
+  | "buy"
+  | "restore"
   | "coffee"
   | "deactivate"
   | "quit";
@@ -140,8 +141,10 @@ export interface LaunchpadDeps {
   deactivateLicense?: () => Promise<DeactivationOutcome>;
   /** Open a URL in the browser (Story 7.2 Buy/Restore + Coffee); injected by `cli/`. */
   openUrl?: (url: string) => Promise<void>;
-  /** The store hand-off URL (Buy / Restore); injected by `cli/`. */
+  /** The Buy (store / checkout) hand-off URL; injected by `cli/`. */
   storeUrl?: string;
+  /** The Restore-purchase hand-off URL (the customer's orders page); injected by `cli/`. */
+  restoreUrl?: string;
   /** The voluntary Buy-Me-a-Coffee URL; injected by `cli/`. */
   coffeeUrl?: string;
 }
@@ -255,7 +258,8 @@ export function buildLaunchpadOptions(state: LaunchpadState): LaunchpadOption[] 
   } else {
     options.push(
       { value: "activate", label: "Activate license", hint: "enter your license key" },
-      { value: "buy-restore", label: "Buy / Restore license", hint: "opens the store in your browser" },
+      { value: "buy", label: "Buy a license", hint: "opens the store in your browser" },
+      { value: "restore", label: "Restore a purchase", hint: "opens your Lemon Squeezy orders" },
       { value: "coffee", label: "Buy Me a Coffee" },
     );
   }
@@ -797,12 +801,15 @@ async function runOpenUrl(deps: LaunchpadDeps, url: string, label: string, note:
   }
 }
 
-const BUY_RESTORE_NOTE =
-  "commit-sage never handles payment. Buy a new license or recover a purchase, then return and choose “Activate license”.";
+const BUY_NOTE =
+  "commit-sage never handles payment — checkout happens in your browser. After buying, return and choose “Activate license”.";
+const RESTORE_NOTE =
+  "commit-sage never handles payment. Find your license key in your Lemon Squeezy orders, then return and choose “Activate license”.";
 
 /** Default browser hand-off URLs (deployment-overridable via `cli/` from the environment). */
-export const DEFAULT_STORE_URL = "https://commitsage.lemonsqueezy.com";
-export const DEFAULT_COFFEE_URL = "https://www.buymeacoffee.com/commitsage";
+export const DEFAULT_STORE_URL = "https://georgiosnikitas.lemonsqueezy.com/";
+export const DEFAULT_RESTORE_URL = "https://app.lemonsqueezy.com/my-orders";
+export const DEFAULT_COFFEE_URL = "https://buymeacoffee.com/georgiosnikitas";
 
 /**
  * Dispatch one chosen launchpad action. Returns `"quit"` to end the session
@@ -834,8 +841,11 @@ async function dispatchAction(deps: LaunchpadDeps, action: LaunchpadAction, outp
     case "deactivate":
       await runDeactivate(deps, output);
       return "continue";
-    case "buy-restore":
-      await runOpenUrl(deps, deps.storeUrl ?? DEFAULT_STORE_URL, "the store", BUY_RESTORE_NOTE, output);
+    case "buy":
+      await runOpenUrl(deps, deps.storeUrl ?? DEFAULT_STORE_URL, "the store", BUY_NOTE, output);
+      return "continue";
+    case "restore":
+      await runOpenUrl(deps, deps.restoreUrl ?? DEFAULT_RESTORE_URL, "your Lemon Squeezy orders", RESTORE_NOTE, output);
       return "continue";
     case "coffee": // the voluntary support link.
       await runOpenUrl(deps, deps.coffeeUrl ?? DEFAULT_COFFEE_URL, "Buy Me a Coffee", "", output);

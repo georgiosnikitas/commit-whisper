@@ -15,6 +15,11 @@ describe("tierForVariantName", () => {
     expect(tierForVariantName("Mystery")).toBe("single-device");
     expect(tierForVariantName(undefined)).toBe("single-device");
   });
+
+  it("maps the real product variants (Commit Stage Single → single-device, Commit Stage Unlimited → unlimited)", () => {
+    expect(tierForVariantName("Commit Stage Single")).toBe("single-device");
+    expect(tierForVariantName("Commit Stage Unlimited")).toBe("unlimited");
+  });
 });
 
 describe("tierForValidation", () => {
