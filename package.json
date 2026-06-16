@@ -1,6 +1,6 @@
 {
   "name": "commit-whisper",
-  "version": "1.0.6",
+  "version": "1.0.7",
   "description": "Deterministic git history analysis with a grounded, BYOK AI narrative — terminal-native CLI.",
   "type": "module",
   "main": "dist/index.js",
