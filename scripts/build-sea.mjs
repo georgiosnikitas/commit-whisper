@@ -135,4 +135,5 @@ if (!isWindows) {
 }
 
 console.log(`\n✓ SEA binary built: ${binaryPath}`);
-console.log(`  Smoke-test it:  ${isWindows ? binaryPath : `./${binaryPath}`} --version`);
+const smokeBinary = isWindows ? binaryPath : `./${binaryPath}`;
+console.log(`  Smoke-test it:  ${smokeBinary} --version`);

@@ -15,7 +15,10 @@
 
 import { main } from "./cli/cli.js";
 
-main(process.argv.slice(2)).then(
+// NOSONAR: this SEA entry is bundled to CommonJS (a Node SEA `main` must be CJS, and
+// esbuild forbids top-level await in `cjs` output), so the promise chain is mandatory —
+// top-level await (rule S7785) is genuinely unavailable here.
+main(process.argv.slice(2)).then( // NOSONAR
   (code) => process.exit(code),
   () => process.exit(1),
 );

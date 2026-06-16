@@ -16,7 +16,7 @@ export type AiMode = "required" | "auto" | "off";
 export type Tier = "free" | "single-device" | "unlimited";
 
 /** ISO-8601 date/timestamp string. Branded later if stricter typing is wanted. */
-export type IsoDate = string;
+export type IsoDate = string; // NOSONAR: intentional domain contract type (the single ISO-8601 anchor), kept by design
 
 /** Which resolver layer supplied a given field (P7 provenance). */
 export type Source = "default" | "configFile" | "env" | "flag" | "interactive";
