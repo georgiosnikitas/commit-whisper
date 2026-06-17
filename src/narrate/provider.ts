@@ -52,7 +52,14 @@ export function resolveModel(config: NarrateConfig): LanguageModel {
       return createOpenAICompatible({ name: "openai-compatible", baseURL, apiKey: config.aiKey?.reveal() })(model);
     }
     case "ollama": {
-      const baseURL = `${cleanBaseUrl(config.llmBaseUrl) ?? OLLAMA_DEFAULT_BASE_URL}/v1`.replace(/(\/v1)+$/, "/v1");
+      // Append exactly one `/v1`, collapsing any the base already ends with so a
+      // user base of `…/v1` does not become `…/v1/v1` (which 404s at generation).
+      // Linear endsWith loop — avoids the super-linear `replace(/(\/v1)+$/)` (S5852).
+      let base = cleanBaseUrl(config.llmBaseUrl) ?? OLLAMA_DEFAULT_BASE_URL;
+      while (base.endsWith("/v1")) {
+        base = base.slice(0, -3);
+      }
+      const baseURL = `${base}/v1`;
       return createOpenAICompatible({ name: "ollama", baseURL })(model);
     }
     case undefined:
