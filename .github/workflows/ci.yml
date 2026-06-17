@@ -1,7 +1,9 @@
 # Continuous integration — runs the gate (typecheck · lint · test · build) on
 # every push and pull request to main. This is what the README "CI" badge
-# reflects. SonarCloud runs separately via Automatic Analysis (the GitHub App),
-# not from this workflow.
+# reflects. A SonarCloud (SonarQube Cloud) CI-based scan runs after the gate and
+# uploads coverage + analysis; it needs the SONAR_TOKEN secret and skips cleanly
+# without it (e.g. on fork PRs). Automatic Analysis is turned off so the two
+# analysis methods don't conflict.
 name: CI
 
 on:
@@ -19,10 +21,10 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
 
       - name: Set up an official Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
         with:
           node-version: 22
           cache: npm
@@ -41,3 +43,34 @@ jobs:
 
       - name: Build
         run: npm run build
+
+  sonarcloud:
+    name: SonarCloud
+    needs: gate
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    env:
+      # Exposed at job level so the step `if` can detect its absence (fork PRs).
+      SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+    steps:
+      - name: Checkout (full history improves blame + new-code detection)
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up an official Node.js
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Coverage (writes coverage/lcov.info for Sonar)
+        run: npm run coverage
+
+      - name: SonarQube Cloud scan
+        if: ${{ env.SONAR_TOKEN != '' }}
+        uses: SonarSource/sonarqube-scan-action@713881670b6b3676cda39549040e2d88c70d582e # v8.2.0
