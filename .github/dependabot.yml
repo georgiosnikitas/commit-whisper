@@ -1,0 +1,30 @@
+# Dependabot keeps dependencies current (https://docs.github.com/code-security/dependabot).
+# The GitHub Actions updater understands SHA-pinned `uses:` lines — it bumps both
+# the commit SHA and the trailing `# vX` comment when a new release ships, so the
+# workflows stay both immutable (security) and up to date (maintenance).
+version: 2
+updates:
+  # Keep the SHA-pinned actions in .github/workflows/* current.
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+    groups:
+      # One PR per week for all action bumps instead of one per action.
+      github-actions:
+        patterns:
+          - "*"
+
+  # Keep npm dependencies current (runtime + dev/build toolchain).
+  - package-ecosystem: npm
+    directory: /
+    schedule:
+      interval: weekly
+    open-pull-requests-limit: 10
+    groups:
+      # Batch low-risk dev-dependency bumps into a single PR.
+      dev-dependencies:
+        dependency-type: development
+        update-types:
+          - minor
+          - patch
