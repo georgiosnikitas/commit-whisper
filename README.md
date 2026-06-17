@@ -5,7 +5,7 @@
 [![Release](https://github.com/georgiosnikitas/commit-whisper/actions/workflows/release.yml/badge.svg?event=push)](https://github.com/georgiosnikitas/commit-whisper/actions/workflows/release.yml)
 [![npm](https://img.shields.io/npm/v/commit-whisper)](https://www.npmjs.com/package/commit-whisper)
 [![TypeScript](https://img.shields.io/badge/TypeScript-6.x-blue?logo=typescript)](https://www.typescriptlang.org/)
-[![License](https://img.shields.io/github/license/georgiosnikitas/commit-whisper)](LICENSE)
+[![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
 [![Buy Me a Coffee](https://img.shields.io/badge/Buy%20Me%20a%20Coffee-ffdd00?style=flat&logo=buy-me-a-coffee&logoColor=black)](https://buymeacoffee.com/georgiosnikitas)
 
 > 🕵️ **I know what you did last commit.**
