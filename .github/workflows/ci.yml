@@ -1,6 +1,7 @@
 # Continuous integration — runs the gate (typecheck · lint · test · build) on
-# every push and pull request to main, plus an optional SonarCloud scan. This is
-# what the README "CI" badge reflects.
+# every push and pull request to main. This is what the README "CI" badge
+# reflects. SonarCloud runs separately via Automatic Analysis (the GitHub App),
+# not from this workflow.
 name: CI
 
 on:
@@ -40,32 +41,3 @@ jobs:
 
       - name: Build
         run: npm run build
-
-  sonarcloud:
-    name: SonarCloud
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout (full history for accurate analysis)
-        uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-
-      - name: Set up an official Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: 22
-          cache: npm
-
-      - name: Install dependencies
-        run: npm ci
-
-      - name: Coverage (writes coverage/lcov.info for Sonar)
-        run: npm run coverage
-
-      # Skips cleanly (no failure) until the repo is imported into SonarCloud and
-      # a SONAR_TOKEN secret is added — so the gate stays green in the meantime.
-      - name: SonarCloud scan
-        if: ${{ env.SONAR_TOKEN != '' }}
-        uses: SonarSource/sonarqube-scan-action@fd88b7d7ccbaefd23d8f36f73b59db7a3d246602 # v6
-        env:
-          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
