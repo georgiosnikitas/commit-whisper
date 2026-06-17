@@ -26,6 +26,7 @@ import { createOpenAICompatible } from "@ai-sdk/openai-compatible";
 import type { LanguageModel } from "ai";
 
 import { NarrationError } from "../shared/errors.js";
+import { stripTrailingSlashes } from "../shared/url.js";
 import type { NarrateConfig } from "./narrate.port.js";
 
 /** The local Ollama endpoint the `ollama` provider defaults to (its OpenAI-compatible API is at `/v1`). */
@@ -100,7 +101,7 @@ function cleanBaseUrl(baseUrl: string | undefined): string | undefined {
   if (baseUrl === undefined) {
     return undefined;
   }
-  const trimmed = baseUrl.trim().replace(/\/+$/, "");
+  const trimmed = stripTrailingSlashes(baseUrl.trim());
   return trimmed === "" ? undefined : trimmed;
 }
 

@@ -218,7 +218,7 @@ export const ownershipByArea: MetricFn = (model) => {
 };
 
 /** Match a `Co-authored-by:` git trailer line (case-insensitive, line-anchored). */
-const CO_AUTHOR_TRAILER = /^[ \t]*co-authored-by:[ \t]*(.+?)[ \t]*$/gim;
+const CO_AUTHOR_TRAILER = /^[ \t]*co-authored-by:[ \t]*(.+)$/gim;
 
 /** Normalize a trailer to its identity key for distinct-counting (email if present, else the whole line). */
 function coAuthorKey(trailer: string): string {

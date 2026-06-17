@@ -13,6 +13,7 @@
  * the config-store. All I/O is injected so the suite never touches real disk.
  */
 
+import { randomBytes } from "node:crypto";
 import { join } from "node:path";
 import { mkdir, readFile, rename, unlink, writeFile } from "node:fs/promises";
 
@@ -167,5 +168,5 @@ export async function clearLicenseCache(
 
 /** A short random suffix for the temp file name (collision-avoidance, not security). */
 function randomSuffix(): string {
-  return Math.random().toString(36).slice(2, 10);
+  return randomBytes(6).toString("hex");
 }

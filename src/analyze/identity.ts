@@ -37,7 +37,7 @@ function nameEmailKey(name: string, email: string): string {
 }
 
 /** Match `Proper Name <proper@email>` / `<proper@email>` segments on a line. */
-const SEGMENT = /([^<>]*?)\s*<([^<>]+)>/g;
+const SEGMENT = /([^<>]*)<([^<>]+)>/g;
 
 interface Segment {
   name: string;
@@ -65,7 +65,7 @@ export function parseMailmap(text: string): MailmapIndex {
   const byNameEmail = new Map<string, CanonicalIdentity>();
 
   for (const rawLine of text.split(/\r?\n/)) {
-    const line = rawLine.replace(/#.*$/, "").trim();
+    const line = rawLine.replace(/#.*/, "").trim();
     if (line === "") {
       continue;
     }

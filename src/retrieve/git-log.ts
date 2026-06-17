@@ -42,10 +42,17 @@ function resolveNumstatPath(raw: string): string {
   if (!raw.includes(" => ")) {
     return raw;
   }
-  const brace = /^(.*)\{(.*) => (.*)\}(.*)$/.exec(raw);
-  if (brace) {
-    const [, prefix, , next, suffix] = brace;
-    return `${prefix}${next}${suffix}`.replace(/\/{2,}/g, "/");
+  const open = raw.indexOf("{");
+  const close = open === -1 ? -1 : raw.indexOf("}", open + 1);
+  if (open !== -1 && close !== -1) {
+    const inside = raw.slice(open + 1, close);
+    const arrow = inside.indexOf(" => ");
+    if (arrow !== -1) {
+      const prefix = raw.slice(0, open);
+      const next = inside.slice(arrow + " => ".length);
+      const suffix = raw.slice(close + 1);
+      return `${prefix}${next}${suffix}`.replace(/\/{2,}/g, "/");
+    }
   }
   return raw.slice(raw.indexOf(" => ") + " => ".length);
 }

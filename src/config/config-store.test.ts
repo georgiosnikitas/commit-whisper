@@ -68,7 +68,7 @@ describe("parseSettings", () => {
     const json = JSON.stringify({
       provider: "openai",
       llmModel: "gpt-4o",
-      llmBaseUrl: "http://x",
+      llmBaseUrl: "https://x",
       outputFormats: ["html", "json"],
       timezone: "Europe/Athens",
       maxCommits: 250,
@@ -76,7 +76,7 @@ describe("parseSettings", () => {
     expect(parseSettings(json)).toEqual({
       provider: "openai",
       llmModel: "gpt-4o",
-      llmBaseUrl: "http://x",
+      llmBaseUrl: "https://x",
       outputFormats: ["html", "json"],
       timezone: "Europe/Athens",
       maxCommits: 250,

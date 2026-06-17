@@ -735,7 +735,7 @@ describe("runSettings via runLaunchpad (Story 6.5)", () => {
     const sel = scriptedSelect(["settings", "quit"]);
     const save = captureSave();
     // ollama → texts: model, baseUrl, tz, limit ; selects: provider, format
-    const scripted = scriptedPrompts({ texts: ["", "http://x", "", ""], selects: ["ollama", "terminal"] });
+    const scripted = scriptedPrompts({ texts: ["", "https://x", "", ""], selects: ["ollama", "terminal"] });
     const code = await runLaunchpad({
       state: FREE_CONFIGURED,
       helpText: "HELP",

@@ -72,7 +72,7 @@ describe("finalizeRunConfig — required-missing throws typed error (never a pro
     ).toThrow(MissingRequiredConfigError);
     expect(() =>
       finalizeRunConfig(
-        base({ aiMode: "auto", provider: "ollama", llmModel: "llama3", llmBaseUrl: "http://x" }),
+        base({ aiMode: "auto", provider: "ollama", llmModel: "llama3", llmBaseUrl: "https://x" }),
         {},
         ctx,
       ),

@@ -14,6 +14,8 @@
 
 import type { NarrateConfig } from "./narrate.port.js";
 
+import { stripTrailingSlashes } from "../shared/url.js";
+
 export type PreflightResult = { reachable: true } | { reachable: false; reason: string };
 
 export interface PreflightDeps {
@@ -62,7 +64,7 @@ function cleanBaseUrl(baseUrl: string | undefined): string | undefined {
   if (baseUrl === undefined) {
     return undefined;
   }
-  const trimmed = baseUrl.trim().replace(/\/+$/, "");
+  const trimmed = stripTrailingSlashes(baseUrl.trim());
   return trimmed === "" ? undefined : trimmed;
 }
 

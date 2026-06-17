@@ -15,6 +15,8 @@
  * any returned error message.
  */
 
+import { stripTrailingSlashes } from "../shared/url.js";
+
 const DEFAULT_API_BASE = "https://api.lemonsqueezy.com";
 const DEFAULT_TIMEOUT_MS = 8000;
 
@@ -101,7 +103,7 @@ function mapValidate(json: LemonSqueezyValidateResponse): LicenseValidation {
 function resolveClient(deps: ClientDeps): { doFetch: typeof fetch; apiBase: string; timeoutMs: number } {
   return {
     doFetch: deps.fetchImpl ?? fetch,
-    apiBase: (deps.apiBase ?? DEFAULT_API_BASE).replace(/\/+$/, ""),
+    apiBase: stripTrailingSlashes(deps.apiBase ?? DEFAULT_API_BASE),
     timeoutMs: deps.timeoutMs ?? DEFAULT_TIMEOUT_MS,
   };
 }

@@ -23,10 +23,14 @@ function cfg(repoTarget: string): RunConfig {
 
 /** Run git in `cwd` with an explicit local identity (no global config / env needed). */
 function git(cwd: string, ...args: string[]): string {
-  return execFileSync("git", ["-c", "user.name=Test", "-c", "user.email=test@example.com", ...args], {
-    cwd,
-    encoding: "utf8",
-  });
+  return execFileSync(
+    "git",
+    ["-c", "user.name=Test", "-c", "user.email=test@example.com", "-c", "commit.gpgsign=false", ...args],
+    {
+      cwd,
+      encoding: "utf8",
+    },
+  );
 }
 
 const tempDirs: string[] = [];

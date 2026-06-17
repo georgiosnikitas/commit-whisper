@@ -40,7 +40,7 @@ describe("resolveModel — every provider resolves to a LanguageModel (no networ
 
   it("ollama → a model with a custom base URL", () => {
     expect(
-      resolveModel(cfg({ provider: "ollama", llmModel: "llama3", aiKey: undefined, llmBaseUrl: "http://ollama.local:11434/" })),
+      resolveModel(cfg({ provider: "ollama", llmModel: "llama3", aiKey: undefined, llmBaseUrl: "https://ollama.local:11434/" })),
     ).toBeDefined();
   });
 });
