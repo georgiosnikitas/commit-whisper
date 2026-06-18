@@ -217,7 +217,7 @@ export interface LaunchpadDeps {
 export const LAUNCHPAD_TAGLINE = "commit-whisper · 🕵️  I know what you did last commit";
 
 /** The warm sign-off printed above the cheatsheet on Esc/Quit. */
-export const QUIT_MESSAGE = "Case closed. 🕵️  Until your next commit — here's the cheatsheet for the road:";
+export const QUIT_MESSAGE = "Case closed. Until your next commit — here's the cheatsheet for the road 🛣️";
 
 /** The short, copyable cheatsheet printed on Esc/Quit (AC4). */
 export const FLAGS_CHEATSHEET = [
