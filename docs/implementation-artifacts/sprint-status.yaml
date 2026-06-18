@@ -93,6 +93,8 @@ development_status:
   4-3-markdown-renderer: done
   4-4-json-output-and-multi-select-formats: done
   4-5-html-auto-open-with-no-open: done
+  4-6-html-renderer-inline-svg-visual-rebuild: done
+  4-7-report-json-provenance-metadata: done
   epic-4-retrospective: optional
 
   # ═══════════════════════════════════════════════════════════════

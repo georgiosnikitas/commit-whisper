@@ -960,6 +960,141 @@ for John: the Report JSON now makes `narrative` **optional** and adds a top-leve
 marker (PRD FR-12 may want to mirror the optionality + marker); `schemaVersion` stays `1.0.0`,
 pinned pre-implementation.
 
+## ADRs — HTML Renderer Inline-SVG Rebuild (2026-06-18)
+
+Four decisions taken while building the HTML report renderer (Stories 4.1–4.2) that **deviate
+from I1 as originally locked**. Recorded here, in the dated-decision-pass family, so the
+architecture and the shipped renderer stop drifting. Two **extend** I1 in its own spirit (the
+inline-SVG engine, the second per-group chart), one **reverses** a locked leanness call (the
+inlined web font), and one **relaxes** a Story-4.2 acceptance criterion (progressive disclosure).
+The first was pre-approved in the Story 4.2 *ADR deviation* note (2026-06-14) and is **promoted to
+the architecture record** here; the other three are new.
+
+**What did NOT change — the load-bearing invariants (stated so reviewers can confirm at a
+glance):** the renderer is still a pure `Report → string` function (no clock, no random, no I/O;
+SVG coordinates rounded so output is **byte-stable** and Node-snapshot-testable); still
+**self-contained** (no `<link>`, no `<script src>`, no CDN, no `@import`, no network); still
+HTML-escapes **every** interpolated value at the render boundary (OWASP A03 / stored-XSS into a
+shareable artifact); still meets the **WCAG 2.2 AA floor** (semantic landmarks, `role="img"` +
+`aria-label` on every chart, a mandatory `<table>` data-table fallback, a working no-JS path); and
+still lives inside the **Rail (a)** ~1 MB weight budget. The hexagonal boundary, frozen
+`RunConfig`, stateless retrieval, and the showpiece-vs-substrate branch (C3 / I1) are untouched.
+
+### ADR H1 — Inline-SVG chart engine supersedes Chart.js (extends I1)
+
+- **Context.** I1 locked **Chart.js 4.5.1 (canvas, animations off)** plus a data-table fallback,
+  with **Rails (a)/(b)** built to cap how many live canvases the report inlines. A canvas renders
+  only in a browser, so it is **neither deterministic nor snapshot-testable in Node** — the
+  determinism posture every other render surface holds.
+- **Decision.** Replace Chart.js wholesale with a **pure inline-SVG chart engine**
+  (`render/html/svg.ts`): each chart is a deterministic `data → SVG string` transform — `svgLine`,
+  `svgSparkline`, `svgBars`, `svgHBars`, `svgGauge`, `svgRadar` (plus the two new primitives in ADR
+  H2). The charts draw **real axes**, not decorative shapes: value gridlines + tick labels via a
+  **"nice tick" 1/2/5 × 10ⁿ** algorithm (`niceStep` / `valueTicks`), category/month x-axis labels
+  via an **ISO-key prettifier** (`tickLabel`: `2026-03` → `Mar`, `…-W12` → `W12`, path → basename),
+  and component labels at each radar axis tip.
+- **Rationale.** Determinism + Node snapshot-testability (no browser, no canvas, no DOM);
+  self-containment with **zero new dependencies** and **no ~150–210 KB runtime to inline**; a native
+  **no-JS floor** (inline SVG + `<details>` tables need no script to display). This is **Rails
+  (a)/(b) taken to their conclusion** — they already pushed everything except a few canvases toward
+  inline SVG; H1 removes the last canvases too.
+- **Consequences.** Charts draw in a uniform-scaled coordinate space
+  (`preserveAspectRatio="xMidYMid meet"`) so text stays crisp at any width; coordinates are rounded
+  (2 dp) and all values finite-guarded (`safe`) against `NaN` / `±Infinity`. **Rail (b)** (the
+  live-canvas cap) is now **moot** — there are no canvases. The accessible contract is **unchanged
+  and universal**: every chart keeps `role="img"` + `aria-label` + a mandatory `<table>` fallback.
+  *(Internal staleness to sweep later: the I1 prose above and a header comment in `charts.ts` still
+  say "Chart.js" / "fixed-type"; the shipped constants are authoritative.)*
+- **Status.** Accepted / Implemented — 2026-06-18. (Promotes the user-approved Story 4.2 *ADR
+  deviation*, 2026-06-14, to the architecture record.)
+
+### ADR H2 — Two charts per group + new SVG primitives (revises the fixed-type-per-group spec)
+
+- **Context.** The locked UX spec (*TEMPLATE-HTML*) gave each group **one fixed-type** overview
+  chart — and Group B specifically as a **"Pareto bar + bus-factor marker."**
+- **Decision.** Each group now renders a **primary + a secondary** chart (`GROUP_CHARTS` in
+  `render/html/charts.ts`), the secondary chosen by the **value-shape** available in the group — a
+  **radial gauge** for a 0–100 share/score, a **doughnut**, or a second series. This adds two
+  primitives to the engine: **`svgDonut`** (annular-sector `<path>` arcs + a side legend rendering
+  `label · share%`) and **`svgRadialGauge`** (a full-ring arc via `stroke-dasharray` + centre value
+  text). The shipped plan: A volume line + cadence bars · **B ownership doughnut + concentration
+  gauge** · C category bars + adherence gauge · D merge line + direct-to-default gauge · E hotspots
+  h-bars + churn-trend line · F component radar + hygiene gauge.
+- **Rationale.** A single chart underuses each group's data; a shape-matched second view
+  (composition as a doughnut, a bounded score as a gauge) reads better and reuses the same
+  deterministic engine at **no dependency cost**.
+- **Consequences — a deliberate divergence to reconcile.** **Group B is now an ownership doughnut +
+  a concentration gauge, not the locked "Pareto bar + bus-factor marker."** This is recorded as an
+  **explicit, intentional divergence**; the **bus-factor marker is not yet expressed** in the new
+  pairing. **Recommendation (next step, owned by the UX designer): update *TEMPLATE-HTML* to
+  match** — ratify the two-chart-per-group model and re-specify where the Group B bus-factor signal
+  lands. Each sub-chart keeps its own data-table fallback (still "never a chart alone").
+- **Status.** Accepted / Implemented — 2026-06-18. UX-spec reconciliation **pending** (Sally).
+
+### ADR H3 — Inlined Inter web font (reverses the system-font-stack leanness call)
+
+- **Context.** Story 4.1's shell deliberately shipped a **system-font stack** ("no web font —
+  self-contained + lean").
+- **Decision.** The report now **inlines the Inter latin subset** (weights 400/600/700/800) as
+  base64 **woff2 `data:` URIs**, isolated in `render/html/inter-font.ts` (`INTER_FONT_CSS`) and
+  injected once into the document `<style>`. The body `font-family` leads with `"Inter"` and keeps
+  the system stack as fallback.
+- **Rationale.** A consistent, designed typographic identity on every machine, independent of
+  installed fonts — the report is a **shareable artifact**, so its look should not vary host-to-host.
+- **Consequences — the weight tradeoff (flag this one).** This **reverses** the leanness decision and
+  adds **~130 KB** per report (sample reports land **~210–225 KB** — still **comfortably under the
+  Rail (a) ~1 MB budget**, nowhere near the ~2 MB regression flag). It remains **fully
+  self-contained** — no `<link>`, no http(s), no `@import` (verified by tests). The cost is
+  **isolated in one module**, so it is **trivially revertible** (drop the import → back to the
+  system stack) or **gateable behind a flag** if weight ever matters more than identity. **Of the
+  four, this is the decision most worth a second look on weight grounds.** *(Staleness to sweep: the
+  shell's "system font stack / no web font" comments now mis-describe the shipped behavior.)*
+- **Status.** Accepted / Implemented — 2026-06-18. **Revisit candidate** (weight vs. identity).
+
+### ADR H4 — Stat-card + always-open disclosure model (relaxes Story 4.2 AC3)
+
+- **Context.** I1 / Story 4.2 envisioned **chart-embedded collapsible cards** with **progressive
+  disclosure** — `watch` / `risk` cards expanded, **`ok` cards collapsed** (so calm survives ~30
+  metrics), a tiny inline script collapsing `ok` cards on load.
+- **Decision.** Metric cards are restructured into **clean stat cards** — title + health pill +
+  headline stat in the `<summary>`, with a **collapsible four-facet explanation** in the body — laid
+  out in a **responsive equal-height grid** (`repeat(auto-fit, minmax(260px, 1fr))`,
+  `align-items: stretch`). **Charts now live ONLY in the group-overview panel, not inside each
+  card.** All cards render **`<details open>` and stay expanded by default** (the reader may collapse
+  any card manually); the inline disclosure script no longer touches cards at all — it **only tucks
+  the chart data-table fallbacks** (`details.data-table` → `open = false`).
+- **Rationale.** Separating **evidence** (the group charts) from **explanation** (the stat cards)
+  makes each card scannable and uniform, and an equal-height grid reads calmer than a column of
+  variable-height chart cards. Keeping cards open by default makes the **no-JS and with-JS views
+  identical** (everything visible) — simpler to reason about and to test.
+- **Consequences.** **Story 4.2 AC3 is intentionally relaxed** from "`ok` collapsed / `watch` ·
+  `risk` expanded" to **"all cards expanded by default, manually collapsible."** The health band is
+  still shape-differentiated glyph + label (never color alone) and `not_available` cards still render
+  greyed with the "why." The no-JS guarantee is **strengthened** (the script now only *tucks* tables;
+  it never *hides* a card). The AC3 wording in the Story 4.2 file should be updated to read "expanded
+  by default, manually collapsible."
+- **Status.** Accepted / Implemented — 2026-06-18.
+
+**Open questions for the next steps:**
+
+- **UX designer (Sally) — *TEMPLATE-HTML*.** Ratify the **two-chart-per-group** model and resolve
+  the **Group B divergence**: where does the **bus-factor marker** live now that B is a doughnut +
+  concentration gauge (ADR H2)? Confirm the secondary-chart selection rule (gauge / doughnut /
+  second series) per group.
+- **PM (John) — provenance / masthead chips.** Still deferred: the masthead/footer **provenance
+  chips** (repo · branch · provider · timestamp · tier) and the Free-tier cap line need the
+  Report-JSON **metadata subtree** not yet in the schema. H3's typographic upgrade makes the masthead
+  more prominent, raising the priority of landing that metadata. (Unchanged by these ADRs, but
+  flagged.)
+- **Weight watch (architecture).** Re-confirm H3's font weight against the Rail (a) budget once
+  real-world reports (large repos, many metrics) are measured; keep the one-module isolation so a
+  flag-gate stays cheap.
+
+Source — the 2026-06-18 HTML-renderer inline-SVG rebuild (Stories 4.1–4.2 implementation; this
+pass touches **architecture only**). Grounded in `src/render/html/svg.ts`, `charts.ts`,
+`html-renderer.ts`, and `inter-font.ts`. Downstream ripples flagged for the UX designer
+(*TEMPLATE-HTML* chart spec) and the PM (provenance / masthead metadata).
+
 ## Implementation Patterns & Consistency Rules
 
 These rules exist so that multiple AI agents implementing different stories produce

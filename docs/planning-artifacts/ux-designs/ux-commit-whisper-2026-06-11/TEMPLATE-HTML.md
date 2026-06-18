@@ -2,7 +2,7 @@
 title: commit-whisper TEMPLATE-HTML
 status: draft
 created: 2026-06-12
-updated: 2026-06-13
+updated: 2026-06-18
 ---
 
 commit-whisper TEMPLATE-HTML
@@ -22,7 +22,7 @@ Sources
 - PRD FR-6 (charts per group), FR-7 (degrade per format), FR-8 (narrative + per-metric explanations), FR-12 (Report JSON), FR-13 (render formats).
 - DESIGN.md — color tokens, IBM Plex type scale, spacing rhythm, component names (`report-surface`, `metric-card`, `chart-panel`), chart-per-group mapping.
 - EXPERIENCE.md — Component Patterns (Metric section, Chart block, Coaching report), Accessibility Floor, HTML navigation.
-- Architecture I1 — Chart.js 4.5.1 (animations off) + mandatory accessible data-table fallback, typed template literals, self-contained inlining.
+- Architecture I1 + ADRs H1–H4 (2026-06-18) — a pure **inline-SVG** chart engine (NOT Chart.js) with real axes + mandatory accessible data-table fallback, typed template literals, self-contained inlining, and an inlined Inter web font.
 
 Governing intent
 ----------------
@@ -56,51 +56,53 @@ Self-containment & no-JS (hard guarantees)
 
 - **Single file, no network.** All CSS, fonts, scripts, and chart code are inlined; opening
   the file in a browser requires no CDN, server, or companion assets.
-- **No-JS degradation.** Every chart (group-level and per-metric) has an accessible data
-  table as its fallback. With JS enabled the table is a collapsed disclosure beneath the
-  chart; with JS disabled the canvas is absent and the **table renders open by default**, so
-  no data is ever lost.
+- **No-JS degradation.** Charts are inline SVG (ADR H1), so they render with no JS at all; each
+  group-overview chart still carries an accessible data table as its fallback. With JS the table
+  is a collapsed disclosure beneath the chart; with JS disabled the **table renders open by
+  default**, so screen-reader and no-JS readers never lose the data.
 - **Color scheme without script.** Dark-first, honoring `prefers-color-scheme` via inlined
   CSS media queries (DESIGN.md ships both palettes). No manual toggle (a toggle would need
   JS and weaken the no-JS guarantee).
-- **Reduced motion.** Chart animations are disabled (architecture I1); nothing essential
-  depends on motion.
+- **Reduced motion.** Charts are static inline SVG with no animation (ADR H1); nothing essential
+  depends on motion. A `prefers-reduced-motion` query also disables UI transitions.
 
 File-weight discipline (the cost of "both")
 -------------------------------------------
 
-Because the report carries a group-overview chart **and** per-metric visuals, weight is
-managed deliberately:
+Because the report inlines its charts and an Inter web font, weight is managed deliberately:
 
-- **Right-size every per-metric visual by shape** (see table below) — most metrics get a
-  lightweight inline **sparkline or bold stat**, not a full canvas. Only genuinely
-  distributional/time-series metrics get a full chart.
-- **One charting runtime, inlined once**, shared by every chart instance — never duplicated
-  per chart.
-- A pure-scalar metric (e.g. bus factor, project age) renders as a **bold number with no
-  chart at all**, by design.
-- **Budget the self-contained file to ≤~1 MB**, flagging anything approaching 2 MB. The
-  mandatory accessibility data-table fallback effectively **doubles the data payload** (every
-  chart's series is serialized a second time as a table), so the shape-based right-sizing
-  above plus a hard cap on live canvas instances (group overviews and genuinely
-  distributional/time-series metrics only — everything else is inline SVG/stat) are what keep
-  the file lean.
+- **Charts live in the group overview only** (two per group — a primary + a secondary). Metric
+  cards no longer embed a chart; each card shows a **headline stat** + its explanation, so the
+  page is not 30 canvases (ADR H4).
+- **Zero charting runtime.** Charts are pure inline SVG strings (ADR H1) — there is no Chart.js
+  (or any) library to inline; each chart is just markup.
+- A pure-scalar metric (e.g. bus factor, project age) renders as a **bold stat with no chart**,
+  by design.
+- **Inlined Inter font (~130 KB)** — the Inter latin subset (weights 400/600/700/800) ships as
+  base64 woff2 `data:` URIs (ADR H3). This is the single largest payload; it is isolated in one
+  module and is revertible to a system-font stack if the budget tightens.
+- **Budget the self-contained file to ≤~1 MB**, flagging anything approaching 2 MB. The mandatory
+  accessibility data-table fallback serializes each chart's series a second time as a table; with
+  charts confined to the group overviews and the font as the main fixed cost, a full report
+  sample lands ~210–225 KB — comfortably inside budget.
 
 Progressive disclosure (calm at scale)
 --------------------------------------
 
-Thirty per-metric cards plus six group charts is calm in *palette* but not automatically calm
-in *volume*. Progressive disclosure keeps attention on what matters:
+Every metric card is a native `<details>` disclosure. Per ADR H4, the default posture changed
+from "collapse the healthy majority" to **all cards expanded by default**:
 
-- **`risk` and `watch` cards are expanded by default** — the reader sees the full four-facet
-  explanation for everything that needs attention, with no click.
-- **`ok` cards collapse to a one-line summary** (title · status · value · its visual) and
-  expand on demand, so the healthy majority stays present but quiet.
-- **No-JS degradation:** with JavaScript disabled, *every* card renders fully expanded
-  (collapsing needs JS), so nothing is ever hidden behind a control that can't be operated.
+- **All cards render expanded by default** — the reader sees every card's headline stat and its
+  four-facet explanation with no click. `risk` / `watch` cards still carry a coloured left edge
+  so the eye is drawn to them.
+- **The reader can collapse any card manually** (it is a `<details>`), per-card — useful for
+  muting the healthy cards once they have been read.
+- **No-JS degradation:** with JavaScript disabled nothing changes — every card is already
+  `<details open>`. The only inline script tucks each chart's data-table behind its "Show data
+  table" toggle; with JS off those tables render open too, so no data is ever lost.
 
-This protects the "calm" promise at ~30 metrics and focuses the eye on the few cards that
-carry the story's tension.
+This trades the earlier auto-collapse for predictability — nothing is hidden on load — while
+keeping manual collapse for readers who want to quiet the healthy cards.
 
 Page skeleton (seven bands)
 ---------------------------
@@ -112,7 +114,7 @@ Page skeleton (seven bands)
 ③ TOC             Summary · Explanation · Coaching · A B C D E F   (sticky on wide screens)
 ④ EXPLANATION     AI Narrative — plain-language interpretation.
 ⑤ COACHING        AI Narrative — intro → themed prioritized chapters → closing summary.
-⑥ METRIC GROUPS   A–F: each = heading → group overview chart → per-metric cards.
+⑥ METRIC GROUPS   A–F: each = heading → two-chart group overview → stat cards (one per metric).
 ⑦ FOOTER          Generated by commit-whisper vX · schemaVersion 1.0.0 ·
                   provider/model · timestamp · Buy Me a Coffee (Free tier only).
 ```
@@ -138,65 +140,75 @@ Every band has a stable `id` anchor; the TOC and browser search jump to them.
 
 ### ⑥ Metric group — the repeating unit
 
-Each group: a heading + one-line description, the **group overview chart** (its locked
-signature type), then one **metric card per metric**, each card carrying its own
-right-sized visual.
+Each group: a heading (with a `Group X` kicker) + one-line description, a **two-chart group
+overview** (a primary chart + a secondary gauge/doughnut/series, ADR H2), then one **stat card
+per metric** in a responsive, equal-height grid. The cards no longer embed a chart — the visuals
+live in the overview; each card carries a headline stat + its four-facet explanation.
 
 ```
   ══ B · Contribution & Ownership ════════════════════════════════
   How the work is distributed across the team.
 
-  ┌─ chart-panel · group overview ───────────────────────────┐
-  │   [ Pareto bar + bus-factor marker ]                      │
-  │   ▸ Show data table                                       │
+  ┌─ chart-panel · group overview (two charts) ──────────────┐
+  │  Ownership spread by area     Contribution concentration  │
+  │  [ doughnut + legend ]        [ radial gauge · 41% ]       │
+  │  ▸ Show data table            ▸ Show data table           │
   └────────────────────────────────────────────────────────────┘
 
-  ┌─ metric-card ────────────────────────────────────────────┐
-  │  Contribution distribution                         ● ok   │
-  │  ┌ visual ─────────────┐                                  │
-  │  │ [ bar / histogram ] │   top 3 authors = 68% of commits │
-  │  └─────────────────────┘                                  │
-  │  What it means      Commits cluster on a few authors…     │
-  │  Strengths          Clear primary maintainers…            │
-  │  Needs improvement  Review load is concentrated…          │
-  │  Suggestions        Rotate review duty; pair on…          │
-  │  ▸ Show data table                                        │
+  ┌─ cards · responsive grid, equal height, expanded by default ─┐
+  │ ┌ metric-card ───────────────┐ ┌ metric-card ────────────┐  │
+  │ │ Contribution concentration │ │ Bus factor              │  │
+  │ │                 ● ok   41% │ │              ● ok    3  │  │
+  │ │ What it means   …          │ │ What it means   …       │  │
+  │ │ Strengths       …          │ │ Strengths       …       │  │
+  │ │ Needs improvement …        │ │ Needs improvement …     │  │
+  │ │ Suggestions     …          │ │ Suggestions     …       │  │
+  │ └────────────────────────────┘ └─────────────────────────┘  │
   └────────────────────────────────────────────────────────────┘
 
-  ┌─ metric-card ────────────────────────────────────────────┐
-  │  Bus factor                                        ▲ risk │
-  │  ◼ 2          (pure scalar — bold stat, no chart)         │
-  │  What it means      Two people hold most knowledge…       │
-  │  Strengths          —                                     │
-  │  Needs improvement  Knowledge concentration is a risk…    │
-  │  Suggestions        Document the auth module; pair…       │
-  └────────────────────────────────────────────────────────────┘
+  (Card summary = title · health band · headline stat; the four facets sit in the
+   body, expanded by default; the reader can collapse any card. Bus factor is a
+   stat card with a health band — the old Pareto bus-factor marker, promoted.)
+
 
   … one card per metric in the group …
 ```
 
-**Group overview charts** keep their locked DESIGN.md signatures:
+**Group overview — two charts per group (ADR H2).** Each group renders a **primary** chart plus a
+**secondary** chart (a radial gauge for a 0–100 share/score, a doughnut for a composition, or a
+second series), chosen from the group's metrics by value-shape:
 
-| Group | Overview chart |
-| --- | --- |
-| A — Activity & Cadence | Multi-series line (commits & churn over time) |
-| B — Contribution & Ownership | Pareto bar + bus-factor marker |
-| C — Commit Message Quality | Stacked bar of message-quality categories |
-| D — Branching & Merge Structure | Branch/merge timeline + merge-density bars |
-| E — Code Churn & Hotspots | Horizontal bar (hotspots) + churn trend line |
-| F — Repository Health Signals | Radar of component scores + overall-score gauge |
-
-### Per-metric visual — by shape
-
-Every metric card gets a visual *sized to the metric's shape*, so the report is rich without
-30 heavy canvases:
-
-| Metric shape | Per-metric visual | Examples |
+| Group | Primary chart | Secondary chart |
 | --- | --- | --- |
-| Time-series | small line / area chart | commit volume over time, churn over time |
-| Distribution | small bar / histogram | commit-size distribution, message-length distribution, contribution share |
-| Scalar within a healthy range | sparkline or mini-gauge + the number | hygiene score, Conventional-Commits %, add/delete ratio |
-| Pure scalar | bold stat, **no chart** | bus factor, project age, contributor count |
+| A — Activity & Cadence | Commit-volume line | Weekly-cadence bars |
+| B — Contribution & Ownership | Ownership **doughnut** (by area) | Contribution-concentration gauge |
+| C — Commit Message Quality | Message-category bars | Conventional-Commits adherence gauge |
+| D — Branching & Merge Structure | Merge-cadence line | Direct-to-default gauge |
+| E — Code Churn & Hotspots | Hotspots horizontal bars | Churn-trend line |
+| F — Repository Health Signals | Component-score radar | Overall hygiene-score gauge |
+
+**Group B's bus-factor signal moved (resolving the open question).** The locked spec drew a
+*bus-factor marker* on the Pareto bar; Group B's primary is now an ownership **doughnut**, which
+has no bar to mark. The bus-factor signal is therefore promoted to a **first-class stat card**
+(`Bus factor · ● ok · 3`) with its own shape-differentiated health band — clearer than a chart
+annotation, and consistent with Group F's `Knowledge-concentration risk` gauge. No signal is
+lost; it simply reads as a card, not an overlay.
+
+### Metric card headline — by shape
+
+Charts live in the **group overview**, not in the cards (ADR H4). Each card instead shows a single
+**headline stat** derived from the metric's value, so the eye gets the number first and the
+explanation on read:
+
+| Metric shape | Card headline | Examples |
+| --- | --- | --- |
+| Scalar within a healthy range | the number, with `%` for a share/score | adherence 82%, hygiene 81%, direct-to-default 34% |
+| Pure scalar | the bold number | bus factor 3, active days 214 |
+| Single-field object | the primary field (`total` / `score` / `busFactor` / count) | commit volume 765 |
+| Distribution / time-series | **no headline stat** — the data is in the group overview chart | message categories, ownership spread, churn trend |
+
+A metric with no clean scalar simply shows title + health band + its four-facet explanation; its
+shape is carried by the group overview chart above the cards.
 
 ### Metric card — uniform skeleton
 
@@ -206,10 +218,11 @@ Every metric card gets a visual *sized to the metric's shape*, so the report is 
   greyed `○` n/a — always with its text label alongside. The band is **derived at render**
   from the metric's status/value against the thresholds owned by PRD §4.2 (the metric
   catalog); it is not stored in the Report JSON.
-- **Default disclosure by status:** `risk` and `watch` cards render expanded; `ok` cards
-  collapse to a one-line summary the reader can expand (with JS off, all cards are expanded).
-- A **`not_available`** metric still renders a card — greyed, with its visual omitted and
-  only the "why" shown in *What it means* (FR-8 covers the full catalog, no silent gaps).
+- **Disclosure:** every card is a `<details>` rendered **expanded by default** (ADR H4); the
+  reader may collapse any card manually. `risk` / `watch` cards carry a coloured left edge to
+  draw the eye. With JS off nothing changes — all cards are already open.
+- A **`not_available`** metric still renders a card — greyed (`○ n/a`), with no headline stat and
+  the "why" shown as the reason + in *What it means* (FR-8 covers the full catalog, no silent gaps).
 - Manager-facing framing stays **team-level**, never per-developer ranking (Group F especially).
 
 ### ⑤ Coaching report
@@ -302,16 +315,16 @@ Navigation & accessibility
 Open deltas (flagged for PRD / architecture reconciliation)
 -----------------------------------------------------------
 
-1. **Per-metric visuals are NEW and revise FR-6.** FR-6 locks *one chart per group* (six
-   charts). This template keeps those six **group overview charts** *and adds* a right-sized
-   per-metric visual to every metric card (~24–30 additional visuals, mostly lightweight
-   sparklines/stats). → John (FR-6, FR-13), Winston (architecture I1 — Chart.js inlining,
-   self-contained file-weight), DESIGN.md (extend the chart-mapping table with the
-   per-metric visual-by-shape model).
-2. **File-weight risk on the self-contained guarantee.** "Both" (group + per-metric) is the
-   heaviest option for a single inlined file; the shape-based right-sizing is the mitigation,
-   but Winston should confirm it against the self-contained/offline NFR and the SEA-binary
-   asset story. → Winston.
+1. **Charts revise FR-6 — now TWO per group, none per card (ADR H2/H4).** FR-6 locks *one chart
+   per group* (six charts). This template now renders **two charts per group** (a primary + a
+   secondary gauge/doughnut/series) — twelve overview charts — and **no per-metric charts** (each
+   card is a stat + explanation). → John (FR-6, FR-13), Winston (ADR H1–H4 recorded), DESIGN.md
+   (update the chart-mapping table to the primary/secondary model + the Group B doughnut).
+2. **File-weight: the inlined Inter font is now the main cost (ADR H3).** With charts confined to
+   the group overviews and zero charting runtime, the ~130 KB inlined font is the largest fixed
+   payload (sample ~210–225 KB, under the ~1 MB budget). Confirm against the self-contained/offline
+   NFR and the SEA-binary asset story; the font is isolated and revertible/flag-gateable. Note the
+   implemented font is **Inter**, not DESIGN.md's IBM Plex — reconcile in DESIGN.md. → Winston, Sally.
 3. **Status dots / health bands** are **shape-differentiated** (`●` ok / `◐` watch / `▲` risk
    / greyed `○` n/a, never color alone) and are a *derived presentational layer* over the
    `analysis` subtree's per-metric envelope `{id,group,title,status,value?,reason?}`: the band

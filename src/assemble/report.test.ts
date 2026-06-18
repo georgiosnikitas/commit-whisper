@@ -1,7 +1,7 @@
 import { describe, it, expect } from "vitest";
 
 import { assembleReport, parseReport, reportFromOutcome } from "./report.js";
-import { SCHEMA_VERSION } from "./report-schema.js";
+import { SCHEMA_VERSION, type ReportProvenance } from "./report-schema.js";
 import type { Analysis } from "../analyze/engine.js";
 import type { Narrative, NarrateOutcome } from "../narrate/narrate.port.js";
 
@@ -16,6 +16,14 @@ const NARRATIVE: Narrative = {
   summary: { headline: "Steady.", overview: "Two commits.", keyFindings: ["Low volume"] },
   explanation: { paragraphs: ["Low but consistent activity."] },
   coaching: { introduction: "A short plan.", chapters: [{ theme: "Cadence", steps: ["Commit smaller"] }], closingSummary: "Start with cadence." },
+};
+
+const PROVENANCE: ReportProvenance = {
+  repo: { name: "payments-api", target: "https://github.com/acme/payments-api", source: "remote", branch: "main" },
+  scale: { totalCommits: 1204, analyzedCommits: 100, contributors: 87 },
+  ai: { provider: "anthropic", model: "claude-sonnet-4" },
+  run: { generatedAt: "2026-06-12T00:00:00Z", toolVersion: "1.0.8" },
+  entitlement: { tier: "free", commitCap: 100 },
 };
 
 describe("assembleReport", () => {
@@ -107,6 +115,63 @@ describe("reportFromOutcome (intentional vs degraded)", () => {
     const report = reportFromOutcome(ANALYSIS, { kind: "degraded", reason: "provider down" });
     expect("narrative" in report).toBe(false);
     expect(report.degraded).toBe(true);
+  });
+});
+
+describe("provenance subtree (FR-17)", () => {
+  it("assembleReport attaches provenance via a defensive deep copy", () => {
+    const provenance = structuredClone(PROVENANCE);
+    const report = assembleReport({ analysis: ANALYSIS, narrative: NARRATIVE, degraded: false, provenance });
+    expect(report.provenance).toEqual(PROVENANCE);
+    expect(report.provenance).not.toBe(provenance);
+    // A later mutation of the caller's provenance cannot poison the assembled report.
+    if (provenance.repo) {
+      provenance.repo.name = "MUTATED";
+    }
+    expect(report.provenance?.repo?.name).toBe("payments-api");
+  });
+
+  it("omits provenance entirely when none is supplied (back-compat)", () => {
+    const report = assembleReport({ analysis: ANALYSIS, narrative: NARRATIVE, degraded: false });
+    expect("provenance" in report).toBe(false);
+  });
+
+  it("narrated → keeps the ai field (provider/model recorded only when narration ran)", () => {
+    const report = reportFromOutcome(ANALYSIS, { kind: "narrated", narrative: NARRATIVE }, PROVENANCE);
+    expect(report.provenance?.ai).toEqual({ provider: "anthropic", model: "claude-sonnet-4" });
+    expect(report.degraded).toBe(false);
+  });
+
+  it("skipped (--no-ai) → strips the ai field but keeps the rest", () => {
+    const report = reportFromOutcome(ANALYSIS, { kind: "skipped" }, PROVENANCE);
+    expect(report.provenance?.ai).toBeUndefined();
+    expect("ai" in (report.provenance ?? {})).toBe(false);
+    expect(report.provenance?.repo).toEqual(PROVENANCE.repo);
+    expect(report.provenance?.entitlement).toEqual(PROVENANCE.entitlement);
+  });
+
+  it("degraded (fail-open) → strips the ai field too", () => {
+    const report = reportFromOutcome(ANALYSIS, { kind: "degraded", reason: "provider down" }, PROVENANCE);
+    expect(report.provenance?.ai).toBeUndefined();
+    expect(report.provenance?.scale).toEqual(PROVENANCE.scale);
+    expect(report.degraded).toBe(true);
+  });
+
+  it("does not mutate the caller's provenance when stripping ai", () => {
+    const provenance = structuredClone(PROVENANCE);
+    reportFromOutcome(ANALYSIS, { kind: "skipped" }, provenance);
+    expect(provenance.ai).toEqual({ provider: "anthropic", model: "claude-sonnet-4" });
+  });
+
+  it("the analysis subtree is byte-identical WITH and WITHOUT provenance (determinism — provenance is run-metadata, not analysis)", () => {
+    const withProv = reportFromOutcome(ANALYSIS, { kind: "narrated", narrative: NARRATIVE }, PROVENANCE);
+    const withoutProv = reportFromOutcome(ANALYSIS, { kind: "narrated", narrative: NARRATIVE });
+    expect(JSON.stringify(withProv.analysis)).toBe(JSON.stringify(withoutProv.analysis));
+  });
+
+  it("round-trips a report carrying provenance through parseReport (strict read-back accepts what the assembler emits)", () => {
+    const report = reportFromOutcome(ANALYSIS, { kind: "narrated", narrative: NARRATIVE }, PROVENANCE);
+    expect(parseReport(JSON.stringify(report))).toEqual(report);
   });
 });
 

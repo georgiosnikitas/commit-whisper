@@ -31,9 +31,9 @@ describe("groupOverviewPanel", () => {
     expect(out).toContain("<table>");
   });
 
-  it("uses the group's fixed chart type (A → line, B → hbars, C → bars, F → radar)", () => {
+  it("uses the group's fixed chart type (A → line, B → donut, C → bars, F → radar)", () => {
     expect(groupOverviewPanel("A", [TIMESERIES])).toContain("chart-line");
-    expect(groupOverviewPanel("B", [{ ...DIST, group: "B" }])).toContain("chart-hbars");
+    expect(groupOverviewPanel("B", [{ ...DIST, group: "B" }])).toContain("chart-donut");
     expect(groupOverviewPanel("C", [{ ...DIST, group: "C" }])).toContain("chart-bars");
   });
 

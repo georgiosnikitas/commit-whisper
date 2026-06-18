@@ -1,6 +1,6 @@
 import { describe, it, expect } from "vitest";
 
-import { svgLine, svgBars, svgHBars, svgSparkline, svgGauge, svgRadar, type Point } from "./svg.js";
+import { svgLine, svgBars, svgHBars, svgSparkline, svgGauge, svgRadar, svgDonut, svgRadialGauge, type Point } from "./svg.js";
 
 const SERIES: Point[] = [
   { label: "2024-01", value: 3 },
@@ -17,6 +17,8 @@ describe("svg primitives", () => {
       svgSparkline(SERIES, "spark"),
       svgGauge(62, 100, "gauge"),
       svgRadar([...SERIES, { label: "d", value: 2 }], 10, "radar"),
+      svgDonut(SERIES, "donut"),
+      svgRadialGauge(41, 100, "rgauge"),
     ];
     for (const svg of fns) {
       expect(svg.startsWith("<svg")).toBe(true);
@@ -55,5 +57,21 @@ describe("svg primitives", () => {
     expect(svgGauge(200, 100, "g")).toContain('width="100"'); // over-max clamps to the track width
     expect(svgGauge(-5, 100, "g")).not.toMatch(/="-/); // negative clamps to 0 — no negative attribute value
     expect(svgGauge(-5, 100, "g")).toContain('class="gauge-fill" x="0" y="16" width="0"');
+  });
+
+  it("svgRadialGauge shows the value as % center text and clamps the arc", () => {
+    expect(svgRadialGauge(41, 100, "r")).toContain(">41%<");
+    expect(svgRadialGauge(200, 100, "r")).not.toContain("NaN");
+    expect(svgRadialGauge(-5, 100, "r")).not.toContain("NaN");
+    expect(svgRadialGauge(41, 100, "r")).toBe(svgRadialGauge(41, 100, "r")); // deterministic
+  });
+
+  it("svgDonut renders one segment per slice with a legend, and is safe for degenerate input", () => {
+    const donut = svgDonut(SERIES, "d");
+    expect((donut.match(/class="donut-seg/g) ?? [])).toHaveLength(SERIES.length);
+    expect(donut).toContain("donut-label");
+    expect(donut).not.toContain("NaN");
+    expect(svgDonut([], "d")).toContain("</svg>"); // empty → minimal valid svg
+    expect(svgDonut([{ label: "a", value: 0 }], "d")).not.toContain("NaN"); // zero total → no divide-by-zero
   });
 });

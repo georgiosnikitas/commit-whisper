@@ -20,6 +20,16 @@ import { SummarySchema, ExplanationSchema, CoachingSchema, MetricExplanationSche
 
 export const SCHEMA_VERSION = "1.0.0";
 
+/**
+ * The AI provider / license tier enums — the schema equivalents of `RunConfig`'s
+ * `Provider` / `Tier` string-literal unions (kept in lockstep with
+ * `config/run-config.ts`). Defined inline (house style; cf. `MetricSchema`'s
+ * group enum) rather than imported, so the read-back boundary owns its own closed
+ * vocabulary.
+ */
+const ProviderSchema = z.enum(["ollama", "openai", "gemini", "anthropic", "openai-compatible"]);
+const TierSchema = z.enum(["free", "single-device", "unlimited"]);
+
 /** A JSON-serializable value — the permissive shape a metric `value` may take. */
 const JsonValueSchema: z.ZodType<unknown> = z.lazy(() =>
   z.union([
@@ -77,16 +87,77 @@ export const NarrativeSchema = z
   })
   .strict();
 
+/**
+ * The Report-JSON `provenance` subtree (Story 4.7 — FR-17): an OPTIONAL third
+ * sibling of `analysis` and `narrative` carrying the run's contextual facts (repo
+ * identity, scale, AI provider/model, run timestamp/version, entitlement) so every
+ * renderer can display them without re-deriving them from the pipeline.
+ *
+ * Provenance is RUN METADATA, NOT ANALYSIS: the run-varying fields (the timestamp
+ * especially, and provider/model) live HERE so the byte-stable `analysis`
+ * trend-diff target stays clean — provenance is excluded from any analysis diff.
+ * Every group is independently optional and the whole subtree may be absent, so a
+ * Report assembled before this FR still validates and still renders. `.strict()`
+ * at every level (the C1 read-back boundary rejects unknown keys), and it NEVER
+ * carries a secret — a remote `repo.target` is credential-stripped upstream.
+ */
+export const ProvenanceSchema = z
+  .object({
+    repo: z
+      .object({
+        name: z.string(),
+        target: z.string(), // credential-stripped — never a token-bearing URL
+        source: z.enum(["local", "remote"]),
+        branch: z.string().optional(),
+      })
+      .strict()
+      .optional(),
+    scale: z
+      .object({
+        totalCommits: z.number().optional(),
+        analyzedCommits: z.number().optional(),
+        contributors: z.number().optional(),
+      })
+      .strict()
+      .optional(),
+    // Present ONLY when narration ran (absent on `--no-ai` / fail-open degraded),
+    // mirroring the `narrative`-subtree presence rule exactly.
+    ai: z
+      .object({
+        provider: ProviderSchema,
+        model: z.string(),
+      })
+      .strict()
+      .optional(),
+    run: z
+      .object({
+        generatedAt: z.string(), // == RunConfig.analysisTimestamp, never Date.now()
+        toolVersion: z.string(),
+      })
+      .strict()
+      .optional(),
+    entitlement: z
+      .object({
+        tier: TierSchema,
+        commitCap: z.number().optional(), // present only on the Free tier
+      })
+      .strict()
+      .optional(),
+  })
+  .strict();
+
 export const ReportSchema = z
   .object({
     schemaVersion: z.literal(SCHEMA_VERSION),
     degraded: z.boolean(),
     analysis: AnalysisSchema,
     narrative: NarrativeSchema.optional(),
+    provenance: ProvenanceSchema.optional(),
   })
   .strict();
 
 export type Report = z.infer<typeof ReportSchema>;
 export type ReportAnalysis = z.infer<typeof AnalysisSchema>;
 export type ReportNarrative = z.infer<typeof NarrativeSchema>;
+export type ReportProvenance = z.infer<typeof ProvenanceSchema>;
 export type MetricExplanation = z.infer<typeof MetricExplanationSchema>;

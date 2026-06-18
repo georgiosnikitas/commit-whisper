@@ -24,7 +24,8 @@
  */
 
 import { analyze } from "../analyze/engine.js";
-import { emptyMailmap } from "../analyze/identity.js";
+import { canonicalizeIdentity, emptyMailmap } from "../analyze/identity.js";
+import type { MailmapIndex } from "../analyze/identity.js";
 import type { AnalysisContext } from "../analyze/model.js";
 import { projectSelection, selectCommitsWithNotice } from "../analyze/select.js";
 import { reportFromOutcome } from "../assemble/report.js";
@@ -35,11 +36,13 @@ import { preflightProvider } from "../narrate/preflight.js";
 import { renderFormat } from "../render/render.js";
 import { planOutputs, type OutputTarget } from "../render/output-plan.js";
 import { createRetrieve } from "../retrieve/retrieve.js";
-import type { RetrievePort } from "../retrieve/retrieve.port.js";
+import type { RetrievePort, RawCommit } from "../retrieve/retrieve.port.js";
 import { NarrationError, RenderError } from "../shared/errors.js";
 import type { Secret } from "../shared/secret.js";
 import { ui as defaultUi, type Ui } from "../shared/ui.js";
 import { ExitCode } from "./exit-codes.js";
+import { buildProvenance } from "./provenance.js";
+import { VERSION } from "./version.js";
 import { defaultWriteFile, type WriteFile } from "./write-file.js";
 import { defaultOpenBrowser, type OpenBrowser } from "./open-browser.js";
 
@@ -114,7 +117,23 @@ export async function runPipeline(config: RunConfig, deps: RunDeps = {}): Promis
   ui.debug?.(`Analyzed ${selection.history.commits.length} commit(s); aiMode=${config.aiMode}.`);
 
   const outcome = await narrateOutcome(config, narrateConfig, analysis, narrate, preflightReason);
-  const report = reportFromOutcome(analysis, outcome);
+  // Build the FR-17 run-metadata subtree from facts the pipeline already holds.
+  // It is sourced once here and emitted verbatim in the JSON; the assembler keeps
+  // the `ai` field only when narration actually ran. Never touches `analysis`.
+  const provenance = buildProvenance({
+    target: config.repoTarget,
+    branch: config.branch,
+    totalCommits: history.commits.length,
+    analyzedCommits: selection.history.commits.length,
+    contributors: countContributors(selection.history.commits, ctx.mailmap),
+    provider: config.provider,
+    model: config.llmModel,
+    generatedAt: config.analysisTimestamp,
+    toolVersion: VERSION,
+    tier: config.entitlement.tier,
+    commitCap: config.entitlement.commitCap,
+  });
+  const report = reportFromOutcome(analysis, outcome, provenance);
 
   // — Render every selected format from the ONE report (no re-analysis, no second
   // LLM call) and emit each to its planned destination (Story 4.4). The default
@@ -249,4 +268,19 @@ async function narrateOutcome(
     return { kind: "degraded", reason: preflightReason };
   }
   return narrate(analysis, narrateConfig); // required-mode failure throws NarrationError (exit 6)
+}
+
+/**
+ * Count distinct contributors in the analyzed history for `provenance.scale`
+ * (FR-17). Uses the SAME `canonicalizeIdentity` + `.mailmap` the engine applies in
+ * `summarizeAuthors`, keyed identically (`email\x00name`), so the figure matches
+ * `analyze`'s author set exactly — never a divergent re-count.
+ */
+function countContributors(commits: readonly RawCommit[], mailmap: MailmapIndex): number {
+  const keys = new Set<string>();
+  for (const commit of commits) {
+    const identity = canonicalizeIdentity(commit.author, mailmap);
+    keys.add(`${identity.email}\x00${identity.name}`);
+  }
+  return keys.size;
 }

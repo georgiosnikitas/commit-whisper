@@ -2,7 +2,7 @@
 title: commit-whisper DESIGN
 status: draft
 created: 2026-06-11
-updated: 2026-06-13
+updated: 2026-06-18
 ---
 
 name: commit-whisper
@@ -153,6 +153,8 @@ Typography should communicate hierarchy fast.
 
 The browser companion report should mix prose and mono rhythmically: section headers in `display`, narrative in `body`, metric values and file paths in `mono`, and supporting labels in `meta`.
 
+> **Implemented (ADR H3):** the self-contained HTML report inlines **Inter** (latin subset, base64 woff2 `data:` URIs) as its shipped typeface so the single file needs no web-font network fetch. IBM Plex remains the aspirational brand face in the token table above, pending a decision to inline Plex; reconcile the token if Inter becomes the canonical choice.
+
 Layout & Spacing
 ----------------
 
@@ -194,27 +196,29 @@ Components
 - **Phase log** — A short, structured sequence of retrieve / analyze / narrate / render messages. It is the user's proof that the run is alive.
 - **Run summary block** — A compact terminal block with repo name, branch scope, output path(s), confidence level, and the top-line outcome.
 - **Report surface** — The full rendered report (HTML, Markdown, or terminal). In its **showpiece** form it carries the AI Narrative (Summary, Explanation, Coaching), per-metric explanations, and charts where the medium allows — the narrated hero is the product. When the `narrative` subtree is absent (a fail-open degrade or an intentional `--no-ai` metrics-only run) the same surface renders as a plainer **substrate**: the health-band cards, the group and per-metric visuals, and the metric data all stay, but the narrative bands and the hero insight do not — so the substrate can never masquerade as the showpiece.
-- **Metric card** — A consistent panel for a Metric: title, value(s), a right-sized **per-metric visual** (see the visual-by-shape table below), and a grounded four-facet explanation (what it means, good behaviours, what needs improvement, suggestions). A `not_available` Metric still shows a card explaining why, with its visual omitted. A status band carries the health signal by **shape, not color** — `●` ok, `◐` watch, `▲` risk, and a greyed `○` for `n/a` — always paired with its text label. To keep the report calm at ~30 metrics, cards practice **progressive disclosure**: `risk` and `watch` cards are expanded by default while `ok` cards collapse to a one-line summary the reader can expand (with JS off, all cards render expanded) — see TEMPLATE-HTML.md.
+- **Metric card** — A consistent panel for a Metric: title, a **headline stat**, and a grounded four-facet explanation (what it means, good behaviours, what needs improvement, suggestions). A `not_available` Metric still shows a card explaining why. A status band carries the health signal by **shape, not color** — `●` ok, `◐` watch, `▲` risk, and a greyed `○` for `n/a` — always paired with its text label. In the **HTML** report the visuals live in the two-chart group overview (ADR H2/H4) and each card shows a headline stat; **Markdown / Terminal** keep the right-sized per-metric visual (sparkline / stat — see the table below). Disclosure (HTML): every card is a `<details>` rendered **expanded by default** and the reader may collapse any card manually (`risk` / `watch` carry a coloured left edge). See TEMPLATE-HTML.md.
 - **Chart panel** — A data-dense, labeled panel paired with its Metric Group's explanation; a chart never stands alone without text.
 - **Coaching chapter** — The structured improvement report: an introduction, themed chapters of prioritized steps, and a closing summary of top priorities.
 - **Confidence indicator** — Surfaces the run's self-assessed confidence as a **word** (`high` / `medium` / `low`), always shown and never carried by color or shape alone; when low, it names the concrete escalation (which provider/config to change). It deliberately does **not** use the status-band shapes — `●◐▲○` stays reserved for per-metric health, so the two scales never visually rhyme.
 - **Degrade banner** — The one deliberately loud element. It appears only when a run **fails open** (narration, grounding, or the provider failed *after* the metrics were computed): `⚠ Narrative unavailable — showing raw analysis`, set in the `warning` / `danger` register so it reads as a wound against the calm body, plus one actionable line (retry · check the provider · switch it in Settings). It sits at the very top of the rendered report, above the masthead, and is the first thing a reader meets. It is shown **only** in the degraded render — an intentional `--no-ai` metrics-only run is a clean success and carries no banner, only a quiet nudge — so the banner always means *something broke*, never *the narrative was skipped on purpose*.
 - **Support link** — The voluntary Buy Me a Coffee link, shown only when unlicensed and hidden once a license is active. It must be visible but never noisy, and it is distinct from **Buy / Restore license** (the browser hand-off to buy or recover a purchase) and from **Activate license** (the only in-app license-key entry).
 
-HTML chart mapping is fixed per Metric Group — each group carries a **group overview chart** of the signature type below, *and* each Metric within it carries its own right-sized per-metric visual:
+HTML chart mapping (implemented — ADR H1/H2): each Metric Group carries a **two-chart group overview** — a primary chart plus a secondary gauge/doughnut/series — rendered as deterministic **inline SVG** (not Chart.js). The per-metric charts were consolidated into these overviews (ADR H4); cards show a headline stat.
 
-| Group | Group overview chart |
-| --- | --- |
-| A — Activity & Cadence | Multi-series line chart (commits and churn over time) |
-| B — Contribution & Ownership | Pareto bar chart with a bus-factor marker |
-| C — Commit Message Quality | Stacked bar chart of message-quality categories |
-| D — Branching & Merge Structure | Branch/merge timeline with merge-density bars |
-| E — Code Churn & Hotspots | Horizontal bar chart for hotspots plus a churn trend line |
-| F — Repository Health Signals | Radar chart for component scores plus an overall-score gauge |
+| Group | Primary chart | Secondary chart |
+| --- | --- | --- |
+| A — Activity & Cadence | Commit-volume line | Weekly-cadence bars |
+| B — Contribution & Ownership | Ownership **doughnut** (by area) | Contribution-concentration gauge |
+| C — Commit Message Quality | Message-category bars | Conventional-Commits adherence gauge |
+| D — Branching & Merge Structure | Merge-cadence line | Direct-to-default gauge |
+| E — Code Churn & Hotspots | Hotspots horizontal bars | Churn-trend line |
+| F — Repository Health Signals | Component-score radar | Overall hygiene-score gauge |
 
-Per-metric visuals are sized to each Metric’s shape so the self-contained file stays lean (full canvases reserved for group overviews and genuinely distributional/time-series metrics; everything else is a lightweight inline SVG/CSS sparkline or a bold stat):
+(Group B's bus-factor signal moved from a Pareto overlay to a first-class **stat card** with a health band — see TEMPLATE-HTML.md.)
 
-| Metric shape | Per-metric visual | Markdown / Terminal degradation |
+Per-metric shape model — in **HTML** these visuals were folded into the group-overview charts (ADR H4) and the card shows a headline stat; the shape model below now primarily drives the **Markdown / Terminal** degradation (and the HTML card's headline figure):
+
+| Metric shape | Rich visual (Markdown/Terminal) | Markdown / Terminal degradation |
 | --- | --- | --- |
 | Time-series | Small line / area chart | ASCII sparkline (`▁▂▄█▆▃`) |
 | Distribution | Small bar / histogram | Small text-bar table (`████ 68%`) |

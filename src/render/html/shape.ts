@@ -1,5 +1,5 @@
 /**
- * Value-shape detection + series extraction for the per-metric visuals (Story 4.2).
+ * Value-shape detection + series extraction for the inline-SVG charts (Story 4.2).
  *
  * The renderer receives arbitrary JSON metric values, so the right visual is
  * chosen by inspecting the value's STRUCTURE — deterministically and tolerantly

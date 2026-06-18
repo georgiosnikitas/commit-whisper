@@ -16,17 +16,19 @@
 
 import type { Analysis } from "../analyze/engine.js";
 import type { Narrative, NarrateOutcome } from "../narrate/narrate.port.js";
-import { ReportSchema, SCHEMA_VERSION, type Report } from "./report-schema.js";
+import { ReportSchema, SCHEMA_VERSION, type Report, type ReportProvenance } from "./report-schema.js";
 
 export interface AssembleInput {
   analysis: Analysis;
   narrative?: Narrative;
   degraded: boolean;
+  /** OPTIONAL run-metadata subtree (Story 4.7 — FR-17); attached verbatim, never welded into `analysis`. */
+  provenance?: ReportProvenance;
 }
 
 export function assembleReport(input: AssembleInput): Report {
   // Deep-copy so the report OWNS its data: a later mutation of the caller's
-  // `analysis`/`narrative` can never poison an already-assembled (byte-stable) report.
+  // `analysis`/`narrative`/`provenance` can never poison an already-assembled (byte-stable) report.
   const report: Report = {
     schemaVersion: SCHEMA_VERSION,
     degraded: input.degraded,
@@ -35,21 +37,38 @@ export function assembleReport(input: AssembleInput): Report {
   if (input.narrative !== undefined) {
     report.narrative = structuredClone(input.narrative);
   }
+  if (input.provenance !== undefined) {
+    report.provenance = structuredClone(input.provenance);
+  }
   return report;
 }
 
 /** Bridge a narrate outcome (Story 1.6) to a canonical Report (the CLI shell uses this in 1.8). */
-export function reportFromOutcome(analysis: Analysis, outcome: NarrateOutcome): Report {
+export function reportFromOutcome(analysis: Analysis, outcome: NarrateOutcome, provenance?: ReportProvenance): Report {
   switch (outcome.kind) {
     case "narrated":
-      return assembleReport({ analysis, narrative: outcome.narrative, degraded: false });
+      return assembleReport({ analysis, narrative: outcome.narrative, degraded: false, provenance });
     case "skipped":
-      return assembleReport({ analysis, degraded: false }); // intentional metrics-only
+      return assembleReport({ analysis, degraded: false, provenance: withoutAi(provenance) }); // intentional metrics-only
     case "degraded":
-      return assembleReport({ analysis, degraded: true }); // fail-open, narrative lost
+      return assembleReport({ analysis, degraded: true, provenance: withoutAi(provenance) }); // fail-open, narrative lost
     default:
       return assertNever(outcome);
   }
+}
+
+/**
+ * Drop the `ai` field: the provider/model are recorded ONLY when narration ran, so
+ * a `--no-ai` metrics-only run and a fail-open degraded run carry no `ai` subtree —
+ * mirroring the `narrative`-subtree presence rule exactly (FR-17).
+ */
+function withoutAi(provenance: ReportProvenance | undefined): ReportProvenance | undefined {
+  if (provenance?.ai === undefined) {
+    return provenance;
+  }
+  const rest: ReportProvenance = { ...provenance };
+  delete rest.ai;
+  return rest;
 }
 
 /** Compile-time exhaustiveness guard: a new `NarrateOutcome` variant becomes a type error here. */

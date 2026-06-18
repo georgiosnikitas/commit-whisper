@@ -1,20 +1,24 @@
 /**
- * Group-overview chart panels + per-metric visuals + the shared data-table
- * fallback (Story 4.2).
+ * Group-overview chart panels + the shared data-table fallback (Story 4.2;
+ * inline-SVG rebuild — ADR H1/H2/H4, 2026-06-18).
  *
- * Each group renders its FIXED-type inline-SVG overview chart (A line · B Pareto
- * hbars · C bars · D timeline line · E hotspots hbars · F radar), fed by a
- * representative series from the group's metrics, inside a `<figure>` with its
- * caption AND a mandatory `<details>`/`<table>` data fallback (the no-JS /
- * keyboard floor — never a chart alone). Each metric card gets a visual chosen by
- * its value shape, also with a fallback. Pure + escaped + deterministic.
+ * Each group renders TWO inline-SVG overview charts — a primary + a shape-matched
+ * secondary (`GROUP_CHARTS`): A volume line + cadence bars · B ownership doughnut
+ * + concentration gauge · C category bars + adherence gauge · D merge line +
+ * direct-to-default gauge · E hotspots h-bars + churn-trend line · F component
+ * radar + hygiene gauge — inside a `<figure>` caption, each sub-chart paired with
+ * a mandatory `<details>`/`<table>` data fallback (the no-JS / keyboard floor —
+ * never a chart alone). `metricVisual` (value-shape → visual) is still exported
+ * for tests but is NO LONGER wired into the cards: per ADR H4 charts live only in
+ * this group panel and metric cards are chart-free stat cards. Pure + escaped +
+ * deterministic.
  */
 
 import type { MetricGroup } from "../../analyze/metric.js";
 import type { ReportAnalysis } from "../../assemble/report-schema.js";
 import { escapeHtml } from "./escape.js";
 import { detectShape, extractSeries, rangeField, type SeriesPoint } from "./shape.js";
-import { svgBars, svgGauge, svgHBars, svgLine, svgRadar, svgSparkline } from "./svg.js";
+import { svgBars, svgDonut, svgGauge, svgHBars, svgLine, svgRadar, svgRadialGauge, svgSparkline } from "./svg.js";
 
 type Metric = ReportAnalysis["metrics"][number];
 
@@ -53,58 +57,105 @@ function formatNumber(value: number): string {
   return Number.isInteger(value) ? String(value) : String(Math.round(value * 100) / 100);
 }
 
-/** The first genuinely chartable series among a group's metrics, in catalog order. */
-function representativeSeries(metrics: readonly Metric[]): { series: SeriesPoint[]; title: string } {
-  for (const metric of metrics) {
-    if (metric.status !== "computed") {
-      continue;
-    }
-    const shape = detectShape(metric.value);
-    if (shape !== "timeseries" && shape !== "distribution") {
-      continue; // a lone scalar / range field is shown on its card, not as a degenerate overview chart
-    }
-    const series = extractSeries(metric.value);
-    if (series.length > 0) {
-      return { series, title: metric.title };
-    }
-  }
-  return { series: [], title: "" };
+/** A chartable value shape the overview plan can request. */
+type SeriesShape = "timeseries" | "distribution";
+/** The chart kinds an overview sub-panel can render. */
+type SubKind = "line" | "bars" | "hbars" | "radar" | "donut" | "gauge";
+/** One sub-chart in a group's overview: a chart kind fed by the Nth metric of a shape. */
+interface SubSpec {
+  kind: SubKind;
+  pick: SeriesShape | "range";
+  index: number;
 }
 
-/** Render the group's fixed-type SVG over a representative series. */
-function groupChartSvg(group: MetricGroup, series: readonly SeriesPoint[], label: string): string {
-  switch (group) {
-    case "A":
-    case "D":
-      return svgLine(series, label);
-    case "B":
-    case "E":
-      return svgHBars(series, label);
-    case "C":
-      return svgBars(series, label);
-    case "F":
-      return svgRadar(series, 100, label);
-    default:
-      return svgBars(series, label);
-  }
+/**
+ * The per-group overview chart plan — a primary chart + a secondary (a radial
+ * gauge for a 0–100 share/score, or a second series). Mirrors the showcase: A
+ * volume line + cadence bars · B ownership doughnut + concentration gauge · C
+ * category bars + adherence gauge · D merge line + direct-to-default gauge · E
+ * hotspots bars + churn-trend line · F component radar + hygiene gauge.
+ */
+const GROUP_CHARTS: Record<MetricGroup, readonly SubSpec[]> = {
+  A: [{ kind: "line", pick: "timeseries", index: 0 }, { kind: "bars", pick: "timeseries", index: 1 }],
+  B: [{ kind: "donut", pick: "distribution", index: 0 }, { kind: "gauge", pick: "range", index: 0 }],
+  C: [{ kind: "bars", pick: "distribution", index: 0 }, { kind: "gauge", pick: "range", index: 0 }],
+  D: [{ kind: "line", pick: "timeseries", index: 0 }, { kind: "gauge", pick: "range", index: 0 }],
+  E: [{ kind: "hbars", pick: "distribution", index: 0 }, { kind: "line", pick: "timeseries", index: 0 }],
+  F: [{ kind: "radar", pick: "distribution", index: 0 }, { kind: "gauge", pick: "range", index: 0 }],
+};
+
+/** Computed metrics in the group whose value has the given chartable shape. */
+function metricsOfShape(metrics: readonly Metric[], shape: SeriesShape): Metric[] {
+  return metrics.filter((m) => m.status === "computed" && detectShape(m.value) === shape && extractSeries(m.value).length > 0);
 }
 
-/** The group-overview chart panel: caption + fixed-type SVG + mandatory data table. */
+/** Computed metrics in the group that carry a 0..max range field (gauge candidates). */
+function rangeMetrics(metrics: readonly Metric[]): Metric[] {
+  return metrics.filter((m) => m.status === "computed" && rangeField(m.value) !== undefined);
+}
+
+/** One titled sub-chart cell (chart + its mandatory data-table fallback). */
+function subFigure(title: string, svg: string, table: string): string {
+  return `<div class="chart-sub">
+<h4>${escapeHtml(title)}</h4>
+${svg}
+${table}
+</div>`;
+}
+
+/** Render the inline-SVG chart for one sub-spec, or undefined when its metric is absent. */
+function renderSubChart(group: MetricGroup, spec: SubSpec, metrics: readonly Metric[]): string | undefined {
+  const pool = spec.pick === "range" ? rangeMetrics(metrics) : metricsOfShape(metrics, spec.pick);
+  const metric = pool[spec.index];
+  if (metric === undefined) {
+    return undefined;
+  }
+  const label = `Group ${group} \u2014 ${metric.title}`;
+  if (spec.kind === "gauge") {
+    const range = rangeField(metric.value);
+    if (range === undefined) {
+      return undefined;
+    }
+    const table = dataTable([{ label: metric.title, value: range.value }], "Value", metric.title);
+    return subFigure(metric.title, svgRadialGauge(range.value, range.max, label), table);
+  }
+  const series = extractSeries(metric.value);
+  const svg =
+    spec.kind === "line"
+      ? svgLine(series, label)
+      : spec.kind === "bars"
+        ? svgBars(series, label)
+        : spec.kind === "hbars"
+          ? svgHBars(series, label)
+          : spec.kind === "radar"
+            ? svgRadar(series, 100, label)
+            : svgDonut(series, label);
+  return subFigure(metric.title, svg, dataTable(series, "Value", metric.title));
+}
+
+/**
+ * The group-overview panel: the group description + a grid of up to two charts
+ * (primary + secondary), each with its mandatory data-table fallback (never a
+ * chart alone). Empty groups render a caption + note instead.
+ */
 export function groupOverviewPanel(group: MetricGroup, metrics: readonly Metric[]): string {
   const description = GROUP_DESCRIPTION[group];
-  const { series, title } = representativeSeries(metrics);
-  if (series.length === 0) {
-    const emptyLabel = `Group ${group} overview`;
-    return `<figure class="chart-panel" aria-label="${escapeHtml(emptyLabel)}">
+  const label = `Group ${group} overview`;
+  const subs = GROUP_CHARTS[group]
+    .map((spec) => renderSubChart(group, spec, metrics))
+    .filter((html): html is string => html !== undefined);
+  if (subs.length === 0) {
+    return `<figure class="chart-panel" aria-label="${escapeHtml(label)}">
 <figcaption>${escapeHtml(description)}</figcaption>
 <p class="chart-empty">No chartable series for this group — see the metric cards below.</p>
 </figure>`;
   }
-  const label = `Group ${group} overview — ${title}`;
+  const gridClass = subs.length > 1 ? "chart-cells two" : "chart-cells";
   return `<figure class="chart-panel" aria-label="${escapeHtml(label)}">
-<figcaption>${escapeHtml(description)} <span class="chart-source">(${escapeHtml(title)})</span></figcaption>
-${groupChartSvg(group, series, label)}
-${dataTable(series, "Value", title)}
+<figcaption>${escapeHtml(description)}</figcaption>
+<div class="${gridClass}">
+${subs.join("\n")}
+</div>
 </figure>`;
 }
 
@@ -112,7 +163,8 @@ ${dataTable(series, "Value", title)}
  * The per-metric visual, chosen by the value's shape: timeseries → line;
  * distribution → bars; scalar-in-range → sparkline + gauge + number; pure scalar →
  * bold stat (no chart); none / not_available → no visual. Every non-scalar visual
- * carries a data-table fallback.
+ * carries a data-table fallback. Retained for tests — per ADR H4 the renderer no
+ * longer embeds per-card visuals (charts live only in the group-overview panel).
  */
 export function metricVisual(metric: Metric): string {
   if (metric.status === "not_available") {

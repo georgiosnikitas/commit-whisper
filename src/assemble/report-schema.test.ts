@@ -1,6 +1,6 @@
 import { describe, it, expect } from "vitest";
 
-import { ReportSchema, MetricSchema, SCHEMA_VERSION } from "./report-schema.js";
+import { ReportSchema, ProvenanceSchema, MetricSchema, SCHEMA_VERSION } from "./report-schema.js";
 
 const ANALYSIS = {
   metrics: [
@@ -122,6 +122,60 @@ describe("ReportSchema", () => {
       narrative: { summary: NARRATIVE.summary },
     };
     expect(ReportSchema.safeParse(report).success).toBe(false);
+  });
+});
+
+describe("ProvenanceSchema (FR-17)", () => {
+  const PROVENANCE = {
+    repo: { name: "payments-api", target: "https://github.com/acme/payments-api", source: "remote", branch: "main" },
+    scale: { totalCommits: 1204, analyzedCommits: 100, contributors: 87 },
+    ai: { provider: "anthropic", model: "claude-sonnet-4" },
+    run: { generatedAt: "2026-06-12T00:00:00Z", toolVersion: "1.0.8" },
+    entitlement: { tier: "free", commitCap: 100 },
+  };
+
+  it("round-trips a full provenance subtree on a report", () => {
+    const report = { schemaVersion: SCHEMA_VERSION, degraded: false, analysis: ANALYSIS, narrative: NARRATIVE, provenance: PROVENANCE };
+    const parsed = ReportSchema.safeParse(report);
+    expect(parsed.success).toBe(true);
+    expect(parsed.success && parsed.data.provenance).toEqual(PROVENANCE);
+  });
+
+  it("accepts a report with NO provenance (the subtree is optional — back-compat)", () => {
+    const report = { schemaVersion: SCHEMA_VERSION, degraded: false, analysis: ANALYSIS };
+    expect(ReportSchema.safeParse(report).success).toBe(true);
+  });
+
+  it("accepts a minimal provenance — every group is independently optional", () => {
+    expect(ProvenanceSchema.safeParse({}).success).toBe(true);
+    expect(ProvenanceSchema.safeParse({ run: { generatedAt: "2026-06-12T00:00:00Z", toolVersion: "1.0.8" } }).success).toBe(true);
+    expect(ProvenanceSchema.safeParse({ entitlement: { tier: "unlimited" } }).success).toBe(true);
+  });
+
+  it("rejects an unknown key at the provenance root (strict read-back boundary)", () => {
+    expect(ProvenanceSchema.safeParse({ ...PROVENANCE, extra: 1 }).success).toBe(false);
+  });
+
+  it("rejects an unknown key inside a nested group (strict at every level)", () => {
+    expect(ProvenanceSchema.safeParse({ repo: { ...PROVENANCE.repo, token: "leak" } }).success).toBe(false);
+    expect(ProvenanceSchema.safeParse({ scale: { ...PROVENANCE.scale, oops: 1 } }).success).toBe(false);
+    expect(ProvenanceSchema.safeParse({ ai: { ...PROVENANCE.ai, key: "sk-secret" } }).success).toBe(false);
+  });
+
+  it("requires repo.name / repo.target / repo.source when repo is present", () => {
+    expect(ProvenanceSchema.safeParse({ repo: { name: "x", target: "x", source: "local" } }).success).toBe(true);
+    expect(ProvenanceSchema.safeParse({ repo: { name: "x", source: "local" } }).success).toBe(false); // missing target
+    expect(ProvenanceSchema.safeParse({ repo: { name: "x", target: "x", source: "elsewhere" } }).success).toBe(false); // bad source
+  });
+
+  it("rejects a provider / tier outside the closed vocabulary", () => {
+    expect(ProvenanceSchema.safeParse({ ai: { provider: "deepseek", model: "m" } }).success).toBe(false);
+    expect(ProvenanceSchema.safeParse({ entitlement: { tier: "enterprise" } }).success).toBe(false);
+  });
+
+  it("rejects a non-finite numeric scale value (would JSON.stringify to null)", () => {
+    expect(ProvenanceSchema.safeParse({ scale: { totalCommits: Number.NaN } }).success).toBe(false);
+    expect(ProvenanceSchema.safeParse({ scale: { analyzedCommits: Infinity } }).success).toBe(false);
   });
 });
 
