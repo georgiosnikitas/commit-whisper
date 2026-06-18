@@ -645,6 +645,76 @@ describe("formatStatusReport (AC1, AC2)", () => {
     const report = formatStatusReport(FREE_CONFIGURED, ENV_OK, { kind: "reachable" });
     expect(report).not.toMatch(/sk-|ghp_/);
   });
+
+  it("omits the Settings/Run-scope blocks when no config is supplied", () => {
+    const report = formatStatusReport(FREE_CONFIGURED, ENV_OK, { kind: "reachable" });
+    expect(report).not.toContain("Settings (saved in ~/.commit-whisper)");
+    expect(report).not.toContain("Run scope");
+  });
+
+  it("renders the Settings + Run-scope blocks with documented defaults when knobs are unset", () => {
+    const report = formatStatusReport(FREE_CONFIGURED, ENV_OK, { kind: "reachable" }, {});
+    // Settings (persisted) block.
+    expect(report).toContain("Settings (saved in ~/.commit-whisper)");
+    expect(report).toContain("UTC (default)");
+    expect(report).toContain("terminal (default)");
+    expect(report).toContain("unbounded");
+    expect(report).not.toContain("Base URL"); // shown only when set
+    // Run-scope (env/flag-only) block.
+    expect(report).toContain("Run scope (env vars / flags only — not saved)");
+    expect(report).toMatch(/Branch\s+HEAD \(default\)/);
+    expect(report).toMatch(/Author\s+any \(default\)/);
+    expect(report).toMatch(/Since\s+— \(unbounded\)/);
+    expect(report).toMatch(/Until\s+— \(unbounded\)/);
+    expect(report).toMatch(/No-merges\s+off \(default\)/);
+    expect(report).toMatch(/Output path\s+— \(auto\)/);
+    expect(report).toMatch(/AI mode\s+auto \(default\)/);
+  });
+
+  it("renders configured Settings + Run-scope values, including Base URL when set", () => {
+    const report = formatStatusReport(FREE_CONFIGURED, ENV_OK, { kind: "reachable" }, {
+      branch: { kind: "named", name: "develop" },
+      authorFilter: "ada@example.com",
+      startDate: "2024-01-01",
+      endDate: "2024-06-30",
+      noMerges: true,
+      outputPath: "out/report.html",
+      aiMode: "required",
+      llmBaseUrl: "http://localhost:11434",
+      timezone: "Europe/Athens",
+      outputFormats: ["html", "json"],
+      maxCommits: 100,
+    });
+    expect(report).toContain("Base URL");
+    expect(report).toContain("http://localhost:11434");
+    expect(report).toContain("Europe/Athens");
+    expect(report).toContain("html, json");
+    expect(report).toMatch(/Max commits\s+100/);
+    expect(report).toMatch(/Branch\s+develop/);
+    expect(report).toContain("ada@example.com");
+    expect(report).toContain("2024-01-01");
+    expect(report).toContain("2024-06-30");
+    expect(report).toMatch(/No-merges\s+on/);
+    expect(report).toContain("out/report.html");
+    expect(report).toMatch(/AI mode\s+required/);
+  });
+
+  it("renders the Operational block (log level + color) when supplied", () => {
+    const report = formatStatusReport(FREE_CONFIGURED, ENV_OK, { kind: "reachable" }, {
+      logLevel: "verbose",
+      color: false,
+    });
+    expect(report).toContain("Operational");
+    expect(report).toMatch(/Log level\s+verbose/);
+    expect(report).toMatch(/Color\s+off/);
+  });
+
+  it("renders 'all branches' for the all-branch scope", () => {
+    const report = formatStatusReport(FREE_CONFIGURED, ENV_OK, { kind: "reachable" }, {
+      branch: { kind: "all" },
+    });
+    expect(report).toMatch(/Branch\s+all branches/);
+  });
 });
 
 function probe(result: Reachability) {
@@ -769,7 +839,7 @@ describe("runSettings via runLaunchpad (Story 6.5)", () => {
     const sel = scriptedSelect(["settings", "quit"]);
     const save = captureSave();
     // provider=openai (cloud → no base URL prompt), format=html
-    const scripted = scriptedPrompts({ texts: ["gpt-4o", "", ""], selects: ["openai", "html"] });
+    const scripted = scriptedPrompts({ texts: ["gpt-4o", "", ""], selects: ["openai"], formats: ["html"] });
     await runLaunchpad({
       state: FREE_CONFIGURED,
       helpText: "HELP",
@@ -783,6 +853,38 @@ describe("runSettings via runLaunchpad (Story 6.5)", () => {
     expect(out.text()).toContain("✓ Saved to /home/alice/.commit-whisper/config.json");
     expect(out.text()).toContain(settingsSavedNote("openai"));
     expect(sel.calls()).toBe(2); // looped back to the menu
+  });
+
+  it("persists multiple default output formats (the picker is multi-select)", async () => {
+    const out = captureStream();
+    const sel = scriptedSelect(["settings", "quit"]);
+    const save = captureSave();
+    const scripted = scriptedPrompts({ texts: ["gpt-4o", "", ""], selects: ["openai"], formats: ["html", "json"] });
+    await runLaunchpad({
+      state: FREE_CONFIGURED,
+      helpText: "HELP",
+      output: out.stream,
+      select: sel.select,
+      prompts: scripted.prompts,
+      saveSettings: save.saveSettings,
+    });
+    expect(save.saved[0]).toEqual({ provider: "openai", llmModel: "gpt-4o", outputFormats: ["html", "json"] });
+  });
+
+  it("falls back to terminal when no default format is selected", async () => {
+    const out = captureStream();
+    const sel = scriptedSelect(["settings", "quit"]);
+    const save = captureSave();
+    const scripted = scriptedPrompts({ texts: ["gpt-4o", "", ""], selects: ["openai"], formats: [] });
+    await runLaunchpad({
+      state: FREE_CONFIGURED,
+      helpText: "HELP",
+      output: out.stream,
+      select: sel.select,
+      prompts: scripted.prompts,
+      saveSettings: save.saveSettings,
+    });
+    expect(save.saved[0]?.outputFormats).toEqual(["terminal"]);
   });
 
   it("prompts the base URL for ollama / openai-compatible and persists it", async () => {
@@ -815,7 +917,7 @@ describe("runSettings via runLaunchpad (Story 6.5)", () => {
     const out = captureStream();
     const sel = scriptedSelect(["settings", "quit"]);
     const save = captureSave();
-    const scripted = scriptedPrompts({ texts: ["", "", ""], selects: ["gemini", "json"] });
+    const scripted = scriptedPrompts({ texts: ["", "", ""], selects: ["gemini"], formats: ["json"] });
     await runLaunchpad({
       state: FREE_CONFIGURED,
       helpText: "HELP",
@@ -901,7 +1003,7 @@ describe("runSettings via runLaunchpad (Story 6.5)", () => {
     expect(save.saved).toHaveLength(1); // proceeded despite the load failure
   });
 
-  it("refreshes the in-session AI state and header after a save (no restart needed)", async () => {
+  it("refreshes the in-session AI state after a save (no restart needed)", async () => {
     const out = captureStream();
     const sel = scriptedSelect(["settings", "quit"]);
     const save = captureSave();
@@ -920,8 +1022,10 @@ describe("runSettings via runLaunchpad (Story 6.5)", () => {
     // The in-session state is mutated so a subsequent Analyze sees the provider.
     expect(state.provider).toBe("openai");
     expect(state.llmModel).toBe("gpt-4o");
-    // The refreshed readiness line is re-printed after the save.
-    expect(out.text()).toContain(formatReadinessLine({ ...state, provider: "openai", llmModel: "gpt-4o" }));
+    // The readiness line is NOT re-printed after the save — the menu repaint
+    // already shows the refreshed header at the top, so an explicit echo would
+    // duplicate it below the save confirmation.
+    expect(out.text()).not.toContain(formatReadinessLine({ ...state, provider: "openai", llmModel: "gpt-4o" }));
   });
 
   it("requires a model — rejects a blank value so a dead config can't be saved", async () => {

@@ -200,26 +200,54 @@ export function aiKeyEnvVar(provider: Provider | undefined): string | undefined 
 }
 
 /**
- * Diagnostics for the Status/doctor view (Story 6.3): the env vars relevant to
- * the current provider, reported by NAME + set/missing only — never the value.
- * `set` is derived from the SAME `readAiKey`/`readGitToken` logic those keys
- * already use, so the displayed presence can never drift from the real key
- * resolution (e.g. the gemini `GEMINI_API_KEY` alias, the git-token host
- * fallbacks). For "no provider configured", the AI row names `OPENAI_API_KEY`
- * with its real presence so a user who already exported a key still sees `✓`.
+ * Every cloud provider's key env var, in a stable display order. Ollama is local
+ * (no key) so it has no row. `openai-compatible` shares `OPENAI_API_KEY` with
+ * `openai`, so it is not a separate row — it is folded into the `openai` row's
+ * "active provider" annotation below.
+ */
+const PROVIDER_KEY_VARS: { provider: Provider; name: string }[] = [
+  { provider: "openai", name: "OPENAI_API_KEY" },
+  { provider: "anthropic", name: "ANTHROPIC_API_KEY" },
+  { provider: "gemini", name: "GOOGLE_GENERATIVE_AI_API_KEY" },
+];
+
+/** Whether `active` is the provider that reads the given row's key var (folds in `openai-compatible`). */
+function isActiveKeyRow(rowProvider: Provider, active: Provider | undefined): boolean {
+  if (active === rowProvider) {
+    return true;
+  }
+  // openai-compatible reads OPENAI_API_KEY, so it lights up the openai row.
+  return active === "openai-compatible" && rowProvider === "openai";
+}
+
+/**
+ * Diagnostics for the Status/doctor view (Story 6.3): EVERY provider's key env
+ * var, the git token, and the license key — reported by NAME + set/missing only,
+ * never the value. Listing all providers lets a user see at a glance which
+ * providers they could switch to; the currently-configured provider's row is
+ * annotated "active provider". `set` is derived from the SAME
+ * `readAiKey`/`readGitToken`/`readLicenseKey` logic those keys already use, so
+ * the displayed presence can never drift from the real key resolution (e.g. the
+ * gemini `GEMINI_API_KEY` alias, the git-token host fallbacks).
  */
 export function readEnvDiagnostics(env: NodeJS.ProcessEnv, provider: Provider | undefined): EnvVarStatus[] {
-  const diagnostics: EnvVarStatus[] = [];
-  const keyVar = aiKeyEnvVar(provider);
-  if (keyVar !== undefined) {
-    diagnostics.push({ name: keyVar, set: readAiKey(env, provider ?? "openai") !== undefined });
-  }
-  diagnostics.push({
-    name: "COMMIT_WHISPER_GIT_TOKEN",
-    set: readGitToken(env) !== undefined,
-    note: "only needed for private remotes",
-  });
-  return diagnostics;
+  return [
+    ...PROVIDER_KEY_VARS.map(({ provider: p, name }) => ({
+      name,
+      set: readAiKey(env, p) !== undefined,
+      note: isActiveKeyRow(p, provider) ? "active provider" : undefined,
+    })),
+    {
+      name: "COMMIT_WHISPER_GIT_TOKEN",
+      set: readGitToken(env) !== undefined,
+      note: "only needed for private remotes",
+    },
+    {
+      name: "COMMIT_WHISPER_LICENSE_KEY",
+      set: readLicenseKey(env) !== undefined,
+      note: "unlocks paid tiers when valid",
+    },
+  ];
 }
 
 /**

@@ -30,7 +30,7 @@ import { isCancel, multiselect as clackMultiselect, select as clackSelect, text 
 import type { EnvVarStatus } from "../config/env.js";
 import { aiKeyEnvVar } from "../config/env.js";
 import type { SettingsData } from "../config/config-store.js";
-import type { OutputFormat, PartialRunConfig, Provider, Tier } from "../config/run-config.js";
+import type { AiMode, Branch, OutputFormat, PartialRunConfig, Provider, Tier } from "../config/run-config.js";
 import type { ActivationOutcome, DeactivationOutcome } from "../license/actions.js";
 import { ExitCode } from "./exit-codes.js";
 
@@ -113,6 +113,30 @@ export type Reachability =
   | { kind: "reachable" }
   | { kind: "unreachable"; reason: string };
 
+/**
+ * The effective NON-SECRET config knobs surfaced in the Status/doctor "Config"
+ * and "Operational" blocks — the everyday options not already on the
+ * AI/License/Repository lines. Each scope/AI knob is the resolver-precedence
+ * value (config < env) or `undefined` when unset, so the view can show the
+ * configured value or the documented default. `logLevel`/`color` are the already
+ * resolved operational state (env + TTY), injected by `cli/`.
+ */
+export interface DoctorConfig {
+  branch?: Branch;
+  authorFilter?: string;
+  startDate?: string;
+  endDate?: string;
+  timezone?: string;
+  noMerges?: boolean;
+  outputFormats?: OutputFormat[];
+  outputPath?: string;
+  maxCommits?: number;
+  aiMode?: AiMode;
+  llmBaseUrl?: string;
+  logLevel?: string;
+  color?: boolean;
+}
+
 /** The injected async reachability probe (cli wraps `preflightProvider`). */
 export type ProbeReachability = () => Promise<Reachability>;
 
@@ -132,6 +156,8 @@ export interface LaunchpadDeps {
   gitTokenConfigured?: boolean;
   /** Env-var presence diagnostics for Status/doctor (names + booleans only); injected by `cli/`. */
   envDiagnostics?: EnvVarStatus[];
+  /** The effective non-secret config knobs for the Status/doctor "Config" block; injected by `cli/`. */
+  doctorConfig?: DoctorConfig;
   /** The async provider reachability probe for Status/doctor; injected by `cli/`. */
   probeReachability?: ProbeReachability;
   /** Load the persisted Settings (Story 6.5); injected by `cli/`. Absent ⇒ Settings starts blank. */
@@ -348,6 +374,97 @@ function repositoryLine(state: LaunchpadState): string {
     : `${statusLabel("Repository")}— not a git repo`;
 }
 
+/** Indent + pad a Config row's label so the values line up under one column. */
+const CONFIG_LABEL_WIDTH = 14;
+function configRow(label: string, value: string): string {
+  return `  ${label.padEnd(CONFIG_LABEL_WIDTH)}${value}`;
+}
+
+/** The configured branch scope (all / a named branch / the checked-out HEAD), or the default. */
+function branchValue(branch: Branch | undefined): string {
+  if (branch === undefined) {
+    return "HEAD (default)";
+  }
+  switch (branch.kind) {
+    case "all":
+      return "all branches";
+    case "head":
+      return "HEAD";
+    default:
+      return branch.name;
+  }
+}
+
+/** The configured output formats, or the documented `terminal` default. */
+function formatValue(formats: OutputFormat[] | undefined): string {
+  return formats !== undefined && formats.length > 0 ? formats.join(", ") : "terminal (default)";
+}
+
+/**
+ * The Settings block: the NON-SECRET knobs that the interactive Settings screen
+ * actually persists to `~/.commit-whisper` (timezone, default format, max
+ * commits, base URL) — distinct from the env/flag-only run scope below. Each row
+ * shows the configured value or the documented default. The base-URL row appears
+ * only when set (meaningful only for local/custom endpoints). `[]` when no config
+ * is supplied.
+ */
+function settingsBlock(config: DoctorConfig | undefined): string[] {
+  if (config === undefined) {
+    return [];
+  }
+  const baseUrlRow = config.llmBaseUrl === undefined ? [] : [configRow("Base URL", config.llmBaseUrl)];
+  const rows = [
+    configRow("Timezone", config.timezone ?? "UTC (default)"),
+    configRow("Format", formatValue(config.outputFormats)),
+    configRow("Max commits", config.maxCommits === undefined ? "unbounded" : String(config.maxCommits)),
+    ...baseUrlRow,
+  ];
+  return ["", "Settings (saved in ~/.commit-whisper)", ...rows];
+}
+
+/**
+ * The Run scope block: the per-run scope inputs that are NOT persisted — they
+ * come only from `COMMIT_WHISPER_*` env vars (or CLI flags on a non-interactive
+ * run), never the Settings file. Each row shows the configured value or the
+ * documented default. `[]` when no config is supplied.
+ */
+function runScopeBlock(config: DoctorConfig | undefined): string[] {
+  if (config === undefined) {
+    return [];
+  }
+  const rows = [
+    configRow("Branch", branchValue(config.branch)),
+    configRow("Author", config.authorFilter ?? "any (default)"),
+    configRow("Since", config.startDate ?? "— (unbounded)"),
+    configRow("Until", config.endDate ?? "— (unbounded)"),
+    configRow("No-merges", config.noMerges === true ? "on" : "off (default)"),
+    configRow("Output path", config.outputPath ?? "— (auto)"),
+    configRow("AI mode", config.aiMode ?? "auto (default)"),
+  ];
+  return ["", "Run scope (env vars / flags only — not saved)", ...rows];
+}
+
+/** Render the resolved color state as a word (never color alone): on / off / auto when unresolved. */
+function colorState(color: boolean | undefined): string {
+  if (color === undefined) {
+    return "auto";
+  }
+  return color ? "on" : "off";
+}
+
+/** The Operational block: the resolved color + log-level state (env + TTY). Omitted when neither is supplied. */
+function operationalBlock(config: DoctorConfig | undefined): string[] {
+  if (config === undefined || (config.logLevel === undefined && config.color === undefined)) {
+    return [];
+  }
+  const colorValue = colorState(config.color);
+  const rows = [
+    configRow("Log level", config.logLevel ?? "normal (default)"),
+    configRow("Color", colorValue),
+  ];
+  return ["", "Operational", ...rows];
+}
+
 /**
  * The read-only Status/doctor report (Story 6.3, AC1/AC2). Line-oriented (the
  * calm 6.1/6.2 posture). Distinguishes *configured* from *reachable* (the probe
@@ -358,6 +475,7 @@ export function formatStatusReport(
   state: LaunchpadState,
   envVars: EnvVarStatus[],
   reachability: Reachability,
+  config?: DoctorConfig,
 ): string {
   // License tier + AI provider/model share a trailing column (the free-tier cap
   // note / the reachability status), aligned to whichever head is longer + a
@@ -375,6 +493,9 @@ export function formatStatusReport(
     aiLine,
     ...environmentBlock(envVars),
     repositoryLine(state),
+    ...settingsBlock(config),
+    ...runScopeBlock(config),
+    ...operationalBlock(config),
   ];
   if (reachability.kind === "not-configured") {
     lines.push("", NO_AI_FIX);
@@ -722,7 +843,7 @@ async function runStatusDoctor(deps: LaunchpadDeps, output: Writable): Promise<v
       reachability = { kind: "unreachable", reason: err instanceof Error ? err.message : "probe failed" };
     }
   }
-  writeLine(output, formatStatusReport(deps.state, deps.envDiagnostics ?? [], reachability));
+  writeLine(output, formatStatusReport(deps.state, deps.envDiagnostics ?? [], reachability, deps.doctorConfig));
 }
 
 /**
@@ -778,12 +899,12 @@ async function runSettings(deps: LaunchpadDeps, output: Writable): Promise<void>
     }
   }
 
-  const format = await prompts.selectOne({
-    message: "Default output format",
-    options: OUTPUT_FORMAT_OPTIONS.map((o) => ({ value: o.value, label: o.label })),
-    initialValue: current.outputFormats?.[0],
+  const formats = await prompts.multiselect({
+    message: "Default output — one or more formats",
+    options: OUTPUT_FORMAT_OPTIONS,
+    initialValues: current.outputFormats,
   });
-  if (format === null) {
+  if (formats === null) {
     return;
   }
 
@@ -806,7 +927,7 @@ async function runSettings(deps: LaunchpadDeps, output: Writable): Promise<void>
     return;
   }
 
-  const data = assembleSettings({ provider, model, baseUrl, format, timezone, limitRaw });
+  const data = assembleSettings({ provider, model, baseUrl, formats, timezone, limitRaw });
   if (deps.saveSettings === undefined) {
     return;
   }
@@ -816,7 +937,7 @@ async function runSettings(deps: LaunchpadDeps, output: Writable): Promise<void>
     const path = await deps.saveSettings(data);
     writeLine(output, `✓ Saved to ${path}`);
     writeLine(output, settingsSavedNote(provider as Provider));
-    await refreshAiState(deps, output);
+    await refreshAiState(deps);
   } catch (err) {
     writeLine(output, `⚠ Could not save settings: ${err instanceof Error ? err.message : "write failed"}`);
   }
@@ -828,7 +949,7 @@ async function runSettings(deps: LaunchpadDeps, output: Writable): Promise<void>
  * required. A refresh failure is non-fatal: the save already succeeded and the
  * persisted change still applies on the next run.
  */
-async function refreshAiState(deps: LaunchpadDeps, output: Writable): Promise<void> {
+async function refreshAiState(deps: LaunchpadDeps): Promise<void> {
   if (deps.reloadAiState === undefined) {
     return;
   }
@@ -836,7 +957,6 @@ async function refreshAiState(deps: LaunchpadDeps, output: Writable): Promise<vo
     const ai = await deps.reloadAiState();
     deps.state.provider = ai.provider;
     deps.state.llmModel = ai.llmModel;
-    writeLine(output, formatReadinessLine(deps.state));
   } catch {
     // Leave the header as-is — the persisted change still applies next run.
   }
@@ -852,11 +972,12 @@ function assembleSettings(input: {
   provider: string;
   model: string;
   baseUrl: string;
-  format: string;
+  formats: OutputFormat[];
   timezone: string;
   limitRaw: string;
 }): SettingsData {
-  const data: SettingsData = { provider: input.provider as Provider, outputFormats: [input.format as OutputFormat] };
+  const outputFormats = input.formats.length > 0 ? input.formats : ["terminal" as OutputFormat];
+  const data: SettingsData = { provider: input.provider as Provider, outputFormats };
   const model = input.model.trim();
   if (model !== "") {
     data.llmModel = model;

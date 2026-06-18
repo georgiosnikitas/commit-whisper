@@ -52,7 +52,7 @@ import { defaultOpenBrowser } from "./open-browser.js";
 import { LicenseError, MissingRequiredConfigError, UsageError } from "../shared/errors.js";
 import { createUi, resolveColor, resolveLogLevel, type Ui } from "../shared/ui.js";
 import { exitCodeForError, ExitCode, messageForError } from "./exit-codes.js";
-import { runLaunchpad, type LaunchpadState, type Reachability } from "./interactive.js";
+import { runLaunchpad, type DoctorConfig, type LaunchpadState, type Reachability } from "./interactive.js";
 import { readRepoContext } from "./repo-context.js";
 import { runPipeline, type RunDeps } from "./run.js";
 import { formatShowConfig } from "./show-config.js";
@@ -486,6 +486,25 @@ async function runZeroArg(ctx: ZeroArgContext): Promise<number> {
   // and an async reachability probe wrapping `preflightProvider`. `aiMode: "auto"`
   // forces a real probe regardless of the user's resolved mode.
   const envDiagnostics = readEnvDiagnostics(ctx.env, aiLayer.provider);
+  // The effective non-secret config knobs for the doctor "Config"/"Operational"
+  // blocks, with the resolver's config < env precedence (an env var still wins
+  // over a saved value). Scope knobs (branch/author/dates/no-merges/output
+  // path/AI mode) are env-only — the Settings file never persists them.
+  const doctorConfig: DoctorConfig = {
+    branch: envLayer.branch,
+    authorFilter: envLayer.authorFilter,
+    startDate: envLayer.startDate,
+    endDate: envLayer.endDate,
+    timezone: envLayer.timezone ?? configFile.timezone,
+    noMerges: envLayer.noMerges,
+    outputFormats: envLayer.outputFormats ?? configFile.outputFormats,
+    outputPath: envLayer.outputPath,
+    maxCommits: envLayer.maxCommits ?? configFile.maxCommits,
+    aiMode: envLayer.aiMode,
+    llmBaseUrl: aiLayer.llmBaseUrl,
+    logLevel: resolveLogLevel({ env: ctx.env }),
+    color: resolveColor({ env: ctx.env, isTTY: ctx.stdoutIsTTY }),
+  };
   const probeReachability = async (): Promise<Reachability> => {
     const narrateConfig: NarrateConfig = {
       aiMode: "auto",
@@ -506,6 +525,7 @@ async function runZeroArg(ctx: ZeroArgContext): Promise<number> {
     gitTokenConfigured: readGitToken(ctx.env) !== undefined,
     envDiagnostics,
     probeReachability,
+    doctorConfig,
     loadSettings: () => readSettings(ctx.env),
     saveSettings: (data) => writeSettings(ctx.env, data),
     // Re-resolve the live AI provider/model after a Settings save (config < env,

@@ -157,41 +157,63 @@ describe("readGitToken (Story 5.2)", () => {
 });
 
 describe("readEnvDiagnostics (Story 6.3)", () => {
-  it("names the provider's key var with its presence, plus the git token row", () => {
+  it("lists every provider key var + the git token + the license key, marking the active provider", () => {
     const diags = readEnvDiagnostics({ OPENAI_API_KEY: "sk-x" }, "openai");
     expect(diags).toEqual([
-      { name: "OPENAI_API_KEY", set: true },
+      { name: "OPENAI_API_KEY", set: true, note: "active provider" },
+      { name: "ANTHROPIC_API_KEY", set: false, note: undefined },
+      { name: "GOOGLE_GENERATIVE_AI_API_KEY", set: false, note: undefined },
       { name: "COMMIT_WHISPER_GIT_TOKEN", set: false, note: "only needed for private remotes" },
+      { name: "COMMIT_WHISPER_LICENSE_KEY", set: false, note: "unlocks paid tiers when valid" },
     ]);
   });
 
-  it("maps each cloud provider to its native key var", () => {
-    expect(readEnvDiagnostics({}, "anthropic")[0]).toEqual({ name: "ANTHROPIC_API_KEY", set: false });
-    expect(readEnvDiagnostics({}, "gemini")[0]).toEqual({ name: "GOOGLE_GENERATIVE_AI_API_KEY", set: false });
+  it("reports the license-key row set when COMMIT_WHISPER_LICENSE_KEY is present", () => {
+    const licenseRow = readEnvDiagnostics({ COMMIT_WHISPER_LICENSE_KEY: "LIC-1" }, "openai").at(-1);
+    expect(licenseRow).toEqual({ name: "COMMIT_WHISPER_LICENSE_KEY", set: true, note: "unlocks paid tiers when valid" });
+  });
+
+  it("marks the matching row active for each cloud provider", () => {
+    const anthropic = readEnvDiagnostics({}, "anthropic");
+    expect(anthropic.find((d) => d.note === "active provider")?.name).toBe("ANTHROPIC_API_KEY");
+    const gemini = readEnvDiagnostics({}, "gemini");
+    expect(gemini.find((d) => d.note === "active provider")?.name).toBe("GOOGLE_GENERATIVE_AI_API_KEY");
+  });
+
+  it("folds openai-compatible onto the OPENAI_API_KEY row's active marker", () => {
+    const diags = readEnvDiagnostics({}, "openai-compatible");
+    expect(diags.find((d) => d.note === "active provider")?.name).toBe("OPENAI_API_KEY");
   });
 
   it("honors the gemini GEMINI_API_KEY alias for the set flag", () => {
-    expect(readEnvDiagnostics({ GEMINI_API_KEY: "g" }, "gemini")[0]).toEqual({
-      name: "GOOGLE_GENERATIVE_AI_API_KEY",
-      set: true,
-    });
+    const gemini = readEnvDiagnostics({ GEMINI_API_KEY: "g" }, "gemini").find(
+      (d) => d.name === "GOOGLE_GENERATIVE_AI_API_KEY",
+    );
+    expect(gemini).toEqual({ name: "GOOGLE_GENERATIVE_AI_API_KEY", set: true, note: "active provider" });
   });
 
-  it("omits the AI-key row for local Ollama (no key needed)", () => {
+  it("marks no key row active for local Ollama (no key needed), still listing them all", () => {
     const diags = readEnvDiagnostics({}, "ollama");
-    expect(diags.map((d) => d.name)).toEqual(["COMMIT_WHISPER_GIT_TOKEN"]);
+    expect(diags.map((d) => d.name)).toEqual([
+      "OPENAI_API_KEY",
+      "ANTHROPIC_API_KEY",
+      "GOOGLE_GENERATIVE_AI_API_KEY",
+      "COMMIT_WHISPER_GIT_TOKEN",
+      "COMMIT_WHISPER_LICENSE_KEY",
+    ]);
+    expect(diags.some((d) => d.note === "active provider")).toBe(false);
   });
 
-  it("names OPENAI_API_KEY (with real presence) when no provider is configured", () => {
-    expect(readEnvDiagnostics({ OPENAI_API_KEY: "sk" }, undefined)[0]).toEqual({
-      name: "OPENAI_API_KEY",
-      set: true,
-    });
-    expect(readEnvDiagnostics({}, undefined)[0]).toEqual({ name: "OPENAI_API_KEY", set: false });
+  it("lists all keys with real presence and no active marker when no provider is configured", () => {
+    const diags = readEnvDiagnostics({ OPENAI_API_KEY: "sk" }, undefined);
+    expect(diags[0]).toEqual({ name: "OPENAI_API_KEY", set: true, note: undefined });
+    expect(diags.some((d) => d.note === "active provider")).toBe(false);
   });
 
   it("reports the git token row set when any git token var is present (incl. fallback)", () => {
-    const gitRow = readEnvDiagnostics({ GITHUB_TOKEN: "gh" }, "ollama").at(-1);
+    const gitRow = readEnvDiagnostics({ GITHUB_TOKEN: "gh" }, "ollama").find(
+      (d) => d.name === "COMMIT_WHISPER_GIT_TOKEN",
+    );
     expect(gitRow).toEqual({ name: "COMMIT_WHISPER_GIT_TOKEN", set: true, note: "only needed for private remotes" });
   });
 
