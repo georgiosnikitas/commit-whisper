@@ -17,7 +17,7 @@ import {
   NO_AI_FIX,
   NO_AI_INTERSTITIAL,
   runLaunchpad,
-  SETTINGS_SAVED_NOTE,
+  settingsSavedNote,
   type GuidedPrompts,
   type LaunchpadAction,
   type LaunchpadDeps,
@@ -781,7 +781,7 @@ describe("runSettings via runLaunchpad (Story 6.5)", () => {
     expect(save.saved).toHaveLength(1);
     expect(save.saved[0]).toEqual({ provider: "openai", llmModel: "gpt-4o", outputFormats: ["html"] });
     expect(out.text()).toContain("✓ Saved to /home/alice/.commit-whisper/config.json");
-    expect(out.text()).toContain(SETTINGS_SAVED_NOTE);
+    expect(out.text()).toContain(settingsSavedNote("openai"));
     expect(sel.calls()).toBe(2); // looped back to the menu
   });
 

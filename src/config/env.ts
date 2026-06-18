@@ -184,7 +184,7 @@ export interface EnvVarStatus {
 }
 
 /** The AI-key environment variable a given provider reads (none for local Ollama). */
-function aiKeyEnvVar(provider: Provider | undefined): string | undefined {
+export function aiKeyEnvVar(provider: Provider | undefined): string | undefined {
   switch (provider) {
     case "anthropic":
       return "ANTHROPIC_API_KEY";

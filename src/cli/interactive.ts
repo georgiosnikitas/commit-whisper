@@ -28,6 +28,7 @@ import { Writable } from "node:stream";
 import { isCancel, multiselect as clackMultiselect, select as clackSelect, text as clackText } from "@clack/prompts";
 
 import type { EnvVarStatus } from "../config/env.js";
+import { aiKeyEnvVar } from "../config/env.js";
 import type { SettingsData } from "../config/config-store.js";
 import type { OutputFormat, PartialRunConfig, Provider, Tier } from "../config/run-config.js";
 import type { ActivationOutcome, DeactivationOutcome } from "../license/actions.js";
@@ -230,12 +231,23 @@ const PROVIDER_OPTIONS: { value: string; label: string; hint?: string }[] = [
 /** Providers that need a base URL (local / custom endpoints). */
 const BASE_URL_PROVIDERS = new Set<string>(["ollama", "openai-compatible"]);
 
-/** The closing note after a Settings save — names the env-only key path + the Ollama must-be-running caveat. */
-export const SETTINGS_SAVED_NOTE = [
-  "Ollama runs locally — no key needed, but it must be running:",
-  "  `ollama serve`, then `ollama pull <model>`. Saving selects it; it doesn't start it.",
-  "For a cloud provider, set its key in your environment (e.g. OPENAI_API_KEY) — never entered here.",
-].join("\n");
+/**
+ * The closing note after a Settings save — provider-aware: for `ollama`, the
+ * must-be-running local caveat (no key); for any cloud provider, the EXACT
+ * native env var it reads (never entered here). Prevents naming an irrelevant
+ * provider's path (e.g. an Ollama tip after saving Anthropic).
+ */
+export function settingsSavedNote(provider: Provider): string {
+  const keyVar = aiKeyEnvVar(provider);
+  if (keyVar === undefined) {
+    // ollama — local, no key, but the server must be running.
+    return [
+      "Ollama runs locally — no key needed, but it must be running:",
+      "  `ollama serve`, then `ollama pull <model>`. Saving selects it; it doesn't start it.",
+    ].join("\n");
+  }
+  return `This provider reads its key from your environment (${keyVar}) — never entered here.`;
+}
 
 function aiSegment(state: LaunchpadState): string {
   if (state.provider === undefined) {
@@ -803,7 +815,7 @@ async function runSettings(deps: LaunchpadDeps, output: Writable): Promise<void>
   try {
     const path = await deps.saveSettings(data);
     writeLine(output, `✓ Saved to ${path}`);
-    writeLine(output, SETTINGS_SAVED_NOTE);
+    writeLine(output, settingsSavedNote(provider as Provider));
     await refreshAiState(deps, output);
   } catch (err) {
     writeLine(output, `⚠ Could not save settings: ${err instanceof Error ? err.message : "write failed"}`);
