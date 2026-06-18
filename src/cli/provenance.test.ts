@@ -1,4 +1,5 @@
 import { describe, it, expect } from "vitest";
+import { basename } from "node:path";
 
 import { buildProvenance, stripCredentials, remoteSlug, localName, branchLabel, type ProvenanceInput } from "./provenance.js";
 
@@ -112,6 +113,12 @@ describe("localName", () => {
     expect(localName("/Users/dev/payments-api")).toBe("payments-api");
     expect(localName("/Users/dev/payments-api/")).toBe("payments-api");
     expect(localName("payments-api")).toBe("payments-api");
+  });
+
+  it("resolves a current-directory target to the real directory name (not a bare '.')", () => {
+    const name = localName(".");
+    expect(name).not.toBe(".");
+    expect(name).toBe(basename(process.cwd()));
   });
 });
 

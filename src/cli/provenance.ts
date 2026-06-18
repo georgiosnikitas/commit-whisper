@@ -16,7 +16,7 @@
  * narration actually ran, stripping it on a `--no-ai` / fail-open degraded run.
  */
 
-import { basename } from "node:path";
+import { basename, resolve } from "node:path";
 
 import type { Branch, IsoDate, Provider, Tier } from "../config/run-config.js";
 import type { ReportProvenance } from "../assemble/report-schema.js";
@@ -131,11 +131,20 @@ export function remoteSlug(target: string): string {
   }
 }
 
-/** The basename of a local path; falls back to the trimmed path if it has no clean basename. */
+/**
+ * The basename of a local path. `.`, `..`, and `` point at a directory whose real
+ * name only appears once resolved to an absolute path (e.g. `.` → the current
+ * working directory's name), so those are resolved before taking the basename;
+ * a clean basename is used as-is.
+ */
 export function localName(target: string): string {
   const trimmed = stripTrailingSlashes(target.trim());
   const base = basename(trimmed);
   if (base === "" || base === "." || base === "..") {
+    const resolved = basename(resolve(trimmed === "" ? "." : trimmed));
+    if (resolved !== "" && resolved !== "." && resolved !== "..") {
+      return resolved;
+    }
     return trimmed === "" ? target.trim() : trimmed;
   }
   return base;
