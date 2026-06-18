@@ -750,6 +750,50 @@ describe("runSettings via runLaunchpad (Story 6.5)", () => {
     expect(code).toBe(ExitCode.Success);
     expect(save.saved).toHaveLength(1); // proceeded despite the load failure
   });
+
+  it("refreshes the in-session AI state and header after a save (no restart needed)", async () => {
+    const out = captureStream();
+    const sel = scriptedSelect(["settings", "quit"]);
+    const save = captureSave();
+    // Start with NO provider configured, then pick openai in Settings.
+    const state: LaunchpadState = { ...FREE_CONFIGURED, provider: undefined, llmModel: undefined };
+    const scripted = scriptedPrompts({ texts: ["gpt-4o", "", ""], selects: ["openai", "terminal"] });
+    await runLaunchpad({
+      state,
+      helpText: "HELP",
+      output: out.stream,
+      select: sel.select,
+      prompts: scripted.prompts,
+      saveSettings: save.saveSettings,
+      reloadAiState: async () => ({ provider: "openai", llmModel: "gpt-4o" }),
+    });
+    // The in-session state is mutated so a subsequent Analyze sees the provider.
+    expect(state.provider).toBe("openai");
+    expect(state.llmModel).toBe("gpt-4o");
+    // The refreshed readiness line is re-printed after the save.
+    expect(out.text()).toContain(formatReadinessLine({ ...state, provider: "openai", llmModel: "gpt-4o" }));
+  });
+
+  it("a reloadAiState failure after a save is non-fatal (the save still applies)", async () => {
+    const out = captureStream();
+    const sel = scriptedSelect(["settings", "quit"]);
+    const save = captureSave();
+    const scripted = scriptedPrompts({ texts: ["", "", ""], selects: ["gemini", "terminal"] });
+    const code = await runLaunchpad({
+      state: { ...FREE_CONFIGURED },
+      helpText: "HELP",
+      output: out.stream,
+      select: sel.select,
+      prompts: scripted.prompts,
+      saveSettings: save.saveSettings,
+      reloadAiState: async () => {
+        throw new Error("refresh failed");
+      },
+    });
+    expect(code).toBe(ExitCode.Success);
+    expect(save.saved).toHaveLength(1); // the save itself succeeded
+    expect(out.text()).toContain("✓ Saved to");
+  });
 });
 
 // ── Story 7.2: license screens (activate / deactivate / buy / restore / coffee) ──

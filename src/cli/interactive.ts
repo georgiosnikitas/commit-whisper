@@ -135,6 +135,13 @@ export interface LaunchpadDeps {
   loadSettings?: () => Promise<SettingsData>;
   /** Persist the Settings (Story 6.5) — returns the saved path; injected by `cli/`. Absent ⇒ Settings is read-only. */
   saveSettings?: (data: SettingsData) => Promise<string>;
+  /**
+   * Re-resolve the live AI provider/model (persisted config overlaid by env, the
+   * resolver's precedence) after a Settings save; injected by `cli/`. Lets a
+   * mid-session provider change cure the no-AI state and refresh the header
+   * WITHOUT restarting the launchpad. Absent ⇒ the header is left as-is.
+   */
+  reloadAiState?: () => Promise<{ provider?: Provider; llmModel?: string }>;
   /** Activate a license key (Story 7.2) — the only in-app key entry; injected by `cli/`. */
   activateLicense?: (licenseKey: string) => Promise<ActivationOutcome>;
   /** Deactivate this device's license (Story 7.2) — frees the activation; injected by `cli/`. */
@@ -703,8 +710,29 @@ async function runSettings(deps: LaunchpadDeps, output: Writable): Promise<void>
     const path = await deps.saveSettings(data);
     writeLine(output, `✓ Saved to ${path}`);
     writeLine(output, SETTINGS_SAVED_NOTE);
+    await refreshAiState(deps, output);
   } catch (err) {
     writeLine(output, `⚠ Could not save settings: ${err instanceof Error ? err.message : "write failed"}`);
+  }
+}
+
+/**
+ * Refresh the in-session AI state after a Settings save so a just-saved provider
+ * immediately cures the no-AI gate (runGuidedAnalyze) and the header — no restart
+ * required. A refresh failure is non-fatal: the save already succeeded and the
+ * persisted change still applies on the next run.
+ */
+async function refreshAiState(deps: LaunchpadDeps, output: Writable): Promise<void> {
+  if (deps.reloadAiState === undefined) {
+    return;
+  }
+  try {
+    const ai = await deps.reloadAiState();
+    deps.state.provider = ai.provider;
+    deps.state.llmModel = ai.llmModel;
+    writeLine(output, formatReadinessLine(deps.state));
+  } catch {
+    // Leave the header as-is — the persisted change still applies next run.
   }
 }
 

@@ -459,6 +459,9 @@ async function runZeroArg(ctx: ZeroArgContext): Promise<number> {
   // calmly and returns its exit code so the menu never dead-ends.
   const runAnalysis = async (flags: PartialRunConfig): Promise<number> => {
     try {
+      // Re-read the persisted Settings per run so a provider/model chosen in this
+      // same session's Settings screen takes effect immediately (no restart).
+      const liveConfigFile = ctx.deps.configFile ?? (await readSettings(ctx.env));
       return await resolveAndRun({
         flags,
         env: ctx.env,
@@ -468,7 +471,7 @@ async function runZeroArg(ctx: ZeroArgContext): Promise<number> {
         analysisTimestamp: ctx.deps.analysisTimestamp ?? new Date().toISOString(),
         nonInteractive: false,
         openAllowed: true,
-        configFile,
+        configFile: liveConfigFile,
         entitlement,
         deps: ctx.deps,
         ui: ctx.ui,
@@ -505,6 +508,17 @@ async function runZeroArg(ctx: ZeroArgContext): Promise<number> {
     probeReachability,
     loadSettings: () => readSettings(ctx.env),
     saveSettings: (data) => writeSettings(ctx.env, data),
+    // Re-resolve the live AI provider/model after a Settings save (config < env,
+    // mirroring the resolver) so a mid-session change cures the no-AI state and
+    // refreshes the header without restarting the launchpad.
+    reloadAiState: async () => {
+      const liveConfigFile = ctx.deps.configFile ?? (await readSettings(ctx.env));
+      const liveEnv = readEnvLayer(ctx.env);
+      return {
+        provider: liveEnv.provider ?? liveConfigFile.provider,
+        llmModel: liveEnv.llmModel ?? liveConfigFile.llmModel,
+      };
+    },
     // License actions (Story 7.2): the only in-app key entry + the browser hand-offs.
     activateLicense: (key) => (ctx.deps.activateLicense ?? defaultActivateLicense)(ctx.env, key),
     deactivateLicense: () => (ctx.deps.deactivateLicense ?? defaultDeactivateLicense)(ctx.env),
