@@ -25,6 +25,7 @@ import type { Confidence } from "../../narrate/narrate.port.js";
 import { classifyReport, type ShowpieceReport, type SubstrateFraming } from "../render.port.js";
 import { classifyHealth, HEALTH_GLYPH, HEALTH_LABEL, type HealthBand } from "../html/health.js";
 import { extractSeries } from "../html/shape.js";
+import { buildValueTree, type ValueEntry } from "../value-tree.js";
 
 type Colors = ReturnType<typeof pc.createColors>;
 type Metric = ReportAnalysis["metrics"][number];
@@ -258,14 +259,31 @@ function valueBullet(metric: Metric, c: Colors): string {
     return `${label} — ${formatValue(value)}`;
   }
   const series = extractSeries(value);
-  if (series.length === 0) {
-    return `${label} — ${formatValue(value)}`;
-  }
   if (series.length === 1) {
     return `${label} — ${formatNumber(series[0].value)}`;
   }
-  const rows = series.map((point) => `    ${c.dim("-")} ${point.label}: ${formatNumber(point.value)}`);
-  return [label, ...rows].join("\n");
+  if (series.length > 1) {
+    const rows = series.map((point) => `    ${c.dim("-")} ${point.label}: ${formatNumber(point.value)}`);
+    return [label, ...rows].join("\n");
+  }
+  // Nested beyond a flat series (e.g. churn-over-time buckets, strengths/weaknesses
+  // lists): render the humanized tree, never a truncated JSON blob.
+  const tree = buildValueTree(value);
+  if (tree.kind === "scalar") {
+    return `${label} — ${tree.text}`;
+  }
+  return [label, ...treeLines(tree.entries, "    ", c)].join("\n");
+}
+
+/** Render a value tree as indented, dim-dashed terminal lines. */
+function treeLines(entries: readonly ValueEntry[], indent: string, c: Colors): string[] {
+  return entries.flatMap((entry) => {
+    if (entry.child.kind === "scalar") {
+      const text = entry.child.text === "" ? entry.label : `${entry.label}: ${entry.child.text}`;
+      return [`${indent}${c.dim("-")} ${text}`];
+    }
+    return [`${indent}${c.dim("-")} ${entry.label}`, ...treeLines(entry.child.entries, `${indent}  `, c)];
+  });
 }
 
 /** A finite number rounded to 2 decimals (locale-independent, byte-stable). */

@@ -255,10 +255,16 @@ const TIER_LABEL: Record<Tier, string> = {
   unlimited: "Unlimited",
 };
 
-/** Color the tier label by entitlement: paid tiers (Single-device/Unlimited) green, Free red. */
-function tierSegment(tier: Tier): string {
+/**
+ * Color the tier label by entitlement: paid tiers (Single-device/Unlimited)
+ * green, Free red. Colour is gated by an explicit `color` decision (resolved
+ * from env + TTY by `cli/`), NOT picocolors' ambient detection — so non-TTY /
+ * captured output (pipes, tests) stays plain regardless of `FORCE_COLOR`.
+ */
+function tierSegment(tier: Tier, color: boolean): string {
+  const c = pc.createColors(color);
   const label = TIER_LABEL[tier];
-  return tier === "free" ? pc.red(label) : pc.green(label);
+  return tier === "free" ? c.red(label) : c.green(label);
 }
 
 /** The output-format picker rows (the resolver tokens — `markdown`, not the `md` extension). */
@@ -320,8 +326,8 @@ function cwdSegment(state: LaunchpadState): string {
  * The persistent header readiness line (AC2): `<tier> · AI: <provider (model) |
  * ⚠ not configured> · cwd: <path> (<branch>) | — (not a git repo)`.
  */
-export function formatReadinessLine(state: LaunchpadState): string {
-  return `${tierSegment(state.tier)} · AI: ${aiSegment(state)} · cwd: ${cwdSegment(state)}`;
+export function formatReadinessLine(state: LaunchpadState, color = false): string {
+  return `${tierSegment(state.tier, color)} · AI: ${aiSegment(state)} · cwd: ${cwdSegment(state)}`;
 }
 
 /**
@@ -546,17 +552,19 @@ export function formatStatusReport(
   if (reachability.kind === "not-configured") {
     lines.push("", NO_AI_FIX);
   }
-  return paintStatusMarks(lines.join("\n"));
+  return paintStatusMarks(lines.join("\n"), config?.color ?? false);
 }
 
 /**
  * Colorize the doctor status glyphs as a final pass — `✓` green, `✗` red —
  * AFTER all column alignment is computed on the plain text, so the ANSI bytes
- * never skew the `padEnd` math. Via `picocolors`, so `NO_COLOR` / a non-TTY
- * yields plain glyphs unchanged (keeping the headless output identical).
+ * never skew the `padEnd` math. Colour is gated by the explicit `color`
+ * decision (resolved from env + TTY by `cli/`), so non-TTY / captured output
+ * (pipes, tests) yields plain glyphs — keeping the headless output identical.
  */
-function paintStatusMarks(text: string): string {
-  return text.replaceAll("✓", pc.green("✓")).replaceAll("✗", pc.red("✗"));
+function paintStatusMarks(text: string, color: boolean): string {
+  const c = pc.createColors(color);
+  return text.replaceAll("✓", c.green("✓")).replaceAll("✗", c.red("✗"));
 }
 
 // ── Guided run: pure command echo + input interpreters (Story 6.2) ──────────
@@ -1213,7 +1221,7 @@ export async function runLaunchpad(deps: LaunchpadDeps): Promise<number> {
 
   const writeHeader = (): void => {
     writeLine(output, LAUNCHPAD_TAGLINE);
-    writeLine(output, formatReadinessLine(deps.state));
+    writeLine(output, formatReadinessLine(deps.state, deps.doctorConfig?.color));
   };
 
   if (!repaint) {

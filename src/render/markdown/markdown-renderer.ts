@@ -29,6 +29,7 @@ import type { MetricGroup } from "../../analyze/metric.js";
 import { classifyReport, type ShowpieceReport, type SubstrateFraming } from "../render.port.js";
 import { classifyHealth, HEALTH_GLYPH, HEALTH_LABEL } from "../html/health.js";
 import { detectShape, extractSeries } from "../html/shape.js";
+import { buildValueTree, type ValueEntry } from "../value-tree.js";
 import { escapeCell, inlineProse } from "./escape.js";
 import { groupOverview, metricVisualMarkdown } from "./visuals.js";
 
@@ -260,12 +261,32 @@ function valueBullet(metric: Metric): string {
   }
   const series = extractSeries(value);
   if (series.length === 0) {
-    return `- **Value** — ${escapeCell(formatValue(value))}`;
+    // Nested beyond a flat series (e.g. churn-over-time buckets, strengths/weaknesses
+    // lists): render the humanized tree as a nested bullet list, never a JSON blob.
+    const tree = buildValueTree(value);
+    if (tree.kind === "scalar") {
+      return `- **Value** — ${escapeCell(tree.text)}`;
+    }
+    return [`- **Value**`, ...treeBullets(tree.entries, "  ")].join("\n");
   }
   if (series.length === 1) {
     return `- **Value** — ${escapeCell(formatNumber(series[0].value))}`;
   }
   return valueTable(value);
+}
+
+/** Render a value tree as a nested Markdown bullet list (each leaf/branch label escaped). */
+function treeBullets(entries: readonly ValueEntry[], indent: string): string[] {
+  return entries.flatMap((entry) => {
+    if (entry.child.kind === "scalar") {
+      const text =
+        entry.child.text === ""
+          ? escapeCell(entry.label)
+          : `${escapeCell(entry.label)}: ${escapeCell(entry.child.text)}`;
+      return [`${indent}- ${text}`];
+    }
+    return [`${indent}- ${escapeCell(entry.label)}`, ...treeBullets(entry.child.entries, `${indent}  `)];
+  });
 }
 
 /** A finite number rounded to 2 decimals for table cells (locale-independent, byte-stable). */

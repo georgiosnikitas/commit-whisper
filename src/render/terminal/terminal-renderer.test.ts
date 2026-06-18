@@ -263,3 +263,49 @@ describe("renderTerminal — structured Value rendering (no raw JSON arrays)", (
   });
 });
 
+describe("renderTerminal — nested Value rendering (no raw JSON blobs)", () => {
+  const NESTED: ReportAnalysis = {
+    metrics: [
+      {
+        id: "e-churn-over-time",
+        group: "E",
+        title: "Churn rate over time",
+        status: "computed",
+        value: {
+          perMonth: {
+            "2026-05": { additions: 100, deletions: 20, churn: 120, commitCount: 4 },
+            "2026-06": { additions: 49404, deletions: 6116, churn: 55520, commitCount: 12 },
+          },
+          totalChurn: 55640,
+        },
+      },
+      {
+        id: "f-strengths-weaknesses",
+        group: "F",
+        title: "Hygiene strengths & weaknesses",
+        status: "computed",
+        value: {
+          strengths: [{ name: "Message Quality", subScore: 91.81 }],
+          weaknesses: [{ name: "Churn Stability", subScore: 40 }],
+        },
+      },
+    ],
+  };
+
+  const out = renderTerminal(report({ analysis: NESTED, degraded: false }), { color: false });
+
+  it("collapses a time-bucket of objects to a labeled tree, not raw JSON", () => {
+    expect(out).not.toContain('"additions"');
+    expect(out).not.toContain('{"perMonth"');
+    expect(out).toContain("- perMonth");
+    expect(out).toContain("- 2026-06: 55520");
+    expect(out).toContain("- totalChurn: 55640");
+  });
+
+  it("flattens strengths/weaknesses score lists to name: score lines", () => {
+    expect(out).toContain("- strengths");
+    expect(out).toContain("- Message Quality: 91.81");
+    expect(out).toContain("- Churn Stability: 40");
+  });
+});
+

@@ -144,6 +144,51 @@ describe("renderMarkdown — structured values render as tables, not JSON (AC2)"
     expect(out).toContain("- **Value** — 2"); // bus factor
     expect(out).toContain("- **Value** — 81"); // hygiene score
   });
+
+  it("a nested value (time-bucket of objects) renders as a labeled bullet list, not JSON", () => {
+    const analysis: ReportAnalysis = {
+      metrics: [
+        {
+          id: "e-churn-over-time",
+          group: "E",
+          title: "Churn rate over time",
+          status: "computed",
+          value: {
+            perMonth: { "2026-06": { additions: 49404, deletions: 6116, churn: 55520, commitCount: 12 } },
+            totalChurn: 55520,
+          },
+        },
+      ],
+    };
+    const out = renderMarkdown(report({ analysis, narrative: NARRATIVE }));
+    expect(out).not.toContain('{"perMonth"'); // no raw JSON
+    expect(out).toContain("- **Value**");
+    expect(out).toContain("- perMonth");
+    expect(out).toContain("- 2026-06: 55520");
+    expect(out).toContain("- totalChurn: 55520");
+  });
+
+  it("a nested object of named-score arrays flattens to name: score bullets", () => {
+    const analysis: ReportAnalysis = {
+      metrics: [
+        {
+          id: "f-strengths-weaknesses",
+          group: "F",
+          title: "Hygiene strengths & weaknesses",
+          status: "computed",
+          value: {
+            strengths: [{ name: "Message Quality", subScore: 91.81 }],
+            weaknesses: [{ name: "Churn Stability", subScore: 40 }],
+          },
+        },
+      ],
+    };
+    const out = renderMarkdown(report({ analysis, narrative: NARRATIVE }));
+    expect(out).not.toContain('{"strengths"'); // no raw JSON
+    expect(out).toContain("- strengths");
+    expect(out).toContain("- Message Quality: 91.81");
+    expect(out).toContain("- Churn Stability: 40");
+  });
 });
 
 describe("renderMarkdown — substrate: degraded vs metrics-only (AC3)", () => {
