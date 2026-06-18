@@ -323,8 +323,8 @@ export function buildLaunchpadOptions(state: LaunchpadState): LaunchpadOption[] 
     { value: "analyze-cwd", label: "Analyze this repository", hint: "the current directory" },
     { value: "analyze-remote", label: "Analyze a remote repository", hint: "clone a URL" },
     { value: "settings", label: "Settings", hint: "provider, model, default format" },
-    { value: "status", label: "Doctor" },
-    { value: "help", label: "Help" },
+    { value: "status", label: "Doctor", hint: "diagnose your setup" },
+    { value: "help", label: "Help", hint: "show the flag reference" },
   ];
   if (state.licensed) {
     options.push({ value: "deactivate", label: "Deactivate license", hint: "free this device" });
