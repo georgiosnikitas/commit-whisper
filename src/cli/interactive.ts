@@ -255,6 +255,12 @@ const TIER_LABEL: Record<Tier, string> = {
   unlimited: "Unlimited",
 };
 
+/** Color the tier label by entitlement: paid tiers (Single-device/Unlimited) green, Free red. */
+function tierSegment(tier: Tier): string {
+  const label = TIER_LABEL[tier];
+  return tier === "free" ? pc.red(label) : pc.green(label);
+}
+
 /** The output-format picker rows (the resolver tokens — `markdown`, not the `md` extension). */
 const OUTPUT_FORMAT_OPTIONS: { value: OutputFormat; label: string }[] = [
   { value: "terminal", label: "terminal" },
@@ -315,7 +321,7 @@ function cwdSegment(state: LaunchpadState): string {
  * ⚠ not configured> · cwd: <path> (<branch>) | — (not a git repo)`.
  */
 export function formatReadinessLine(state: LaunchpadState): string {
-  return `${TIER_LABEL[state.tier]} · AI: ${aiSegment(state)} · cwd: ${cwdSegment(state)}`;
+  return `${tierSegment(state.tier)} · AI: ${aiSegment(state)} · cwd: ${cwdSegment(state)}`;
 }
 
 /**

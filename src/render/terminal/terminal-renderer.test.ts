@@ -233,3 +233,33 @@ describe("renderTerminal — group structure + four-facet explanations (parity)"
   });
 });
 
+describe("renderTerminal — structured Value rendering (no raw JSON arrays)", () => {
+  const STRUCTURED: ReportAnalysis = {
+    metrics: [
+      { id: "b-bus", group: "B", title: "Bus factor", status: "computed", value: { busFactor: 2 } },
+      {
+        id: "e-most",
+        group: "E",
+        title: "Most changed files",
+        status: "computed",
+        value: [
+          { path: "src/app.ts", changes: 40 },
+          { path: "src/util.ts", changes: 12 },
+        ],
+      },
+    ],
+  };
+
+  const out = renderTerminal(report({ analysis: STRUCTURED, degraded: false }), { color: false });
+
+  it("renders an array value as a labeled list, not a raw JSON dump", () => {
+    expect(out).not.toContain('[{"path"');
+    expect(out).toContain("- src/app.ts: 40");
+    expect(out).toContain("- src/util.ts: 12");
+  });
+
+  it("renders a single-field object value inline", () => {
+    expect(out).toContain("• Value — 2");
+  });
+});
+
