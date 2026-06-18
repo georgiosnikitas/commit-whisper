@@ -2,13 +2,16 @@
  * Group-overview chart panels + the shared data-table fallback (Story 4.2;
  * inline-SVG rebuild — ADR H1/H2/H4, 2026-06-18).
  *
- * Each group renders TWO inline-SVG overview charts — a primary + a shape-matched
- * secondary (`GROUP_CHARTS`): A volume line + cadence bars · B ownership doughnut
- * + concentration gauge · C category bars + adherence gauge · D merge line +
- * direct-to-default gauge · E hotspots h-bars + churn-trend line · F component
- * radar + hygiene gauge — inside a `<figure>` caption, each sub-chart paired with
- * a mandatory `<details>`/`<table>` data fallback (the no-JS / keyboard floor —
- * never a chart alone). `metricVisual` (value-shape → visual) is still exported
+ * Each group renders TWO inline-SVG overview charts bound to specific metrics by
+ * id (`CHART_PLAN`), matched to the design sample
+ * (docs/sample/commit-whisper-sample-report.html): A volume line + cadence bars ·
+ * B contributor doughnut + top-author gauge · C subject-length bars + adherence
+ * gauge · D commit-type bars + direct-to-default gauge · E hotspot h-bars +
+ * churn-trend line · F hygiene radar + overall-score gauge — inside a `<figure>`
+ * caption, each sub-chart paired with a mandatory `<details>`/`<table>` data
+ * fallback (the no-JS / keyboard floor — never a chart alone). Binding by id (plus
+ * a per-metric data extractor) keeps the panel stable regardless of the order or
+ * shape of other metrics. `metricVisual` (value-shape → visual) is still exported
  * for tests but is NO LONGER wired into the cards: per ADR H4 charts live only in
  * this group panel and metric cards are chart-free stat cards. Pure + escaped +
  * deterministic.
@@ -57,42 +60,170 @@ function formatNumber(value: number): string {
   return Number.isInteger(value) ? String(value) : String(Math.round(value * 100) / 100);
 }
 
-/** A chartable value shape the overview plan can request. */
-type SeriesShape = "timeseries" | "distribution";
 /** The chart kinds an overview sub-panel can render. */
 type SubKind = "line" | "bars" | "hbars" | "radar" | "donut" | "gauge";
-/** One sub-chart in a group's overview: a chart kind fed by the Nth metric of a shape. */
-interface SubSpec {
+/** A 0..max value for a radial gauge, or undefined when its field is absent. */
+type GaugeValue = { value: number; max: number } | undefined;
+
+/**
+ * One sub-chart in a group's overview, bound to a specific metric by id so the
+ * panel always renders the SAME chart as the design sample regardless of the
+ * order or shape of other metrics. Series charts supply `series`; gauges `gauge`.
+ */
+interface ChartSpec {
+  title: string;
+  sourceId: string;
   kind: SubKind;
-  pick: SeriesShape | "range";
-  index: number;
+  series?: (value: unknown) => SeriesPoint[];
+  gauge?: (value: unknown) => GaugeValue;
+}
+
+/** The value as a plain record, or an empty record for non-objects. */
+function asRecord(value: unknown): Record<string, unknown> {
+  return value !== null && typeof value === "object" && !Array.isArray(value) ? (value as Record<string, unknown>) : {};
+}
+
+/** A labelled series from an object of `key -> number` (the value's own key order). */
+function objectSeries(value: unknown): SeriesPoint[] {
+  return Object.entries(asRecord(value))
+    .filter(([, v]) => typeof v === "number" && Number.isFinite(v))
+    .map(([label, v]) => ({ label, value: v as number }));
+}
+
+/** The named numeric fields (in order, skipping absent ones) as a labelled series. */
+function pickFields(value: unknown, fields: readonly (readonly string[])[]): SeriesPoint[] {
+  const obj = asRecord(value);
+  const out: SeriesPoint[] = [];
+  for (const pair of fields) {
+    const key = pair[0];
+    if (typeof key !== "string") {
+      continue;
+    }
+    const v = obj[key];
+    if (typeof v === "number" && Number.isFinite(v)) {
+      out.push({ label: pair[1] ?? key, value: v });
+    }
+  }
+  return out;
+}
+
+/** A 0..100 gauge value from a named percentage/score field. */
+function pctField(value: unknown, key: string): GaugeValue {
+  const v = asRecord(value)[key];
+  return typeof v === "number" && Number.isFinite(v) ? { value: v, max: 100 } : undefined;
+}
+
+/** The trailing path segment (file/dir name) for a hotspot label. */
+function baseName(path: string): string {
+  const parts = path.split("/").filter((p) => p !== "");
+  return parts.at(-1) ?? path;
+}
+
+/** Top-N `{ path, <field> }` rows → a labelled series keyed by `field`. */
+function rowsSeries(value: unknown, key: string, field: string, limit: number): SeriesPoint[] {
+  const rows = asRecord(value)[key];
+  if (!Array.isArray(rows)) {
+    return [];
+  }
+  const out: SeriesPoint[] = [];
+  for (const row of rows.slice(0, limit)) {
+    const obj = asRecord(row);
+    const v = obj[field];
+    if (typeof v === "number" && Number.isFinite(v) && typeof obj.path === "string") {
+      out.push({ label: baseName(obj.path), value: v });
+    }
+  }
+  return out;
+}
+
+/** Active-vs-inactive split for the contributor doughnut. */
+function contributorSplit(value: unknown): SeriesPoint[] {
+  const obj = asRecord(value);
+  const active = typeof obj.active === "number" ? obj.active : 0;
+  const total = typeof obj.total === "number" ? obj.total : active;
+  return [
+    { label: "active", value: active },
+    { label: "inactive", value: Math.max(0, total - active) },
+  ];
+}
+
+/** Hygiene component sub-scores (strengths then weaknesses) for the radar. */
+function hygieneDimensions(value: unknown): SeriesPoint[] {
+  const obj = asRecord(value);
+  const out: SeriesPoint[] = [];
+  for (const key of ["strengths", "weaknesses"] as const) {
+    const arr = obj[key];
+    if (!Array.isArray(arr)) {
+      continue;
+    }
+    for (const entry of arr) {
+      const dim = asRecord(entry);
+      if (typeof dim.name === "string" && typeof dim.subScore === "number" && Number.isFinite(dim.subScore)) {
+        out.push({ label: dim.name, value: dim.subScore });
+      }
+    }
+  }
+  return out;
+}
+
+/** Churn-per-month series from `perMonth: { "YYYY-MM": { churn } }`. */
+function churnByMonth(value: unknown): SeriesPoint[] {
+  const out: SeriesPoint[] = [];
+  for (const [label, bucket] of Object.entries(asRecord(asRecord(value).perMonth))) {
+    const churn = asRecord(bucket).churn;
+    if (typeof churn === "number" && Number.isFinite(churn)) {
+      out.push({ label, value: churn });
+    }
+  }
+  return out;
+}
+
+/** Subject-length percentile profile (Min · Median · Mean · p90 · Max). */
+function subjectLengthSeries(value: unknown): SeriesPoint[] {
+  return pickFields(asRecord(value).subjectLength, [
+    ["min", "Min"],
+    ["median", "Median"],
+    ["mean", "Mean"],
+    ["p90", "p90"],
+    ["max", "Max"],
+  ]);
 }
 
 /**
- * The per-group overview chart plan — a primary chart + a secondary (a radial
- * gauge for a 0–100 share/score, or a second series). Mirrors the showcase: A
- * volume line + cadence bars · B ownership doughnut + concentration gauge · C
- * category bars + adherence gauge · D merge line + direct-to-default gauge · E
- * hotspots bars + churn-trend line · F component radar + hygiene gauge.
+ * The per-group overview chart plan — two charts per group, each bound to a
+ * specific metric by id and matched to the design sample
+ * (docs/sample/commit-whisper-sample-report.html): A monthly-volume line +
+ * weekly-cadence bars · B contributor doughnut + top-author gauge · C
+ * subject-length bars + Conventional-Commits gauge · D commit-type bars +
+ * direct-to-default gauge · E hotspot h-bars + churn-trend line · F hygiene
+ * radar + overall-score gauge.
  */
-const GROUP_CHARTS: Record<MetricGroup, readonly SubSpec[]> = {
-  A: [{ kind: "line", pick: "timeseries", index: 0 }, { kind: "bars", pick: "timeseries", index: 1 }],
-  B: [{ kind: "donut", pick: "distribution", index: 0 }, { kind: "gauge", pick: "range", index: 0 }],
-  C: [{ kind: "bars", pick: "distribution", index: 0 }, { kind: "gauge", pick: "range", index: 0 }],
-  D: [{ kind: "line", pick: "timeseries", index: 0 }, { kind: "gauge", pick: "range", index: 0 }],
-  E: [{ kind: "hbars", pick: "distribution", index: 0 }, { kind: "line", pick: "timeseries", index: 0 }],
-  F: [{ kind: "radar", pick: "distribution", index: 0 }, { kind: "gauge", pick: "range", index: 0 }],
+const CHART_PLAN: Record<MetricGroup, readonly ChartSpec[]> = {
+  A: [
+    { title: "Commit volume over time", sourceId: "a-commit-volume", kind: "line", series: (v) => objectSeries(asRecord(v).perMonth) },
+    { title: "Commit frequency / cadence", sourceId: "a-commit-volume", kind: "bars", series: (v) => objectSeries(asRecord(v).perWeek) },
+  ],
+  B: [
+    { title: "Contributor count", sourceId: "b-contributor-count", kind: "donut", series: contributorSplit },
+    { title: "Contribution distribution", sourceId: "b-contribution-distribution", kind: "gauge", gauge: (v) => pctField(v, "topCommitSharePct") },
+  ],
+  C: [
+    { title: "Message length distribution", sourceId: "c-message-length-distribution", kind: "bars", series: subjectLengthSeries },
+    { title: "Conventional Commits adherence", sourceId: "c-conventional-commits", kind: "gauge", gauge: (v) => pctField(v, "adherenceSharePct") },
+  ],
+  D: [
+    { title: "Branch/merge topology summary", sourceId: "d-topology-summary", kind: "bars", series: (v) => pickFields(v, [["regularCommitCount", "Regular"], ["mergeCommitCount", "Merges"], ["rootCommitCount", "Root"]]) },
+    { title: "Direct-to-default-branch rate", sourceId: "d-direct-to-default", kind: "gauge", gauge: (v) => pctField(v, "directToDefaultSharePct") },
+  ],
+  E: [
+    { title: "Most-changed files / directories", sourceId: "e-most-changed", kind: "hbars", series: (v) => rowsSeries(v, "topFiles", "touchCount", 8) },
+    { title: "Churn rate over time", sourceId: "e-churn-over-time", kind: "line", series: churnByMonth },
+  ],
+  F: [
+    { title: "Hygiene strengths & weaknesses", sourceId: "f-strengths-weaknesses", kind: "radar", series: hygieneDimensions },
+    { title: "Overall hygiene score", sourceId: "f-hygiene-score", kind: "gauge", gauge: (v) => pctField(v, "score") },
+  ],
 };
-
-/** Computed metrics in the group whose value has the given chartable shape. */
-function metricsOfShape(metrics: readonly Metric[], shape: SeriesShape): Metric[] {
-  return metrics.filter((m) => m.status === "computed" && detectShape(m.value) === shape && extractSeries(m.value).length > 0);
-}
-
-/** Computed metrics in the group that carry a 0..max range field (gauge candidates). */
-function rangeMetrics(metrics: readonly Metric[]): Metric[] {
-  return metrics.filter((m) => m.status === "computed" && rangeField(m.value) !== undefined);
-}
 
 /** One titled sub-chart cell (chart + its mandatory data-table fallback). */
 function subFigure(title: string, svg: string, table: string): string {
@@ -103,23 +234,25 @@ ${table}
 </div>`;
 }
 
-/** Render the inline-SVG chart for one sub-spec, or undefined when its metric is absent. */
-function renderSubChart(group: MetricGroup, spec: SubSpec, metrics: readonly Metric[]): string | undefined {
-  const pool = spec.pick === "range" ? rangeMetrics(metrics) : metricsOfShape(metrics, spec.pick);
-  const metric = pool[spec.index];
-  if (metric === undefined) {
+/** Render one bound sub-chart (+ its data-table fallback), or undefined when its source metric is absent or empty. */
+function renderChartSpec(group: MetricGroup, spec: ChartSpec, byId: ReadonlyMap<string, Metric>): string | undefined {
+  const metric = byId.get(spec.sourceId);
+  if (metric?.status !== "computed") {
     return undefined;
   }
-  const label = `Group ${group} \u2014 ${metric.title}`;
+  const label = `Group ${group} \u2014 ${spec.title}`;
   if (spec.kind === "gauge") {
-    const range = rangeField(metric.value);
+    const range = spec.gauge?.(metric.value);
     if (range === undefined) {
       return undefined;
     }
-    const table = dataTable([{ label: metric.title, value: range.value }], "Value", metric.title);
-    return subFigure(metric.title, svgRadialGauge(range.value, range.max, label), table);
+    const table = dataTable([{ label: spec.title, value: range.value }], "Value", spec.title);
+    return subFigure(spec.title, svgRadialGauge(range.value, range.max, label), table);
   }
-  const series = extractSeries(metric.value);
+  const series = spec.series?.(metric.value) ?? [];
+  if (series.length === 0) {
+    return undefined;
+  }
   let svg: string;
   switch (spec.kind) {
     case "line":
@@ -137,19 +270,23 @@ function renderSubChart(group: MetricGroup, spec: SubSpec, metrics: readonly Met
     default:
       svg = svgDonut(series, label);
   }
-  return subFigure(metric.title, svg, dataTable(series, "Value", metric.title));
+  return subFigure(spec.title, svg, dataTable(series, "Value", spec.title));
 }
 
 /**
- * The group-overview panel: the group description + a grid of up to two charts
- * (primary + secondary), each with its mandatory data-table fallback (never a
- * chart alone). Empty groups render a caption + note instead.
+ * The group-overview panel: the group description + a grid of the group's two
+ * charts (bound to specific metrics by id per `CHART_PLAN`, matched to the design
+ * sample), each with its mandatory data-table fallback (never a chart alone). A
+ * chart slot is omitted only when its source metric is unavailable; an empty group
+ * renders a caption + note. (HTML-only — markdown/terminal group overviews are
+ * unaffected.)
  */
 export function groupOverviewPanel(group: MetricGroup, metrics: readonly Metric[]): string {
   const description = GROUP_DESCRIPTION[group];
   const label = `Group ${group} overview`;
-  const subs = GROUP_CHARTS[group]
-    .map((spec) => renderSubChart(group, spec, metrics))
+  const byId = new Map<string, Metric>(metrics.map((m) => [m.id, m]));
+  const subs = CHART_PLAN[group]
+    .map((spec) => renderChartSpec(group, spec, byId))
     .filter((html): html is string => html !== undefined);
   if (subs.length === 0) {
     return `<figure class="chart-panel" aria-label="${escapeHtml(label)}">

@@ -296,7 +296,7 @@ describe("renderHtml — charts, health bands, disclosure (Story 4.2)", () => {
 
   it("keeps escaping through the new visuals/tables and stays self-contained < 1 MB", () => {
     const evil: ReportAnalysis = {
-      metrics: [{ id: "e-most-changed", group: "E", title: "Most changed", status: "computed", value: [{ path: "<img onerror=alert(1)>", changes: 9 }] }],
+      metrics: [{ id: "e-most-changed", group: "E", title: "Most changed", status: "computed", value: { topFiles: [{ path: "<img onerror=alert(1)>", touchCount: 9, churn: 9 }] } }],
     };
     const evilOut = renderHtml(report({ analysis: evil, narrative: NARRATIVE }));
     expect(evilOut).not.toContain("<img onerror=alert(1)>");

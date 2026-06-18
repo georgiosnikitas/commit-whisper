@@ -22,8 +22,18 @@ describe("dataTable", () => {
 });
 
 describe("groupOverviewPanel", () => {
+  const VOLUME: Metric = {
+    id: "a-commit-volume",
+    group: "A",
+    title: "Commit volume over time",
+    status: "computed",
+    value: { perMonth: { "2024-01": 3, "2024-02": 7 }, perWeek: { "2024-W01": 2, "2024-W02": 5 } },
+  };
+  const CONTRIBUTORS: Metric = { id: "b-contributor-count", group: "B", title: "Contributor count", status: "computed", value: { total: 7, active: 5, activeWindowDays: 90 } };
+  const MSG_LENGTH: Metric = { id: "c-message-length-distribution", group: "C", title: "Message length distribution", status: "computed", value: { subjectLength: { min: 10, median: 40, mean: 42, p90: 70, max: 110 } } };
+
   it("renders a figure + caption + SVG + a mandatory data-table fallback (never a chart alone)", () => {
-    const out = groupOverviewPanel("A", [TIMESERIES, NA]);
+    const out = groupOverviewPanel("A", [VOLUME, NA]);
     expect(out).toContain("<figure class=\"chart-panel\"");
     expect(out).toContain("<figcaption>");
     expect(out).toContain("<svg");
@@ -31,14 +41,28 @@ describe("groupOverviewPanel", () => {
     expect(out).toContain("<table>");
   });
 
-  it("uses the group's fixed chart type (A → line, B → donut, C → bars, F → radar)", () => {
-    expect(groupOverviewPanel("A", [TIMESERIES])).toContain("chart-line");
-    expect(groupOverviewPanel("B", [{ ...DIST, group: "B" }])).toContain("chart-donut");
-    expect(groupOverviewPanel("C", [{ ...DIST, group: "C" }])).toContain("chart-bars");
+  it("uses each group's bound chart type (A → line, B → donut, C → bars)", () => {
+    expect(groupOverviewPanel("A", [VOLUME])).toContain("chart-line");
+    expect(groupOverviewPanel("B", [CONTRIBUTORS])).toContain("chart-donut");
+    expect(groupOverviewPanel("C", [MSG_LENGTH])).toContain("chart-bars");
   });
 
-  it("renders a caption + note (no SVG) when no metric yields a chartable series", () => {
-    const out = groupOverviewPanel("A", [SCALAR, NA]);
+  it("renders the group's two bound charts when their source metrics are present", () => {
+    const out = groupOverviewPanel("A", [VOLUME]);
+    expect(out).toContain("chart-cells two");
+    expect(out).toContain("chart-line"); // monthly volume
+    expect(out).toContain("chart-bars"); // weekly cadence
+  });
+
+  it("keeps a single chart when only one bound chart has data", () => {
+    const monthlyOnly: Metric = { id: "a-commit-volume", group: "A", title: "Commit volume over time", status: "computed", value: { perMonth: { "2024-01": 3, "2024-02": 7 } } };
+    const out = groupOverviewPanel("A", [monthlyOnly, NA]);
+    expect(out).not.toContain("chart-cells two");
+    expect(out).toContain("chart-line");
+  });
+
+  it("renders a caption + note (no SVG) when the group's bound metrics are absent", () => {
+    const out = groupOverviewPanel("A", [SCALAR, NA]); // neither id matches the Group A plan
     expect(out).toContain("<figcaption>");
     expect(out).toContain("No chartable series");
     expect(out).not.toContain("<svg");
