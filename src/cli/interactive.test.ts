@@ -662,17 +662,17 @@ describe("formatStatusReport (AC1, AC2)", () => {
     expect(report).not.toContain("Base URL"); // shown only when set
     // Run-scope (env/flag-only) block.
     expect(report).toContain("Run scope (env vars / flags only — not saved)");
-    expect(report).toMatch(/Branch\s+HEAD \(default\)\s+COMMIT_WHISPER_BRANCH/);
-    expect(report).toMatch(/Author\s+any \(default\)\s+COMMIT_WHISPER_AUTHOR/);
-    expect(report).toMatch(/Since\s+— \(unbounded\)\s+COMMIT_WHISPER_START_DATE/);
-    expect(report).toMatch(/Until\s+— \(unbounded\)\s+COMMIT_WHISPER_END_DATE/);
-    expect(report).toMatch(/No-merges\s+off \(default\)\s+COMMIT_WHISPER_NO_MERGES/);
-    expect(report).toMatch(/Output path\s+— \(auto\)\s+COMMIT_WHISPER_OUT/);
-    expect(report).toMatch(/AI mode\s+auto \(default\)\s+COMMIT_WHISPER_AI_MODE/);
+    expect(report).toMatch(/COMMIT_WHISPER_BRANCH\s+Branch\s+HEAD \(default\)/);
+    expect(report).toMatch(/COMMIT_WHISPER_AUTHOR\s+Author\s+any \(default\)/);
+    expect(report).toMatch(/COMMIT_WHISPER_START_DATE\s+Since\s+— \(unbounded\)/);
+    expect(report).toMatch(/COMMIT_WHISPER_END_DATE\s+Until\s+— \(unbounded\)/);
+    expect(report).toMatch(/COMMIT_WHISPER_NO_MERGES\s+No-merges\s+off \(default\)/);
+    expect(report).toMatch(/COMMIT_WHISPER_OUT\s+Output path\s+— \(auto\)/);
+    expect(report).toMatch(/COMMIT_WHISPER_AI_MODE\s+AI mode\s+auto \(default\)/);
     // Settings rows are annotated with their env vars too.
-    expect(report).toMatch(/Timezone\s+UTC \(default\)\s+COMMIT_WHISPER_TZ/);
-    expect(report).toMatch(/Format\s+terminal \(default\)\s+COMMIT_WHISPER_FORMAT/);
-    expect(report).toMatch(/Max commits\s+unbounded\s+COMMIT_WHISPER_MAX_COMMITS/);
+    expect(report).toMatch(/COMMIT_WHISPER_TZ\s+Timezone\s+UTC \(default\)/);
+    expect(report).toMatch(/COMMIT_WHISPER_FORMAT\s+Format\s+terminal \(default\)/);
+    expect(report).toMatch(/COMMIT_WHISPER_MAX_COMMITS\s+Max commits\s+unbounded/);
   });
 
   it("renders configured Settings + Run-scope values, including Base URL when set", () => {
@@ -709,8 +709,8 @@ describe("formatStatusReport (AC1, AC2)", () => {
       color: false,
     });
     expect(report).toContain("Operational");
-    expect(report).toMatch(/Log level\s+verbose\s+COMMIT_WHISPER_LOG_LEVEL/);
-    expect(report).toMatch(/Color\s+off\s+NO_COLOR \/ FORCE_COLOR/);
+    expect(report).toMatch(/COMMIT_WHISPER_LOG_LEVEL\s+Log level\s+verbose/);
+    expect(report).toMatch(/NO_COLOR \/ FORCE_COLOR\s+Color\s+off/);
   });
 
   it("renders 'all branches' for the all-branch scope", () => {

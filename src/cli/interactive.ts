@@ -374,7 +374,7 @@ function repositoryLine(state: LaunchpadState): string {
     : `${statusLabel("Repository")}— not a git repo`;
 }
 
-/** Indent + pad a Config row's label so the values line up under one column. */
+/** Pad a doctor row's description (label) column so the values line up. */
 const CONFIG_LABEL_WIDTH = 14;
 
 /** A single doctor key/value row, optionally annotated with the env var that sets it. */
@@ -385,15 +385,15 @@ interface DoctorRow {
 }
 
 /**
- * Render doctor rows with two aligned columns: `label → value`, then (when
- * present) the env var NAME that controls it, aligned into one trailing column
- * (longest `label+value` prefix + a 3-space gutter) so the var names form a
- * straight vertical column the user can copy.
+ * Render doctor rows in three aligned columns — `<ENV_VAR> <description> <value>`
+ * — so the `COMMIT_WHISPER_*` names form a straight, copyable left column, the
+ * descriptions a second column, then the set value. The env-var column is sized
+ * to the longest name in the block (+ a 2-space gutter); the description column
+ * to `CONFIG_LABEL_WIDTH`. Rows without an env var keep the leading column blank.
  */
 function renderRows(rows: DoctorRow[]): string[] {
-  const prefixes = rows.map((r) => `  ${r.label.padEnd(CONFIG_LABEL_WIDTH)}${r.value}`);
-  const envColumn = Math.max(0, ...prefixes.map((p) => p.length)) + 3;
-  return rows.map((r, i) => (r.envVar === undefined ? prefixes[i] : `${prefixes[i].padEnd(envColumn)}${r.envVar}`));
+  const envColumn = Math.max(0, ...rows.map((r) => (r.envVar ?? "").length)) + 2;
+  return rows.map((r) => `  ${(r.envVar ?? "").padEnd(envColumn)}${r.label.padEnd(CONFIG_LABEL_WIDTH)}${r.value}`);
 }
 
 /** The configured branch scope (all / a named branch / the checked-out HEAD), or the default. */
