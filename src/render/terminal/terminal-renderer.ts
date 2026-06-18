@@ -24,6 +24,7 @@ import type { MetricGroup } from "../../analyze/metric.js";
 import type { Confidence } from "../../narrate/narrate.port.js";
 import { classifyReport, type ShowpieceReport, type SubstrateFraming } from "../render.port.js";
 import { classifyHealth, HEALTH_GLYPH, HEALTH_LABEL, type HealthBand } from "../html/health.js";
+import { extractSeries } from "../html/shape.js";
 
 type Colors = ReturnType<typeof pc.createColors>;
 type Metric = ReportAnalysis["metrics"][number];
@@ -249,7 +250,27 @@ function valueBullet(metric: Metric, c: Colors): string {
     const note = `not available${reason}`;
     return `${label} — ${c.dim(note)}`;
   }
-  return `${label} — ${formatValue(metric.value)}`;
+  const value = metric.value;
+  // Scalars stay inline; structured multi-field values become a compact labeled
+  // list (the same series the Markdown/HTML renderers chart) rather than a raw
+  // JSON array dump.
+  if (value === null || typeof value !== "object") {
+    return `${label} — ${formatValue(value)}`;
+  }
+  const series = extractSeries(value);
+  if (series.length === 0) {
+    return `${label} — ${formatValue(value)}`;
+  }
+  if (series.length === 1) {
+    return `${label} — ${formatNumber(series[0].value)}`;
+  }
+  const rows = series.map((point) => `    ${c.dim("-")} ${point.label}: ${formatNumber(point.value)}`);
+  return [label, ...rows].join("\n");
+}
+
+/** A finite number rounded to 2 decimals (locale-independent, byte-stable). */
+function formatNumber(n: number): string {
+  return Number.isFinite(n) ? String(Math.round(n * 100) / 100) : "0";
 }
 
 /** The four facets as labeled bullets in the fixed order (mirrors the Markdown/HTML facet order). */
@@ -270,10 +291,16 @@ function arrayFacet(label: string, items: readonly string[], c: Colors): string[
   return [`  ${c.cyan("•")} ${c.bold(label)}`, ...items.map((item) => `    ${c.dim("-")} ${item}`)];
 }
 
-/** Compact, width-bounded rendering of a metric value (the value is arbitrary JSON). */
+/** Compact, width-bounded rendering of a scalar / un-series-able metric value. */
 function formatValue(value: unknown): string {
   if (value === undefined) {
     return "";
+  }
+  if (typeof value === "string") {
+    return value.length > 60 ? `${value.slice(0, 59)}…` : value;
+  }
+  if (typeof value === "number" || typeof value === "boolean") {
+    return String(value);
   }
   const json = JSON.stringify(value);
   if (json === undefined) {

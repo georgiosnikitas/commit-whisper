@@ -119,6 +119,33 @@ describe("renderMarkdown — facets as bullets, bands, not_available (AC2)", () 
   });
 });
 
+describe("renderMarkdown — structured values render as tables, not JSON (AC2)", () => {
+  it("a multi-field object value renders as a 2-column Markdown table (never a JSON blob)", () => {
+    const analysis: ReportAnalysis = {
+      metrics: [{ id: "c-ref", group: "C", title: "Issue references", status: "computed", value: { withReferenceCount: 7, referenceSharePct: 5.93, commitCount: 118 } }],
+    };
+    const out = renderMarkdown(report({ analysis, narrative: NARRATIVE }));
+    expect(out).not.toContain('{"withReferenceCount"'); // no raw JSON
+    expect(out).toContain("- **Value**\n\n| Field | Value |\n| --- | --- |");
+    expect(out).toContain("| withReferenceCount | 7 |");
+    expect(out).toContain("| referenceSharePct | 5.93 |");
+    expect(out).toContain("| commitCount | 118 |");
+  });
+
+  it("a multi-point distribution array renders its rows as a table", () => {
+    const out = showpiece();
+    expect(out).not.toContain('[{"path"'); // no raw JSON
+    expect(out).toContain("| Item | Value |");
+    expect(out).toContain("| src/app.ts | 40 |");
+  });
+
+  it("a single-field object value stays a tight inline bullet (no degenerate 1-row table)", () => {
+    const out = showpiece();
+    expect(out).toContain("- **Value** — 2"); // bus factor
+    expect(out).toContain("- **Value** — 81"); // hygiene score
+  });
+});
+
 describe("renderMarkdown — substrate: degraded vs metrics-only (AC3)", () => {
   it("a degraded substrate leads with the banner blockquote + stub headings + — confidence", () => {
     const out = renderMarkdown(report({ degraded: true }));
