@@ -21,8 +21,8 @@ import { hostname } from "node:os";
 
 import { Command, CommanderError } from "commander";
 
-import { readAiKey, readEnvDiagnostics, readEnvLayer, readGitToken, readLicenseKey, readProcessEnv } from "../config/env.js";
-import { readSettings, writeSettings } from "../config/config-store.js";
+import { readAiKey, readEnvDiagnostics, readEnvLayer, readGitToken, readLicenseKey, readProcessEnv, type EnvVarStatus } from "../config/env.js";
+import { readSettings, writeSettings, type SettingsData } from "../config/config-store.js";
 import { resolveRunConfig } from "../config/resolve-run-config.js";
 import { detectCapability } from "../config/capability.js";
 import type { Entitlement, OutputFormat, PartialRunConfig, Provider, RunConfig } from "../config/run-config.js";
@@ -551,7 +551,7 @@ async function runZeroArg(ctx: ZeroArgContext): Promise<number> {
     aiMode: envLayerNow.aiMode,
     llmBaseUrl: envLayerNow.llmBaseUrl ?? configFileNow.llmBaseUrl,
     logLevel: resolveLogLevel({ env: ctx.env }),
-    color: resolveColor({ env: ctx.env, isTTY: ctx.stdoutIsTTY }),
+    color: resolveColor({ env: ctx.env, isTTY: Boolean(ctx.stdoutIsTTY) }),
   });
   const envDiagnostics = readEnvDiagnostics(ctx.env, aiLayer.provider);
   const doctorConfig = buildDoctorConfig(envLayer, configFile);
