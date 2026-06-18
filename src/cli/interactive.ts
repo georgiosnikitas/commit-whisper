@@ -216,6 +216,9 @@ export interface LaunchpadDeps {
 /** The locked product tagline (brief.md / DESIGN.md). */
 export const LAUNCHPAD_TAGLINE = "commit-whisper · 🕵️  I know what you did last commit";
 
+/** The warm sign-off printed above the cheatsheet on Esc/Quit. */
+export const QUIT_MESSAGE = "Case closed. 🕵️  Until your next commit — here's the cheatsheet for the road:";
+
 /** The short, copyable cheatsheet printed on Esc/Quit (AC4). */
 export const FLAGS_CHEATSHEET = [
   "Common commands:",
@@ -1147,6 +1150,8 @@ export const DEFAULT_COFFEE_URL = "https://buymeacoffee.com/georgiosnikitas";
 async function dispatchAction(deps: LaunchpadDeps, action: LaunchpadAction, output: Writable): Promise<"quit" | "continue"> {
   switch (action) {
     case "quit":
+      writeLine(output, QUIT_MESSAGE);
+      writeLine(output, "");
       writeLine(output, FLAGS_CHEATSHEET);
       return "quit";
     case "help":
