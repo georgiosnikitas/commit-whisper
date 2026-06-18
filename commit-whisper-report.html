@@ -211,14 +211,14 @@ a:focus-visible, :focus-visible { outline: 2px solid var(--accent); outline-offs
 </header>
 <section id="summary" class="band" aria-labelledby="summary-h">
 <h2 id="summary-h"><span class="kicker">TL;DR</span> Summary</h2>
-<p class="headline">The repository shows strong commit size discipline but faces challenges with collaboration and branching practices.</p>
-<p>The repository has a high concentration of knowledge risk due to a single dominant contributor, and while commit size and message quality are strengths, collaboration and branching practices need improvement. The commit volume has decreased significantly over time, and the project is heavily reliant on one contributor, posing a high bus-factor risk. Addressing these issues will improve the repository&#39;s overall health and sustainability.</p>
+<p class="headline">The repository shows strong commit size discipline but faces high bus-factor risk and limited collaboration.</p>
+<p>The repository has maintained a consistent activity level with a strong focus on commit size discipline and message quality. However, it faces significant challenges in collaboration breadth and branching discipline, with a high bus-factor risk due to knowledge concentration in a single contributor. Addressing these issues is crucial for improving the project&#39;s sustainability and resilience.</p>
 <ul class="key-findings">
-<li>Commit volume decreased from 189 in March to 26 in May.</li>
-<li>One contributor is responsible for 99.28% of commits, indicating high bus-factor risk.</li>
-<li>Commit size discipline is excellent with a perfect score of 100.</li>
-<li>Branching discipline is weak with a score of 7.55.</li>
-<li>Collaboration breadth is minimal with a score of 0.72.</li>
+<li>Commit volume peaked in March with 189 commits, declining to 26 by May.</li>
+<li>Commit size discipline is excellent, with a perfect score of 100.</li>
+<li>Bus-factor risk is high, with 99.28% of contributions from one author.</li>
+<li>Branching discipline is weak, with 92.45% of commits going directly to the default branch.</li>
+<li>Collaboration breadth is limited, with a score of 0.72.</li>
 </ul>
 </section>
 <nav class="toc" aria-label="Table of contents">
@@ -237,36 +237,31 @@ a:focus-visible, :focus-visible { outline: 2px solid var(--accent); outline-offs
 </nav>
 <section id="explanation" class="band" aria-labelledby="explanation-h">
 <h2 id="explanation-h"><span class="kicker">What the metrics show</span> Explanation</h2>
-<p>The repository&#39;s commit volume has significantly decreased from 189 in March to just 26 in May, indicating a potential slowdown in development activity. This could be due to various factors such as project completion phases or resource allocation changes.</p>
-<p>The project is heavily reliant on a single contributor, who is responsible for 99.28% of the commits. This creates a high bus-factor risk, meaning the project is vulnerable if this contributor becomes unavailable.</p>
-<p>Commit size discipline is a strong point, with a perfect score of 100, indicating that commits are well-sized and likely manageable. Message quality is also high, with a score of 84.89, suggesting that commit messages are informative and well-structured.</p>
-<p>However, the repository struggles with collaboration and branching practices. The collaboration breadth score is only 0.72, reflecting minimal co-authorship and shared contributions. Branching discipline is also weak, with a score of 7.55, indicating a high rate of direct commits to the default branch and limited use of feature branches.</p>
+<p>The repository&#39;s activity peaked in March with 189 commits, followed by a decline to 63 in April and 26 in May. This suggests a burst of initial development activity that has since slowed. The commit cadence shows a median interval of 677 seconds, indicating frequent commits during active periods.</p>
+<p>Commit size discipline is a strength, with a perfect score of 100, reflecting well-managed changes. However, the bus-factor risk is high, as 99.28% of contributions come from a single author, posing a significant risk if this contributor becomes unavailable.</p>
+<p>Branching discipline is notably weak, with 92.45% of commits made directly to the default branch, indicating a lack of feature branching and potential integration issues. Collaboration breadth is also limited, with a score of 0.72, suggesting minimal co-authorship and shared knowledge.</p>
+<p>The overall hygiene score is 56.15, with strengths in commit size and message quality but weaknesses in collaboration and branching. Addressing these weaknesses is essential to improve the project&#39;s resilience and maintainability.</p>
 </section>
 <section id="coaching" class="band" aria-labelledby="coaching-h">
 <h2 id="coaching-h"><span class="kicker">Improvement plan</span> Coaching</h2>
-<p class="coaching-intro">The repository is currently facing challenges with collaboration and branching practices, alongside a high concentration of knowledge risk. This improvement plan focuses on enhancing these areas to ensure better sustainability and team resilience.</p>
-<article class="chapter">
-<h3>Collaboration Enhancement</h3>
-<ol>
-<li>Encourage more co-authorship by pairing contributors on tasks to increase the collaboration breadth score from 0.72.</li>
-<li>Implement regular code reviews and pair programming sessions to distribute knowledge more evenly across the team.</li>
-</ol>
-</article>
+<p class="coaching-intro">The repository is currently in a state of high activity but faces challenges in collaboration and branching practices. This improvement plan focuses on addressing these areas to enhance the project&#39;s sustainability and reduce risk.</p>
 <article class="chapter">
 <h3>Branching Discipline</h3>
 <ol>
-<li>Adopt a more structured branching strategy to improve the branching discipline score from 7.55. Encourage the use of feature branches for new developments and bug fixes.</li>
-<li>Reduce the direct-to-default-branch commit rate from 92.45% by enforcing pull requests and code reviews before merging.</li>
+<li>Implement a feature branching strategy to reduce direct commits to the default branch, currently at 92.45%.</li>
+<li>Encourage regular merges to integrate changes, improving the current merge share of 3.24%.</li>
+<li>Establish guidelines for branch naming and lifecycle to enhance organization and clarity.</li>
 </ol>
 </article>
 <article class="chapter">
-<h3>Knowledge Distribution</h3>
+<h3>Collaboration and Knowledge Sharing</h3>
 <ol>
-<li>Develop a knowledge transfer plan to mitigate the high bus-factor risk, ensuring that more team members are familiar with critical parts of the codebase.</li>
-<li>Conduct regular knowledge-sharing sessions and document key processes and code areas to reduce reliance on the top contributor.</li>
+<li>Increase the number of active contributors to reduce the bus-factor risk, currently at 1.</li>
+<li>Promote pair programming or code reviews to enhance collaboration, addressing the low collaboration breadth score of 0.72.</li>
+<li>Document key areas of the codebase to distribute knowledge and reduce reliance on a single contributor.</li>
 </ol>
 </article>
-<p class="coaching-closing">The top priorities are to enhance collaboration and improve branching discipline. Start by encouraging co-authorship and adopting a structured branching strategy. Simultaneously, work on distributing knowledge to mitigate the high bus-factor risk.</p>
+<p class="coaching-closing">The top priorities are to improve branching discipline and enhance collaboration. Start by implementing a feature branching strategy and increasing contributor engagement to mitigate the high bus-factor risk. These steps will strengthen the project&#39;s resilience and maintainability.</p>
 </section>
 <main id="main" class="metric-groups">
 <section id="group-a" class="metric-group" aria-labelledby="group-a-h">
@@ -344,7 +339,7 @@ a:focus-visible, :focus-visible { outline: 2px solid var(--accent); outline-offs
 <div class="metric-body">
 
 <div class="facets">
-<p class="facet-meaning">The average commit interval is approximately 6.7 hours, with a median of about 11 minutes. This suggests frequent commits, which is generally positive for continuous integration practices.</p>
+<p class="facet-meaning">The average commit interval is approximately 6.7 hours, with a median of about 11 minutes, indicating frequent commits. This suggests a healthy, continuous integration practice.</p>
 <h4>Good behaviours</h4>
 <ul>
 <li>Frequent commits indicate active development and integration.</li>
@@ -353,7 +348,7 @@ a:focus-visible, :focus-visible { outline: 2px solid var(--accent); outline-offs
 <p>None.</p>
 <h4>Suggestions</h4>
 <ul>
-<li>Maintain this cadence to support agile development practices.</li>
+<li>Maintain the current commit frequency to support agile development practices.</li>
 </ul>
 </div>
 </div>
@@ -366,13 +361,13 @@ a:focus-visible, :focus-visible { outline: 2px solid var(--accent); outline-offs
 <p class="facet-meaning">There are no dormant periods, indicating continuous activity from March to May. This is a positive sign of ongoing development without significant breaks.</p>
 <h4>Good behaviours</h4>
 <ul>
-<li>Continuous activity without dormancy.</li>
+<li>Continuous activity without dormancy shows consistent engagement.</li>
 </ul>
 <h4>Needs improvement</h4>
 <p>None.</p>
 <h4>Suggestions</h4>
 <ul>
-<li>Continue to monitor for any potential future dormancy.</li>
+<li>Continue to monitor for any potential future dormancy to ensure ongoing project health.</li>
 </ul>
 </div>
 </div>
@@ -382,16 +377,16 @@ a:focus-visible, :focus-visible { outline: 2px solid var(--accent); outline-offs
 <div class="metric-body">
 
 <div class="facets">
-<p class="facet-meaning">The project is relatively young, with a lifespan of about 77 days. This suggests it is still in its early stages of development.</p>
+<p class="facet-meaning">The project is relatively young, with a lifespan of about 77 days. This suggests it is in its early stages, which aligns with the high initial activity observed.</p>
 <h4>Good behaviours</h4>
 <ul>
-<li>Active development in the early stages of the project.</li>
+<li>Strong initial development phase.</li>
 </ul>
 <h4>Needs improvement</h4>
 <p>None.</p>
 <h4>Suggestions</h4>
 <ul>
-<li>Focus on establishing strong development practices as the project matures.</li>
+<li>Focus on establishing long-term goals and sustainability strategies as the project matures.</li>
 </ul>
 </div>
 </div>
@@ -401,16 +396,17 @@ a:focus-visible, :focus-visible { outline: 2px solid var(--accent); outline-offs
 <div class="metric-body">
 
 <div class="facets">
-<p class="facet-meaning">The commit size distribution shows a wide range, with a median of 35.5 and a maximum of 3935. This indicates variability in commit sizes, which can be typical but may need monitoring to ensure consistency.</p>
+<p class="facet-meaning">The commit size distribution shows a wide range, with a median of 35.5 and a maximum of 3935. This indicates variability in commit sizes, which could affect code review and integration processes.</p>
 <h4>Good behaviours</h4>
 <p>None.</p>
 <h4>Needs improvement</h4>
 <ul>
-<li>Large variability in commit sizes.</li>
+<li>High variability in commit sizes.</li>
 </ul>
 <h4>Suggestions</h4>
 <ul>
-<li>Encourage smaller, more consistent commit sizes to improve code review and integration processes.</li>
+<li>Encourage smaller, more consistent commit sizes to improve code review efficiency.</li>
+<li>Implement guidelines for commit size to ensure manageable changes.</li>
 </ul>
 </div>
 </div>
@@ -420,19 +416,19 @@ a:focus-visible, :focus-visible { outline: 2px solid var(--accent); outline-offs
 <div class="metric-body">
 
 <div class="facets">
-<p class="facet-meaning">Most commits occur during typical working hours, with a peak on Sundays. This suggests a flexible work schedule or weekend catch-up work.</p>
+<p class="facet-meaning">Most commits occur during typical working hours, with a peak at 13:00 UTC. There is also a high volume of activity on Sundays, which may indicate weekend work or global team contributions.</p>
 <h4>Good behaviours</h4>
 <ul>
-<li>Commit activity aligns with typical working hours.</li>
+<li>Consistent activity during working hours.</li>
 </ul>
 <h4>Needs improvement</h4>
 <ul>
-<li>High activity on Sundays may indicate work-life balance issues.</li>
+<li>High Sunday activity may indicate work-life balance issues.</li>
 </ul>
 <h4>Suggestions</h4>
 <ul>
-<li>Encourage a balanced work schedule to prevent burnout.</li>
-<li>Consider team discussions to understand weekend work patterns.</li>
+<li>Ensure team members are not overworking, especially on weekends.</li>
+<li>Consider time zone differences if the team is distributed globally.</li>
 </ul>
 </div>
 </div>
@@ -446,7 +442,7 @@ a:focus-visible, :focus-visible { outline: 2px solid var(--accent); outline-offs
 <div class="chart-cells two">
 <div class="chart-sub">
 <h4>Contributor count</h4>
-<svg class="chart-svg chart-donut" viewBox="0 0 360 200" preserveAspectRatio="xMidYMid meet" role="img" aria-label="Group B — Contributor count"><path class="donut-seg slice-0" d="M 100 18 A 82 82 0 1 1 100 18 L 100 50 A 50 50 0 1 0 100 50 Z"/><path class="donut-seg slice-1" d="M 100 18 A 82 82 0 0 1 100 18 L 100 50 A 50 50 0 0 0 100 50 Z"/><rect class="slice-0" x="200" y="44" width="13" height="13" rx="3"/><text class="donut-label" x="220" y="55">active · 100%</text><rect class="slice-1" x="200" y="68" width="13" height="13" rx="3"/><text class="donut-label" x="220" y="79">inactive · 0%</text></svg>
+<svg class="chart-svg chart-donut" viewBox="0 0 360 200" preserveAspectRatio="xMidYMid meet" role="img" aria-label="Group B — Contributor count"><path class="donut-seg slice-0" d="M 100 18 A 82 82 0 1 1 100 182 A 82 82 0 1 1 100 18 Z M 100 50 A 50 50 0 1 0 100 150 A 50 50 0 1 0 100 50 Z"/><rect class="slice-0" x="200" y="44" width="13" height="13" rx="3"/><text class="donut-label" x="220" y="55">active · 100%</text><rect class="slice-1" x="200" y="68" width="13" height="13" rx="3"/><text class="donut-label" x="220" y="79">inactive · 0%</text></svg>
 <details class="data-table" open>
 <summary>Show data table</summary>
 <table>
@@ -484,15 +480,15 @@ a:focus-visible, :focus-visible { outline: 2px solid var(--accent); outline-offs
 <p class="facet-meaning">The repository has a total of 2 contributors, both of whom are active within the last 90 days. This indicates a small, but currently engaged team.</p>
 <h4>Good behaviours</h4>
 <ul>
-<li>Both contributors are active, indicating consistent engagement.</li>
+<li>Both contributors are active, indicating engagement.</li>
 </ul>
 <h4>Needs improvement</h4>
 <ul>
-<li>The contributor count is low, which may risk knowledge concentration and bus factor issues.</li>
+<li>The contributor base is small, which may risk continuity if one leaves.</li>
 </ul>
 <h4>Suggestions</h4>
 <ul>
-<li>Consider recruiting more contributors to diversify knowledge and reduce risk.</li>
+<li>Consider recruiting more contributors to diversify the team and reduce risk.</li>
 </ul>
 </div>
 </div>
@@ -502,16 +498,16 @@ a:focus-visible, :focus-visible { outline: 2px solid var(--accent); outline-offs
 <div class="metric-body">
 
 <div class="facets">
-<p class="facet-meaning">The contribution distribution shows a high concentration of work by one contributor, with 99.28% of commits and 99.88% of lines. This suggests a significant imbalance in contributions.</p>
+<p class="facet-meaning">The contribution distribution shows a high concentration of work by one contributor, with 99.28% of commits and 99.88% of lines of code. This indicates a potential risk of over-reliance on a single contributor.</p>
 <h4>Good behaviours</h4>
 <p>None.</p>
 <h4>Needs improvement</h4>
 <ul>
-<li>High concentration of contributions by one individual, which can lead to bottlenecks and risks if that person becomes unavailable.</li>
+<li>High concentration of contributions by one person can lead to knowledge silos.</li>
 </ul>
 <h4>Suggestions</h4>
 <ul>
-<li>Encourage more balanced contributions by involving the second contributor more actively in key areas.</li>
+<li>Encourage more balanced contributions by involving the second contributor in more areas of the codebase.</li>
 </ul>
 </div>
 </div>
@@ -521,16 +517,16 @@ a:focus-visible, :focus-visible { outline: 2px solid var(--accent); outline-offs
 <div class="metric-body">
 
 <div class="facets">
-<p class="facet-meaning">The bus factor is 1, meaning the project heavily relies on a single contributor. This is a risk for project continuity if that person leaves or is unavailable.</p>
+<p class="facet-meaning">The bus factor is 1, meaning the project heavily relies on a single contributor. If this person becomes unavailable, it could significantly impact the project.</p>
 <h4>Good behaviours</h4>
 <p>None.</p>
 <h4>Needs improvement</h4>
 <ul>
-<li>The bus factor of 1 indicates a critical dependency on one contributor.</li>
+<li>The bus factor of 1 is a critical risk for project continuity.</li>
 </ul>
 <h4>Suggestions</h4>
 <ul>
-<li>Increase the bus factor by distributing knowledge and responsibilities among more contributors.</li>
+<li>Increase knowledge sharing and documentation to mitigate risks associated with a low bus factor.</li>
 </ul>
 </div>
 </div>
@@ -540,10 +536,10 @@ a:focus-visible, :focus-visible { outline: 2px solid var(--accent); outline-offs
 <div class="metric-body">
 
 <div class="facets">
-<p class="facet-meaning">There is one new contributor and no departures in the last 90 days, suggesting some growth without loss of existing contributors.</p>
+<p class="facet-meaning">There is one new contributor and no departures in the last 90 days. This suggests some growth in the contributor base without losing existing members.</p>
 <h4>Good behaviours</h4>
 <ul>
-<li>New contributor added without any departures, indicating positive growth.</li>
+<li>New contributor joined without any departures, indicating positive growth.</li>
 </ul>
 <h4>Needs improvement</h4>
 <p>None.</p>
@@ -559,16 +555,16 @@ a:focus-visible, :focus-visible { outline: 2px solid var(--accent); outline-offs
 <div class="metric-body">
 
 <div class="facets">
-<p class="facet-meaning">Ownership by area shows that most directories and files are dominated by a single author, indicating a lack of shared ownership.</p>
+<p class="facet-meaning">Ownership by area shows that most directories and files are dominated by a single author, indicating potential knowledge silos.</p>
 <h4>Good behaviours</h4>
 <p>None.</p>
 <h4>Needs improvement</h4>
 <ul>
-<li>Single-author dominance in most areas, which can lead to knowledge silos.</li>
+<li>Single-author dominance in many areas can lead to bottlenecks and risks if that author is unavailable.</li>
 </ul>
 <h4>Suggestions</h4>
 <ul>
-<li>Promote pair programming or code reviews to increase shared ownership across different areas.</li>
+<li>Encourage code reviews and pair programming to spread knowledge across the team.</li>
 </ul>
 </div>
 </div>
@@ -581,15 +577,15 @@ a:focus-visible, :focus-visible { outline: 2px solid var(--accent); outline-offs
 <p class="facet-meaning">The co-authorship metric shows that 7.91% of commits involve co-authors, indicating some level of collaboration, but it could be improved.</p>
 <h4>Good behaviours</h4>
 <ul>
-<li>Presence of co-authored commits suggests some collaboration.</li>
+<li>There is some collaboration as evidenced by co-authored commits.</li>
 </ul>
 <h4>Needs improvement</h4>
 <ul>
-<li>Low percentage of co-authored commits, indicating limited collaboration.</li>
+<li>The level of co-authorship is relatively low, suggesting limited collaboration.</li>
 </ul>
 <h4>Suggestions</h4>
 <ul>
-<li>Encourage more collaborative practices, such as pair programming or team-based projects, to increase co-authorship.</li>
+<li>Promote more collaborative practices such as pair programming or team-based projects to increase co-authorship.</li>
 </ul>
 </div>
 </div>
@@ -648,11 +644,11 @@ a:focus-visible, :focus-visible { outline: 2px solid var(--accent); outline-offs
 </ul>
 <h4>Needs improvement</h4>
 <ul>
-<li>Increase the percentage of messages with bodies to provide more context.</li>
+<li>Low percentage of messages with a body, which could limit context for changes.</li>
 </ul>
 <h4>Suggestions</h4>
 <ul>
-<li>Encourage developers to include more detailed bodies in commit messages, especially for complex changes.</li>
+<li>Encourage adding more detailed bodies to commit messages to improve context and understanding of changes.</li>
 </ul>
 </div>
 </div>
@@ -669,11 +665,12 @@ a:focus-visible, :focus-visible { outline: 2px solid var(--accent); outline-offs
 </ul>
 <h4>Needs improvement</h4>
 <ul>
-<li>Increase adherence to reach closer to 100%.</li>
+<li>30.22% of commits do not follow the convention, which could lead to inconsistencies.</li>
 </ul>
 <h4>Suggestions</h4>
 <ul>
-<li>Conduct a workshop or provide guidelines on the importance and usage of Conventional Commits to improve adherence.</li>
+<li>Conduct a team workshop on the benefits of Conventional Commits to improve adherence.</li>
+<li>Implement commit message linting tools to enforce adherence.</li>
 </ul>
 </div>
 </div>
@@ -683,15 +680,19 @@ a:focus-visible, :focus-visible { outline: 2px solid var(--accent); outline-offs
 <div class="metric-body">
 
 <div class="facets">
-<p class="facet-meaning">The imperative mood is used in 91.01% of commit messages, which is a good practice for clarity and consistency. However, only 7.19% of subjects are capitalized, which is less common but not necessarily problematic.</p>
+<p class="facet-meaning">The imperative mood is used in 91.01% of commit messages, which is a good practice for clarity and consistency. However, only 7.19% of subjects are capitalized, which is less conventional.</p>
 <h4>Good behaviours</h4>
 <ul>
 <li>High use of imperative mood, enhancing clarity.</li>
 </ul>
 <h4>Needs improvement</h4>
-<p>None.</p>
+<ul>
+<li>Low capitalization of subjects, which is less conventional.</li>
+</ul>
 <h4>Suggestions</h4>
-<p>None.</p>
+<ul>
+<li>Encourage capitalization of the first word in commit messages to align with common conventions.</li>
+</ul>
 </div>
 </div>
 </details>
@@ -717,16 +718,16 @@ a:focus-visible, :focus-visible { outline: 2px solid var(--accent); outline-offs
 <div class="metric-body">
 
 <div class="facets">
-<p class="facet-meaning">Only 2.52% of commits reference issues or tickets, which is quite low. This can make it harder to track changes related to specific issues.</p>
+<p class="facet-meaning">Only 2.52% of commits reference an issue or ticket, which may indicate a lack of traceability between code changes and project management tools.</p>
 <h4>Good behaviours</h4>
 <p>None.</p>
 <h4>Needs improvement</h4>
 <ul>
-<li>Increase the rate of issue or ticket references in commit messages.</li>
+<li>Low rate of issue or ticket references, which can hinder traceability.</li>
 </ul>
 <h4>Suggestions</h4>
 <ul>
-<li>Encourage linking commits to relevant issues or tickets to improve traceability.</li>
+<li>Encourage linking commits to relevant issues or tickets to improve traceability and context.</li>
 </ul>
 </div>
 </div>
@@ -736,10 +737,10 @@ a:focus-visible, :focus-visible { outline: 2px solid var(--accent); outline-offs
 <div class="metric-body">
 
 <div class="facets">
-<p class="facet-meaning">There are no revert, fixup, or squash commits, indicating a clean commit history with minimal churn of intent.</p>
+<p class="facet-meaning">There are no revert, fixup, or squash commits, indicating a clean commit history with no apparent need for corrections or amendments.</p>
 <h4>Good behaviours</h4>
 <ul>
-<li>No revert or fixup commits, suggesting a stable and well-managed commit history.</li>
+<li>No revert or fixup commits, suggesting a clean and deliberate commit history.</li>
 </ul>
 <h4>Needs improvement</h4>
 <p>None.</p>
@@ -793,16 +794,18 @@ a:focus-visible, :focus-visible { outline: 2px solid var(--accent); outline-offs
 <div class="metric-body">
 
 <div class="facets">
-<p class="facet-meaning">The repository primarily uses a merge-based workflow, with 278 total commits and 9 merge commits, resulting in a low merge share of 3.24%. This indicates that most changes are committed directly rather than through merges.</p>
+<p class="facet-meaning">This metric shows that the repository primarily uses a merge-based workflow, with a low percentage of merge commits (3.24%). This suggests that most changes are committed directly to the main branch rather than through feature branches.</p>
 <h4>Good behaviours</h4>
-<p>None.</p>
+<ul>
+<li>The workflow is consistent with a merge-based approach.</li>
+</ul>
 <h4>Needs improvement</h4>
 <ul>
-<li>Low merge commit count suggests limited use of feature branches.</li>
+<li>The low number of merge commits indicates limited use of feature branches, which can hinder collaborative development and code review processes.</li>
 </ul>
 <h4>Suggestions</h4>
 <ul>
-<li>Encourage the use of feature branches to increase the number of merge commits, which can improve code review and integration processes.</li>
+<li>Encourage the use of feature branches for new features and bug fixes to facilitate better code reviews and testing before merging into the main branch.</li>
 </ul>
 </div>
 </div>
@@ -812,18 +815,18 @@ a:focus-visible, :focus-visible { outline: 2px solid var(--accent); outline-offs
 <div class="metric-body">
 
 <div class="facets">
-<p class="facet-meaning">The repository shows a mixed tendency between merging and rebasing, with a high first-parent linearity of 95.68% and a low merge share of 3.24%. This suggests a preference for linear history, possibly through rebasing or direct commits.</p>
+<p class="facet-meaning">The repository shows a mixed tendency between merging and rebasing, with a high first-parent linearity percentage (95.68%). This indicates a preference for keeping the commit history linear, which can simplify the history but may obscure the context of changes.</p>
 <h4>Good behaviours</h4>
 <ul>
-<li>High first-parent linearity indicates a clean and understandable commit history.</li>
+<li>High linearity suggests a clean and understandable commit history.</li>
 </ul>
 <h4>Needs improvement</h4>
 <ul>
-<li>Low merge share suggests limited use of collaborative workflows.</li>
+<li>The mixed tendency might lead to confusion about the preferred workflow.</li>
 </ul>
 <h4>Suggestions</h4>
 <ul>
-<li>Consider increasing the use of merges for collaborative features to balance the linear history with collaborative development.</li>
+<li>Clarify the preferred workflow (merge or rebase) in the team&#39;s development guidelines to ensure consistency and understanding among team members.</li>
 </ul>
 </div>
 </div>
@@ -833,16 +836,16 @@ a:focus-visible, :focus-visible { outline: 2px solid var(--accent); outline-offs
 <div class="metric-body">
 
 <div class="facets">
-<p class="facet-meaning">A high 92.45% of commits are made directly to the default branch, indicating a strong preference for direct commits over feature branches or pull requests.</p>
+<p class="facet-meaning">A high percentage (92.45%) of commits are made directly to the default branch, indicating that most changes bypass feature branches.</p>
 <h4>Good behaviours</h4>
 <p>None.</p>
 <h4>Needs improvement</h4>
 <ul>
-<li>High direct-to-default rate can lead to less code review and testing before integration.</li>
+<li>Direct commits to the default branch can reduce opportunities for code review and testing, potentially increasing the risk of introducing bugs.</li>
 </ul>
 <h4>Suggestions</h4>
 <ul>
-<li>Encourage the use of pull requests and feature branches to reduce the direct-to-default rate, enhancing code quality and collaboration.</li>
+<li>Implement a policy to use pull requests for changes to the default branch, encouraging code reviews and testing before integration.</li>
 </ul>
 </div>
 </div>
@@ -852,10 +855,10 @@ a:focus-visible, :focus-visible { outline: 2px solid var(--accent); outline-offs
 <div class="metric-body">
 
 <div class="facets">
-<p class="facet-meaning">There are no long-lived branches, with the longest branch lasting only 8.68 days. This suggests efficient merging and integration of changes.</p>
+<p class="facet-meaning">There are no long-lived branches, with the longest branch lasting only 8.68 days. This suggests that branches are short-lived and likely merged or deleted quickly.</p>
 <h4>Good behaviours</h4>
 <ul>
-<li>Quick integration of branches indicates efficient workflow and reduced risk of merge conflicts.</li>
+<li>Short-lived branches indicate efficient merging and integration processes.</li>
 </ul>
 <h4>Needs improvement</h4>
 <p>None.</p>
@@ -869,16 +872,16 @@ a:focus-visible, :focus-visible { outline: 2px solid var(--accent); outline-offs
 <div class="metric-body">
 
 <div class="facets">
-<p class="facet-meaning">The average changes per merge are high at 296.56, with a maximum of 1986 changes in a single merge. This indicates that merges often integrate substantial changes, which can be risky.</p>
+<p class="facet-meaning">The average number of changes per merge is high (296.56), with a significant maximum of 1986 changes in one merge. This suggests that some merges integrate large amounts of work, which can complicate reviews and increase the risk of integration issues.</p>
 <h4>Good behaviours</h4>
 <p>None.</p>
 <h4>Needs improvement</h4>
 <ul>
-<li>Large merges can increase the risk of integration issues and make code reviews more challenging.</li>
+<li>Large merges can be difficult to review and may introduce integration problems.</li>
 </ul>
 <h4>Suggestions</h4>
 <ul>
-<li>Encourage more frequent, smaller merges to reduce the complexity and risk associated with large integrations.</li>
+<li>Encourage more frequent, smaller merges to make code reviews more manageable and reduce the risk of integration issues.</li>
 </ul>
 </div>
 </div>
@@ -938,7 +941,7 @@ a:focus-visible, :focus-visible { outline: 2px solid var(--accent); outline-offs
 <p class="facet-meaning">The &#39;Most-changed files / directories&#39; metric shows which files and directories have been modified most frequently. High touch counts and churn in files like &#39;package.json&#39; and &#39;package-lock.json&#39; suggest frequent updates, possibly due to dependency changes. High churn in documentation files indicates ongoing updates to planning and implementation artifacts.</p>
 <h4>Good behaviours</h4>
 <ul>
-<li>Frequent updates to documentation suggest active maintenance.</li>
+<li>Frequent updates to documentation suggest active maintenance and planning.</li>
 </ul>
 <h4>Needs improvement</h4>
 <ul>
@@ -947,7 +950,7 @@ a:focus-visible, :focus-visible { outline: 2px solid var(--accent); outline-offs
 <h4>Suggestions</h4>
 <ul>
 <li>Review dependency management practices to reduce churn in &#39;package-lock.json&#39;.</li>
-<li>Ensure documentation updates are well-coordinated to avoid unnecessary churn.</li>
+<li>Ensure changes to documentation are well-coordinated to avoid unnecessary churn.</li>
 </ul>
 </div>
 </div>
@@ -964,12 +967,12 @@ a:focus-visible, :focus-visible { outline: 2px solid var(--accent); outline-offs
 </ul>
 <h4>Needs improvement</h4>
 <ul>
-<li>The high churn in March could indicate instability or rework.</li>
+<li>The high churn in March could suggest inefficiencies or rework.</li>
 </ul>
 <h4>Suggestions</h4>
 <ul>
-<li>Analyze the reasons for high churn in March to identify areas for process improvement.</li>
-<li>Ensure code reviews and testing are thorough to reduce rework.</li>
+<li>Analyze the reasons for high churn in March to identify potential inefficiencies.</li>
+<li>Ensure that the decrease in churn is due to stabilization rather than reduced productivity.</li>
 </ul>
 </div>
 </div>
@@ -979,19 +982,19 @@ a:focus-visible, :focus-visible { outline: 2px solid var(--accent); outline-offs
 <div class="metric-body">
 
 <div class="facets">
-<p class="facet-meaning">The &#39;Add/delete ratio&#39; metric shows a high ratio of additions to deletions, indicating that more code is being added than removed. This suggests growth in the codebase, which can be positive if managed well.</p>
+<p class="facet-meaning">The &#39;Add/delete ratio&#39; metric shows a high ratio of additions to deletions (5.79), indicating that more lines are being added than removed. This suggests growth in the codebase, which can be positive if managed well.</p>
 <h4>Good behaviours</h4>
 <ul>
-<li>High add/delete ratio indicates codebase growth.</li>
+<li>The high add/delete ratio suggests active development and feature growth.</li>
 </ul>
 <h4>Needs improvement</h4>
 <ul>
-<li>Ensure that code growth does not lead to complexity or technical debt.</li>
+<li>A high ratio could lead to code bloat if not managed properly.</li>
 </ul>
 <h4>Suggestions</h4>
 <ul>
-<li>Implement regular code reviews to manage complexity as the codebase grows.</li>
-<li>Consider refactoring opportunities to maintain code quality.</li>
+<li>Regularly review and refactor code to manage growth and maintain quality.</li>
+<li>Ensure that new additions are necessary and well-integrated.</li>
 </ul>
 </div>
 </div>
@@ -1001,19 +1004,19 @@ a:focus-visible, :focus-visible { outline: 2px solid var(--accent); outline-offs
 <div class="metric-body">
 
 <div class="facets">
-<p class="facet-meaning">The &#39;File survival / age&#39; metric shows that files have a median age of 1.35 days, indicating frequent updates. This suggests active development but may also point to instability if files are being frequently rewritten.</p>
+<p class="facet-meaning">The &#39;File survival / age&#39; metric shows a median file age of 1.35 days, indicating frequent updates. This suggests active development but may also point to instability if files are frequently rewritten.</p>
 <h4>Good behaviours</h4>
 <ul>
-<li>Frequent updates indicate active development.</li>
+<li>Frequent updates suggest active development and responsiveness to change.</li>
 </ul>
 <h4>Needs improvement</h4>
 <ul>
-<li>Frequent rewriting of files may indicate instability.</li>
+<li>Frequent rewriting of files could indicate instability or poor initial design.</li>
 </ul>
 <h4>Suggestions</h4>
 <ul>
 <li>Investigate why files are frequently rewritten and address underlying issues.</li>
-<li>Ensure changes are necessary and not due to poor initial implementation.</li>
+<li>Ensure that changes are well-planned to avoid unnecessary rewrites.</li>
 </ul>
 </div>
 </div>
@@ -1023,19 +1026,19 @@ a:focus-visible, :focus-visible { outline: 2px solid var(--accent); outline-offs
 <div class="metric-body">
 
 <div class="facets">
-<p class="facet-meaning">The &#39;Large-change events&#39; metric identifies significant changes, with 17 events exceeding 1000 lines of churn. This can indicate major feature additions or refactoring but may also suggest potential risks if not well-managed.</p>
+<p class="facet-meaning">The &#39;Large-change events&#39; metric identifies 17 events with significant churn, accounting for 6.12% of changes. These events can indicate major updates or refactoring but may also suggest potential risks if not well-managed.</p>
 <h4>Good behaviours</h4>
 <ul>
-<li>Large changes can indicate significant progress or improvements.</li>
+<li>Large changes can indicate significant progress or necessary refactoring.</li>
 </ul>
 <h4>Needs improvement</h4>
 <ul>
-<li>Large changes can introduce risks if not properly reviewed.</li>
+<li>Frequent large changes can introduce risks and instability.</li>
 </ul>
 <h4>Suggestions</h4>
 <ul>
-<li>Ensure large changes undergo thorough code reviews and testing.</li>
-<li>Break down large changes into smaller, manageable parts where possible.</li>
+<li>Ensure large changes are thoroughly reviewed and tested to mitigate risks.</li>
+<li>Plan large changes carefully to minimize disruption.</li>
 </ul>
 </div>
 </div>
@@ -1086,21 +1089,21 @@ a:focus-visible, :focus-visible { outline: 2px solid var(--accent); outline-offs
 <div class="metric-body">
 
 <div class="facets">
-<p class="facet-meaning">The overall hygiene score of 56.15 indicates a moderate level of codebase health. The score is a weighted average of several components, with strong performance in Commit Size Discipline (100) and Message Quality (84.89). However, low scores in Branching Discipline (7.55) and Collaboration Breadth (0.72) significantly lower the overall score.</p>
+<p class="facet-meaning">The overall hygiene score of 56.15 indicates a moderate level of codebase health. This score is a weighted average of several components, with strong performance in Commit Size Discipline and Message Quality, but significant weaknesses in Branching Discipline and Collaboration Breadth.</p>
 <h4>Good behaviours</h4>
 <ul>
-<li>Commit Size Discipline is excellent, indicating well-managed commit sizes.</li>
+<li>Commit Size Discipline is perfect, indicating well-managed commit sizes.</li>
 <li>Message Quality is high, suggesting clear and informative commit messages.</li>
 </ul>
 <h4>Needs improvement</h4>
 <ul>
-<li>Branching Discipline is very low, indicating potential issues with branch management.</li>
-<li>Collaboration Breadth is extremely low, suggesting limited contributor diversity.</li>
+<li>Branching Discipline is very low, indicating potential issues with how branches are managed.</li>
+<li>Collaboration Breadth is extremely low, suggesting limited contribution diversity.</li>
 </ul>
 <h4>Suggestions</h4>
 <ul>
-<li>Improve branching practices by adopting a more structured branching strategy.</li>
-<li>Encourage broader collaboration by involving more team members in the codebase.</li>
+<li>Improve Branching Discipline by establishing clearer branching strategies and guidelines.</li>
+<li>Enhance Collaboration Breadth by encouraging more team members to contribute to the codebase.</li>
 </ul>
 </div>
 </div>
@@ -1110,17 +1113,17 @@ a:focus-visible, :focus-visible { outline: 2px solid var(--accent); outline-offs
 <div class="metric-body">
 
 <div class="facets">
-<p class="facet-meaning">The bus-factor risk is high, with a bus factor of 1 and 99.28% of contributions coming from a single author. This indicates a significant risk if the primary contributor becomes unavailable, as much of the project knowledge is concentrated with them.</p>
+<p class="facet-meaning">The bus-factor risk is high, with a bus factor of 1 and 99.28% of contributions coming from a single author. This indicates a significant risk if the primary contributor becomes unavailable.</p>
 <h4>Good behaviours</h4>
 <p>None.</p>
 <h4>Needs improvement</h4>
 <ul>
-<li>High concentration of knowledge with one contributor poses a risk to project continuity.</li>
+<li>The team is highly dependent on a single contributor, which poses a risk to project continuity.</li>
 </ul>
 <h4>Suggestions</h4>
 <ul>
-<li>Distribute knowledge by involving more team members in key areas of the codebase.</li>
-<li>Implement pair programming or code reviews to share knowledge among team members.</li>
+<li>Distribute knowledge and responsibilities more evenly across the team to reduce dependency on a single contributor.</li>
+<li>Encourage code reviews and pair programming to share knowledge.</li>
 </ul>
 </div>
 </div>
@@ -1148,18 +1151,18 @@ a:focus-visible, :focus-visible { outline: 2px solid var(--accent); outline-offs
 <p class="facet-meaning">The strengths and weaknesses highlight areas of excellence and concern. Commit Size Discipline and Message Quality are strengths, while Collaboration Breadth and Branching Discipline are weaknesses.</p>
 <h4>Good behaviours</h4>
 <ul>
-<li>Commit Size Discipline is a strength, ensuring manageable and reviewable commits.</li>
-<li>Message Quality is a strength, aiding in understanding changes.</li>
+<li>Commit Size Discipline is a strength, showing effective management of commit sizes.</li>
+<li>Message Quality is a strength, indicating clear communication in commit messages.</li>
 </ul>
 <h4>Needs improvement</h4>
 <ul>
-<li>Collaboration Breadth is a weakness, indicating limited contributor diversity.</li>
-<li>Branching Discipline is a weakness, suggesting potential issues with branch management.</li>
+<li>Collaboration Breadth is a weakness, indicating limited diversity in contributions.</li>
+<li>Branching Discipline is a weakness, suggesting issues with branch management.</li>
 </ul>
 <h4>Suggestions</h4>
 <ul>
-<li>Increase collaboration by encouraging contributions from a wider range of team members.</li>
-<li>Adopt a more structured branching strategy to improve Branching Discipline.</li>
+<li>To address Collaboration Breadth, involve more team members in the development process.</li>
+<li>Improve Branching Discipline by implementing a more structured branching strategy.</li>
 </ul>
 </div>
 </div>
@@ -1168,7 +1171,7 @@ a:focus-visible, :focus-visible { outline: 2px solid var(--accent); outline-offs
 </section>
 </main>
 <footer class="footer">
-<p>Generated by commit-whisper v1.1.1 · schemaVersion 1.0.0 · openai/gpt-4o · 2026-06-18T20:33:06.650Z</p>
+<p>Generated by commit-whisper v1.1.1 · schemaVersion 1.0.0 · openai/gpt-4o · 2026-06-18T20:44:37.917Z</p>
 </footer>
 <script>
 document.querySelectorAll('details.data-table').forEach(function(d){d.open=false;});
