@@ -154,10 +154,23 @@ export interface LaunchpadDeps {
   restoreUrl?: string;
   /** The voluntary Buy-Me-a-Coffee URL; injected by `cli/`. */
   coffeeUrl?: string;
+  /**
+   * Whether to clear the screen and re-pin the header + menu at the top before
+   * every prompt (the interactive full-screen posture). Default: auto-detected
+   * from whether `output` is a TTY. Injected mainly so tests can drive the
+   * full-screen path without a real terminal.
+   */
+  repaint?: boolean;
+  /**
+   * Hold the just-rendered action output on screen until the user presses a key,
+   * then resolve `"quit"` (Ctrl-C / Esc) or `"continue"`. Only used when
+   * `repaint` is on. Default: a single raw keystroke read from `process.stdin`.
+   */
+  waitForKey?: (output: Writable) => Promise<"quit" | "continue">;
 }
 
 /** The locked product tagline (brief.md / DESIGN.md). */
-export const LAUNCHPAD_TAGLINE = "commit-whisper · 🕵️ I know what you did last commit";
+export const LAUNCHPAD_TAGLINE = "commit-whisper · 🕵️  I know what you did last commit";
 
 /** The short, copyable cheatsheet printed on Esc/Quit (AC4). */
 export const FLAGS_CHEATSHEET = [
@@ -278,8 +291,8 @@ export function buildLaunchpadOptions(state: LaunchpadState): LaunchpadOption[] 
 
 /**
  * Column where the primary Status/doctor values begin — the longest label
- * ("Repository", 10) plus a 2-space gutter — so the License / AI / status /
- * Repository values line up in one straight vertical column.
+ * ("Repository", 10) plus a 2-space gutter — so the License / AI / Repository
+ * values line up in one straight vertical column.
  */
 const STATUS_LABEL_WIDTH = 12;
 
@@ -288,21 +301,16 @@ function statusLabel(text: string): string {
   return text.padEnd(STATUS_LABEL_WIDTH);
 }
 
-/** The reachability status line for the AI block. */
-function reachabilityLine(reachability: Reachability): string {
+/** The reachability annotation appended to the AI line's trailing column. */
+function reachabilityAnnotation(reachability: Reachability): string {
   switch (reachability.kind) {
     case "reachable":
-      return `${statusLabel("  status")}✓ reachable`;
+      return "✓ reachable";
     case "unreachable":
-      return `${statusLabel("  status")}⚠ unreachable — ${reachability.reason}`;
+      return `⚠ unreachable — ${reachability.reason}`;
     default:
-      return `${statusLabel("  status")}⚠ not configured`;
+      return "⚠ not configured";
   }
-}
-
-/** The AI block: configured provider/model (or the not-configured warning) + the reachability line. */
-function aiBlock(state: LaunchpadState, reachability: Reachability): string[] {
-  return [`${statusLabel("AI")}${aiSegment(state)}`, reachabilityLine(reachability)];
 }
 
 /** The Environment block: each var by NAME + set/missing glyph + word (never color alone), never a value. */
@@ -337,12 +345,20 @@ export function formatStatusReport(
   envVars: EnvVarStatus[],
   reachability: Reachability,
 ): string {
-  const capNote = state.tier === "free" ? "            100-commit cap" : "";
+  // License tier + AI provider/model share a trailing column (the free-tier cap
+  // note / the reachability status), aligned to whichever head is longer + a
+  // 3-space gutter so both annotations begin in one straight vertical column.
+  const licenseHead = `${statusLabel("License")}${TIER_LABEL[state.tier]}`;
+  const aiHead = `${statusLabel("AI")}${aiSegment(state)}`;
+  const annotationColumn = Math.max(licenseHead.length, aiHead.length) + 3;
+  const licenseLine =
+    state.tier === "free" ? `${licenseHead.padEnd(annotationColumn)}100-commit cap` : licenseHead;
+  const aiLine = `${aiHead.padEnd(annotationColumn)}${reachabilityAnnotation(reachability)}`;
   const lines = [
     "Status / doctor",
     "",
-    `${statusLabel("License")}${TIER_LABEL[state.tier]}${capNote}`,
-    ...aiBlock(state, reachability),
+    licenseLine,
+    aiLine,
     ...environmentBlock(envVars),
     repositoryLine(state),
   ];
@@ -460,6 +476,46 @@ function writeLine(output: Writable, text: string): void {
   output.write(text.endsWith("\n") ? text : `${text}\n`);
 }
 
+/** Is this stream an interactive terminal? (the injected test stream / a pipe is not). */
+function isInteractive(output: Writable): boolean {
+  return (output as NodeJS.WriteStream).isTTY === true;
+}
+
+/**
+ * Wipe the visible screen AND the scrollback buffer, then home the cursor — so a
+ * re-pinned menu starts from a truly clean slate (`2J` clears the screen, `3J`
+ * the scrollback, `H` homes). TTY-only; never emitted to a pipe or the test
+ * stream (where the ANSI bytes would corrupt captured output).
+ */
+function clearScreen(output: Writable): void {
+  output.write("\u001B[2J\u001B[3J\u001B[H");
+}
+
+/**
+ * Hold the just-rendered action output on screen until the user presses a key,
+ * so it is readable before the next loop clears and re-pins the menu. Resolves
+ * `"quit"` when the user interrupts (Ctrl-C / Esc) so the caller can exit
+ * cleanly, else `"continue"`. TTY-only — guarded by the caller; reads a single
+ * raw keystroke from `process.stdin`.
+ */
+async function waitForKey(output: Writable): Promise<"quit" | "continue"> {
+  writeLine(output, "");
+  output.write("Press any key to return to the menu… (Esc to quit)");
+  const stdin = process.stdin;
+  const wasRaw = stdin.isRaw === true;
+  stdin.setRawMode?.(true);
+  stdin.resume();
+  return await new Promise<"quit" | "continue">((resolve) => {
+    stdin.once("data", (data: Buffer) => {
+      stdin.setRawMode?.(wasRaw);
+      stdin.pause();
+      const key = data.toString("utf8");
+      // Ctrl-C (ETX) or Esc → treat as quit so raw mode never traps the user.
+      resolve(key === "\u0003" || key === "\u001B" ? "quit" : "continue");
+    });
+  });
+}
+
 /** The default menu primitive: a `@clack/prompts` `select` wired to `output`; cancel → `null`. */
 function clackLaunchpadSelect(output: Writable): LaunchpadSelect {
   return async ({ message, options }) => {
@@ -523,7 +579,10 @@ function errorOf(
  * flags (no `repoTarget`), or `null` if any prompt is cancelled. Branch is NOT
  * asked (the CLI has no `--branch` flag).
  */
-async function collectGuidedInputs(prompts: GuidedPrompts): Promise<PartialRunConfig | null> {
+async function collectGuidedInputs(
+  prompts: GuidedPrompts,
+  initialFormats: OutputFormat[] = ["terminal"],
+): Promise<PartialRunConfig | null> {
   const limitRaw = await prompts.text({
     message: "Limit — most-recent commits to analyze",
     placeholder: "all history",
@@ -545,7 +604,7 @@ async function collectGuidedInputs(prompts: GuidedPrompts): Promise<PartialRunCo
   const formats = await prompts.multiselect({
     message: "Output — one or more formats",
     options: OUTPUT_FORMAT_OPTIONS,
-    initialValues: ["terminal"],
+    initialValues: initialFormats,
   });
   if (formats === null) {
     return null;
@@ -565,6 +624,24 @@ async function collectGuidedInputs(prompts: GuidedPrompts): Promise<PartialRunCo
   }
   flags.outputFormats = formats.length > 0 ? formats : ["terminal"];
   return flags;
+}
+
+/**
+ * The persisted default output format, used to pre-select the guided picker so
+ * a saved Settings choice is honored in interactive runs (not only strict
+ * single-shot CLI runs). Absent `loadSettings`, a load failure, or an empty
+ * saved list all fall back to `["terminal"]` — the never-dead-end posture.
+ */
+async function loadDefaultFormats(deps: LaunchpadDeps): Promise<OutputFormat[]> {
+  if (deps.loadSettings === undefined) {
+    return ["terminal"];
+  }
+  try {
+    const saved = (await deps.loadSettings()).outputFormats;
+    return saved !== undefined && saved.length > 0 ? saved : ["terminal"];
+  } catch {
+    return ["terminal"];
+  }
 }
 
 /**
@@ -601,7 +678,7 @@ async function runGuidedAnalyze(deps: LaunchpadDeps, mode: "cwd" | "remote", out
     }
   }
 
-  const inputs = await collectGuidedInputs(prompts);
+  const inputs = await collectGuidedInputs(prompts, await loadDefaultFormats(deps));
   if (inputs === null) {
     return;
   }
@@ -915,20 +992,41 @@ function assertNeverAction(action: never): never {
 
 /**
  * Render the launchpad and loop until the user quits (AC1, AC4). Returns
- * `ExitCode.Success` on a clean Esc/Quit. The header is written once; the menu
- * re-prompts after each non-terminal action.
+ * `ExitCode.Success` on a clean Esc/Quit. In an interactive terminal the screen
+ * is cleared and the header + menu re-pinned at the top before every prompt, and
+ * each action's output is held until a keypress so it stays readable; otherwise
+ * (pipe / tests) the header is written once and output simply accumulates.
  */
 export async function runLaunchpad(deps: LaunchpadDeps): Promise<number> {
   const output = deps.output ?? process.stderr;
   const select = deps.select ?? clackLaunchpadSelect(output);
   const options = buildLaunchpadOptions(deps.state);
+  const repaint = deps.repaint ?? isInteractive(output);
+  const pause = deps.waitForKey ?? waitForKey;
 
-  writeLine(output, LAUNCHPAD_TAGLINE);
-  writeLine(output, formatReadinessLine(deps.state));
+  const writeHeader = (): void => {
+    writeLine(output, LAUNCHPAD_TAGLINE);
+    writeLine(output, formatReadinessLine(deps.state));
+  };
+
+  if (!repaint) {
+    writeHeader();
+  }
 
   for (;;) {
+    if (repaint) {
+      clearScreen(output);
+      writeHeader();
+    }
     const action = (await select({ message: "What would you like to do?", options })) ?? "quit";
     if ((await dispatchAction(deps, action, output)) === "quit") {
+      return ExitCode.Success;
+    }
+    // Hold the action's output on screen until a keypress, before the next loop
+    // wipes the screen and re-pins the menu at the top (interactive only).
+    if (repaint && (await pause(output)) === "quit") {
+      writeLine(output, "");
+      writeLine(output, FLAGS_CHEATSHEET);
       return ExitCode.Success;
     }
   }

@@ -24,7 +24,7 @@
  * `no-console` — the renderer never writes; the CLI shell writes the returned string.
  */
 
-import type { Report, ReportAnalysis, ReportNarrative } from "../../assemble/report-schema.js";
+import type { Report, ReportAnalysis, ReportNarrative, ReportProvenance } from "../../assemble/report-schema.js";
 import type { MetricGroup } from "../../analyze/metric.js";
 import { classifyReport, type ShowpieceReport, type SubstrateFraming } from "../render.port.js";
 import { classifyHealth, HEALTH_GLYPH, HEALTH_LABEL } from "../html/health.js";
@@ -54,10 +54,11 @@ export const MD_METRICS_ONLY_NOTE = "_Narrative skipped (--no-ai) — run intera
 /** Render the full Markdown report document for a Report. */
 export function renderMarkdown(report: Report): string {
   const route = classifyReport(report);
+  const provenance = report.provenance;
   const body =
     route.kind === "showpiece"
-      ? renderShowpiece(route.report)
-      : renderSubstrate(route.analysis, route.framing);
+      ? renderShowpiece(route.report, provenance)
+      : renderSubstrate(route.analysis, route.framing, provenance);
   return `${body}\n`;
 }
 
@@ -66,39 +67,110 @@ function blocks(...parts: string[]): string {
   return parts.filter((part) => part !== "").join("\n\n");
 }
 
-/** The narrated showpiece: title → confidence → Summary → Explanation → Coaching → Metrics → footer. */
-function renderShowpiece(report: ShowpieceReport): string {
+/** The narrated showpiece: masthead → confidence → Summary → Explanation → Coaching → Metrics → footer. */
+function renderShowpiece(report: ShowpieceReport, provenance: ReportProvenance | undefined): string {
   const { summary, explanation, coaching, explanations, confidence } = report.narrative;
   return blocks(
-    title(),
+    masthead(provenance),
     confidence === undefined ? "" : confidenceBlock(confidence),
     summaryBand(summary),
     explanationBand(explanation),
     coachingBand(coaching),
     metricsSection(report.analysis, explanations),
-    footer("showpiece"),
+    footer("showpiece", provenance),
   );
 }
 
 /** The substrate: a degraded render (banner + stub headings) or a calm metrics-only render. */
-function renderSubstrate(analysis: ReportAnalysis, framing: SubstrateFraming): string {
+function renderSubstrate(analysis: ReportAnalysis, framing: SubstrateFraming, provenance: ReportProvenance | undefined): string {
   if (framing === "degraded") {
     return blocks(
       MD_DEGRADED_BANNER,
-      title(),
+      masthead(provenance),
       "**Confidence:** —  _(no narrative to assess)_",
       stubBand("Summary", "Narrative unavailable — showing raw analysis."),
       stubBand("Explanation", "Narrative unavailable."),
       stubBand("Coaching", "Narrative unavailable."),
       metricsSection(analysis, undefined),
-      footer("degraded"),
+      footer("degraded", provenance),
     );
   }
-  return blocks(title(), metricsSection(analysis, undefined), footer("metrics-only"));
+  return blocks(masthead(provenance), metricsSection(analysis, undefined), footer("metrics-only", provenance));
 }
 
-function title(): string {
-  return "# commit-whisper";
+/** The masthead: the wordmark title (+ repo name), the FR-17 provenance chip line, and the Free-tier cap line. */
+function masthead(provenance: ReportProvenance | undefined): string {
+  return blocks(title(provenance), provenanceChips(provenance), capLine(provenance));
+}
+
+/** The title — `# commit-whisper` plus the repo name when present (mirrors the HTML masthead wordmark). */
+function title(provenance: ReportProvenance | undefined): string {
+  const name = provenance?.repo?.name;
+  return name === undefined ? "# commit-whisper" : `# commit-whisper — ${escapeCell(name)}`;
+}
+
+/** The FR-17 provenance chip line: the present facts (repo · branch · N commits · C contributors · analyzed date), each escaped. */
+function provenanceChips(provenance: ReportProvenance | undefined): string {
+  const repo = provenance?.repo;
+  const scale = provenance?.scale;
+  const chips: string[] = [];
+  if (repo?.name !== undefined) {
+    chips.push(escapeCell(repo.name));
+  }
+  if (repo?.branch !== undefined) {
+    chips.push(escapeCell(repo.branch));
+  }
+  const commits = scale?.totalCommits ?? scale?.analyzedCommits;
+  if (commits !== undefined) {
+    chips.push(`${formatCount(commits)} ${commits === 1 ? "commit" : "commits"}`);
+  }
+  if (scale?.contributors !== undefined) {
+    chips.push(`${formatCount(scale.contributors)} ${scale.contributors === 1 ? "contributor" : "contributors"}`);
+  }
+  const generatedAt = provenance?.run?.generatedAt;
+  if (generatedAt !== undefined) {
+    chips.push(`analyzed ${isoDate(generatedAt)}`);
+  }
+  return chips.length === 0 ? "" : `_${chips.join(" · ")}_`;
+}
+
+/** The Free-tier cap line: `Free · X of N commits analyzed` (degrading to `X commits analyzed`); a paid tier renders nothing. */
+function capLine(provenance: ReportProvenance | undefined): string {
+  if (provenance?.entitlement?.tier !== "free") {
+    return "";
+  }
+  const analyzed = provenance.scale?.analyzedCommits;
+  if (analyzed === undefined) {
+    return "";
+  }
+  const total = provenance.scale?.totalCommits;
+  const detail =
+    total === undefined
+      ? `${formatCount(analyzed)} commits analyzed`
+      : `${formatCount(analyzed)} of ${formatCount(total)} commits analyzed`;
+  return `Free · ${detail}`;
+}
+
+/** Deterministic thousands-grouping (locale-INDEPENDENT — the renderer must be pure; never `toLocaleString`). */
+function formatCount(n: number): string {
+  if (!Number.isFinite(n)) {
+    return "0";
+  }
+  const negative = n < 0;
+  const digits = Math.abs(Math.trunc(n)).toString();
+  let grouped = "";
+  for (let i = 0; i < digits.length; i++) {
+    if (i > 0 && (digits.length - i) % 3 === 0) {
+      grouped += ",";
+    }
+    grouped += digits[i];
+  }
+  return negative ? `-${grouped}` : grouped;
+}
+
+/** The date component (`YYYY-MM-DD`) of an ISO-8601 timestamp, for the "analyzed <date>" chip. */
+function isoDate(iso: string): string {
+  return iso.slice(0, 10);
 }
 
 /** The confidence line — the WORD (high/medium/low), never a glyph; escalation on its own line. */
@@ -210,8 +282,21 @@ function formatValue(value: unknown): string {
   return JSON.stringify(value) ?? "";
 }
 
-/** The footer; the metrics-only render appends its quiet note. */
-function footer(kind: "showpiece" | "degraded" | "metrics-only"): string {
-  const base = "---\nGenerated by commit-whisper · schemaVersion 1.0.0";
+/** The footer; appends the FR-17 provenance facts (version · provider/model · timestamp) and the metrics-only note. */
+function footer(kind: "showpiece" | "degraded" | "metrics-only", provenance: ReportProvenance | undefined): string {
+  const version = provenance?.run?.toolVersion;
+  const parts = [
+    version === undefined ? "Generated by commit-whisper" : `Generated by commit-whisper v${escapeCell(version)}`,
+    "schemaVersion 1.0.0",
+  ];
+  const ai = provenance?.ai;
+  if (ai !== undefined) {
+    parts.push(`${escapeCell(ai.provider)}/${escapeCell(ai.model)}`);
+  }
+  const generatedAt = provenance?.run?.generatedAt;
+  if (generatedAt !== undefined) {
+    parts.push(escapeCell(generatedAt));
+  }
+  const base = `---\n${parts.join(" · ")}`;
   return kind === "metrics-only" ? `${base}\n\n${MD_METRICS_ONLY_NOTE}` : base;
 }

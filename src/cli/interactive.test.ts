@@ -186,6 +186,99 @@ describe("runLaunchpad (AC1, AC4)", () => {
   });
 });
 
+// ── Full-screen (repaint) path: clear + re-pin menu, hold output on keypress ─
+
+/** A TTY-flagged capture stream — drives the `repaint` auto-detection branch. */
+function captureTtyStream() {
+  const chunks: string[] = [];
+  const stream = new Writable({
+    write(chunk, _enc, cb) {
+      chunks.push(String(chunk));
+      cb();
+    },
+  }) as Writable & { isTTY?: boolean };
+  stream.isTTY = true;
+  return { stream, text: (): string => chunks.join("") };
+}
+
+/** The ANSI clear-screen + scrollback-wipe + home sequence emitted before each re-pinned menu. */
+const CLEAR_SEQUENCE = "\u001B[2J\u001B[3J\u001B[H";
+
+describe("runLaunchpad full-screen repaint path", () => {
+  it("clears + re-pins the header before every prompt and holds output via waitForKey", async () => {
+    const out = captureStream();
+    const sel = scriptedSelect(["help", "status", "quit"]);
+    const keys: string[] = [];
+    const code = await runLaunchpad({
+      state: FREE_CONFIGURED,
+      helpText: "FULL-FLAG-REFERENCE",
+      output: out.stream,
+      select: sel.select,
+      repaint: true,
+      waitForKey: async () => {
+        keys.push("k");
+        return "continue";
+      },
+      envDiagnostics: [],
+      probeReachability: async () => ({ kind: "reachable" }),
+    });
+    const text = out.text();
+    expect(code).toBe(ExitCode.Success);
+    // The screen is cleared once per loop iteration (help, status, quit = 3).
+    expect(text.split(CLEAR_SEQUENCE).length - 1).toBe(3);
+    // The header is re-pinned each iteration (one tagline per clear).
+    expect(text.split(LAUNCHPAD_TAGLINE).length - 1).toBe(3);
+    // The action output is preserved (not wiped before the user reads it).
+    expect(text).toContain("FULL-FLAG-REFERENCE");
+    // waitForKey is awaited after each non-quit action (help, status = 2).
+    expect(keys.length).toBe(2);
+  });
+
+  it("a quit keypress (Esc/Ctrl-C) after an action exits cleanly with the cheatsheet", async () => {
+    const out = captureStream();
+    // Never reaches a second select — the keypress quits first.
+    const sel = scriptedSelect(["help", "quit"]);
+    const code = await runLaunchpad({
+      state: FREE_CONFIGURED,
+      helpText: "HELP",
+      output: out.stream,
+      select: sel.select,
+      repaint: true,
+      waitForKey: async () => "quit",
+    });
+    expect(code).toBe(ExitCode.Success);
+    expect(out.text()).toContain(FLAGS_CHEATSHEET);
+    expect(sel.calls()).toBe(1); // quit keypress short-circuited the loop
+  });
+
+  it("auto-detects the repaint path from a TTY output stream", async () => {
+    const out = captureTtyStream();
+    const sel = scriptedSelect(["quit"]);
+    await runLaunchpad({
+      state: FREE_CONFIGURED,
+      helpText: "HELP",
+      output: out.stream,
+      select: sel.select,
+      // no `repaint` override — driven purely by `stream.isTTY`.
+    });
+    expect(out.text()).toContain(CLEAR_SEQUENCE);
+  });
+
+  it("non-TTY output never clears the screen and writes the header once", async () => {
+    const out = captureStream();
+    const sel = scriptedSelect(["help", "quit"]);
+    await runLaunchpad({
+      state: FREE_CONFIGURED,
+      helpText: "HELP",
+      output: out.stream,
+      select: sel.select,
+    });
+    const text = out.text();
+    expect(text).not.toContain(CLEAR_SEQUENCE);
+    expect(text.split(LAUNCHPAD_TAGLINE).length - 1).toBe(1); // header written exactly once
+  });
+});
+
 // ── Story 6.2: guided prompts + command echo ────────────────────────────────
 
 /** A scripted guided-prompt primitive: returns each text answer in turn, then the formats. */
@@ -198,13 +291,15 @@ function scriptedPrompts(script: {
   let si = 0;
   const textMessages: string[] = [];
   const selectMessages: string[] = [];
+  const formatInitialValues: (OutputFormat[] | undefined)[] = [];
   const prompts: GuidedPrompts = {
     async text(opts) {
       textMessages.push(opts.message);
       const next = script.texts?.[ti++];
       return next ?? null;
     },
-    async multiselect() {
+    async multiselect(opts) {
+      formatInitialValues.push(opts.initialValues);
       if (script.formats === undefined) {
         return ["terminal"];
       }
@@ -216,7 +311,7 @@ function scriptedPrompts(script: {
       return next ?? null;
     },
   };
-  return { prompts, textMessages, selectMessages };
+  return { prompts, textMessages, selectMessages, formatInitialValues };
 }
 
 function captureAnalysis() {
@@ -351,6 +446,56 @@ describe("runGuidedAnalyze via runLaunchpad (AC1, AC2, AC3)", () => {
     expect(sel.calls()).toBe(2); // looped back to the menu
   });
 
+  it("pre-selects the guided output picker from the persisted Settings default", async () => {
+    const out = captureStream();
+    const sel = scriptedSelect(["analyze-cwd", "quit"]);
+    const scripted = scriptedPrompts({ texts: ["", ""], formats: ["html"] });
+    await runLaunchpad(
+      guidedDeps({
+        output: out.stream,
+        select: sel.select,
+        prompts: scripted.prompts,
+        runAnalysis: captureAnalysis().runAnalysis,
+        loadSettings: async () => ({ outputFormats: ["html", "json"] }),
+      }),
+    );
+    expect(scripted.formatInitialValues).toEqual([["html", "json"]]);
+  });
+
+  it("falls back to ['terminal'] for the picker when no Settings default is saved", async () => {
+    const out = captureStream();
+    const sel = scriptedSelect(["analyze-cwd", "quit"]);
+    const scripted = scriptedPrompts({ texts: ["", ""], formats: ["terminal"] });
+    await runLaunchpad(
+      guidedDeps({
+        output: out.stream,
+        select: sel.select,
+        prompts: scripted.prompts,
+        runAnalysis: captureAnalysis().runAnalysis,
+        loadSettings: async () => ({}),
+      }),
+    );
+    expect(scripted.formatInitialValues).toEqual([["terminal"]]);
+  });
+
+  it("falls back to ['terminal'] for the picker when loadSettings throws", async () => {
+    const out = captureStream();
+    const sel = scriptedSelect(["analyze-cwd", "quit"]);
+    const scripted = scriptedPrompts({ texts: ["", ""], formats: ["terminal"] });
+    await runLaunchpad(
+      guidedDeps({
+        output: out.stream,
+        select: sel.select,
+        prompts: scripted.prompts,
+        runAnalysis: captureAnalysis().runAnalysis,
+        loadSettings: async () => {
+          throw new Error("disk error");
+        },
+      }),
+    );
+    expect(scripted.formatInitialValues).toEqual([["terminal"]]);
+  });
+
   it("cancelling a guided prompt aborts the run (no execution) and returns to the menu", async () => {
     const out = captureStream();
     const sel = scriptedSelect(["analyze-cwd", "quit"]);
@@ -448,16 +593,21 @@ describe("formatStatusReport (AC1, AC2)", () => {
       .map((l) => l.search(/\b(?:set|missing)\b/));
     expect(envStateCols).toHaveLength(2);
     expect(new Set(envStateCols).size).toBe(1);
-    // License / AI / status / Repository values begin in one straight vertical column.
+    // License / AI / Repository values begin in one straight vertical column.
     const valueCol = (prefix: string, value: string): number =>
       lines.find((l) => l.startsWith(prefix))!.indexOf(value);
     const primaryCols = [
       valueCol("License", "Free"),
       valueCol("AI ", "ollama"),
       valueCol("Repository", "✓"),
-      lines.find((l) => l.trimStart().startsWith("status"))!.indexOf("✓ reachable"),
     ];
     expect(new Set(primaryCols).size).toBe(1);
+    // The free-tier cap note and the AI reachability share one trailing column.
+    const annotationCols = [
+      valueCol("License", "100-commit cap"),
+      valueCol("AI ", "✓ reachable"),
+    ];
+    expect(new Set(annotationCols).size).toBe(1);
   });
 
   it("shows the failure reason when the provider is unreachable", () => {

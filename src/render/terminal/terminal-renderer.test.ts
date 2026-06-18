@@ -151,3 +151,85 @@ describe("renderTerminal — empty analysis", () => {
     expect(out).toContain("No metrics computed.");
   });
 });
+
+describe("renderTerminal — masthead provenance (FR-17 parity)", () => {
+  const PROVENANCE: Report["provenance"] = {
+    repo: { name: "payments-api", target: "github.com/acme/payments-api", source: "remote", branch: "main" },
+    scale: { totalCommits: 1234, analyzedCommits: 100, contributors: 3 },
+    ai: { provider: "openai", model: "gpt-4o" },
+    run: { generatedAt: "2026-06-18T09:30:00.000Z", toolVersion: "1.2.3" },
+    entitlement: { tier: "free", commitCap: 100 },
+  };
+
+  it("renders the provenance chip line and the Free-tier cap line under the wordmark", () => {
+    const out = renderTerminal(report({ narrative: NARRATIVE, provenance: PROVENANCE }), { color: false });
+    expect(out).toContain("payments-api · main · 1,234 commits · 3 contributors · analyzed 2026-06-18");
+    expect(out).toContain("Free · 100 of 1,234 commits analyzed");
+  });
+
+  it("omits the cap line on a paid tier and shows just the wordmark with no provenance", () => {
+    const paid = renderTerminal(report({ narrative: NARRATIVE, provenance: { ...PROVENANCE, entitlement: { tier: "unlimited" } } }), { color: false });
+    expect(paid).not.toContain("Free ·");
+    const none = renderTerminal(report({ narrative: NARRATIVE }), { color: false });
+    expect(none.startsWith("commit-whisper")).toBe(true);
+    expect(none.split("\n")[1]).toBe(""); // no chip line directly under the wordmark when provenance is absent
+  });
+});
+
+describe("renderTerminal — group structure + four-facet explanations (parity)", () => {
+  const NARRATIVE_WITH_FACETS: ReportNarrative = {
+    ...NARRATIVE,
+    explanations: {
+      "a-commit-volume": {
+        explanation: "Volume is steady across the window.",
+        goodBehaviours: ["Consistent cadence", "No long gaps"],
+        needsImprovement: ["Few commits on weekends"],
+        suggestions: ["Spread work earlier in the week"],
+      },
+    },
+  };
+
+  const out = renderTerminal(report({ narrative: NARRATIVE_WITH_FACETS, degraded: false }), { color: false });
+
+  it("renders the Metrics heading and the group header with id, title, and description", () => {
+    expect(out).toContain("Metrics");
+    expect(out).toContain("A · Activity & Cadence");
+    expect(out).toContain("How the project moves over time.");
+  });
+
+  it("renders the health band (glyph + word) on a metric", () => {
+    expect(out).toMatch(/Commit volume {2}[●◐▲○] (ok|watch|risk|n\/a)/);
+  });
+
+  it("renders the four-facet bullets in the fixed order for a metric with an explanation", () => {
+    const iValue = out.indexOf("• Value");
+    const iMeaning = out.indexOf("• What it means");
+    const iStrengths = out.indexOf("• Strengths");
+    const iNeeds = out.indexOf("• Needs improvement");
+    const iSuggestions = out.indexOf("• Suggestions");
+    expect(iValue).toBeGreaterThanOrEqual(0);
+    expect(iMeaning).toBeGreaterThan(iValue);
+    expect(iStrengths).toBeGreaterThan(iMeaning);
+    expect(iNeeds).toBeGreaterThan(iStrengths);
+    expect(iSuggestions).toBeGreaterThan(iNeeds);
+    expect(out).toContain("Volume is steady across the window.");
+    expect(out).toContain("- Consistent cadence");
+    expect(out).toContain("- Spread work earlier in the week");
+  });
+
+  it("shows an em-dash for an empty facet list", () => {
+    const noFacets: ReportNarrative = {
+      ...NARRATIVE,
+      explanations: {
+        "a-commit-volume": { explanation: "Steady.", goodBehaviours: [], needsImprovement: [], suggestions: [] },
+      },
+    };
+    const o = renderTerminal(report({ narrative: noFacets }), { color: false });
+    expect(o).toContain("• Strengths — —");
+  });
+
+  it("renders the Value bullet with the not-available reason for an uncomputed metric", () => {
+    expect(out).toContain("• Value — not available — Too few commits.");
+  });
+});
+

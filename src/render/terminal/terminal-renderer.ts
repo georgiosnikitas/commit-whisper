@@ -19,11 +19,25 @@
 
 import pc from "picocolors";
 
-import type { Report, ReportAnalysis } from "../../assemble/report-schema.js";
+import type { Report, ReportAnalysis, ReportNarrative, ReportProvenance } from "../../assemble/report-schema.js";
+import type { MetricGroup } from "../../analyze/metric.js";
 import type { Confidence } from "../../narrate/narrate.port.js";
 import { classifyReport, type ShowpieceReport, type SubstrateFraming } from "../render.port.js";
+import { classifyHealth, HEALTH_GLYPH, HEALTH_LABEL, type HealthBand } from "../html/health.js";
 
 type Colors = ReturnType<typeof pc.createColors>;
+type Metric = ReportAnalysis["metrics"][number];
+type MetricExplanations = NonNullable<ReportNarrative["explanations"]>;
+
+/** The catalog Metric Groups in stable order, with display titles + one-line descriptions (shared copy with Markdown/HTML). */
+const GROUPS: ReadonlyArray<{ id: MetricGroup; title: string; description: string }> = [
+  { id: "A", title: "Activity & Cadence", description: "How the project moves over time." },
+  { id: "B", title: "Contribution & Ownership", description: "How the work is distributed across the team." },
+  { id: "C", title: "Commit Message Quality", description: "How clearly the history communicates intent." },
+  { id: "D", title: "Branching & Merge Structure", description: "How branching and merging are structured." },
+  { id: "E", title: "Churn & Hotspots", description: "Where change and instability concentrate." },
+  { id: "F", title: "Repository Health Signals", description: "Overall repository health signals." },
+];
 
 export interface TerminalRenderOptions {
   /** Force color on/off. Omitted ⇒ picocolors auto-detect (`NO_COLOR` / non-TTY ⇒ off). */
@@ -38,14 +52,14 @@ export function renderTerminal(report: Report, opts: TerminalRenderOptions = {})
   const c = opts.color === undefined ? pc.createColors() : pc.createColors(opts.color);
   const route = classifyReport(report);
   return route.kind === "showpiece"
-    ? renderShowpiece(route.report, c)
-    : renderSubstrate(route.analysis, route.framing, c);
+    ? renderShowpiece(route.report, report.provenance, c)
+    : renderSubstrate(route.analysis, route.framing, report.provenance, c);
 }
 
-function renderShowpiece(report: ShowpieceReport, c: Colors): string {
+function renderShowpiece(report: ShowpieceReport, provenance: ReportProvenance | undefined, c: Colors): string {
   const { summary, explanation, coaching, confidence } = report.narrative;
   return [
-    heading(c),
+    masthead(provenance, c),
     ...confidenceBand(confidence, c),
     "",
     c.bold("Summary"),
@@ -71,18 +85,102 @@ function renderShowpiece(report: ShowpieceReport, c: Colors): string {
     ]),
     coaching.closingSummary,
     "",
-    metricsTable(report.analysis, c),
+    metricsSection(report.analysis, report.narrative.explanations, c),
   ].join("\n");
 }
 
-function renderSubstrate(analysis: ReportAnalysis, framing: SubstrateFraming, c: Colors): string {
+function renderSubstrate(
+  analysis: ReportAnalysis,
+  framing: SubstrateFraming,
+  provenance: ReportProvenance | undefined,
+  c: Colors,
+): string {
   const banner =
     framing === "degraded" ? c.bold(c.yellow(DEGRADED_BANNER)) : c.dim(METRICS_ONLY_NOTE);
-  return [heading(c), "", banner, "", metricsTable(analysis, c)].join("\n");
+  return [masthead(provenance, c), "", banner, "", metricsSection(analysis, undefined, c)].join("\n");
 }
 
-function heading(c: Colors): string {
-  return c.bold("commit-whisper");
+/**
+ * The masthead: the wordmark, then the FR-17 provenance chip line (repo · branch
+ * · N commits · C contributors · analyzed date) and the Free-tier cap line — the
+ * same provenance the Markdown/HTML renderers carry. Each line renders only when
+ * its facts are present, so a Report with no provenance shows just the wordmark.
+ */
+function masthead(provenance: ReportProvenance | undefined, c: Colors): string {
+  const lines = [c.bold("commit-whisper")];
+  const chips = provenanceChips(provenance);
+  if (chips !== "") {
+    lines.push(c.dim(chips));
+  }
+  const cap = capLine(provenance);
+  if (cap !== "") {
+    lines.push(c.dim(cap));
+  }
+  return lines.join("\n");
+}
+
+/** The FR-17 provenance chip line: the present facts joined by ` · ` (or "" when none are present). */
+function provenanceChips(provenance: ReportProvenance | undefined): string {
+  const repo = provenance?.repo;
+  const scale = provenance?.scale;
+  const chips: string[] = [];
+  if (repo?.name !== undefined) {
+    chips.push(repo.name);
+  }
+  if (repo?.branch !== undefined) {
+    chips.push(repo.branch);
+  }
+  const commits = scale?.totalCommits ?? scale?.analyzedCommits;
+  if (commits !== undefined) {
+    chips.push(`${formatCount(commits)} ${commits === 1 ? "commit" : "commits"}`);
+  }
+  if (scale?.contributors !== undefined) {
+    chips.push(`${formatCount(scale.contributors)} ${scale.contributors === 1 ? "contributor" : "contributors"}`);
+  }
+  const generatedAt = provenance?.run?.generatedAt;
+  if (generatedAt !== undefined) {
+    chips.push(`analyzed ${isoDate(generatedAt)}`);
+  }
+  return chips.join(" · ");
+}
+
+/** The Free-tier cap line: `Free · X of N commits analyzed` (degrading to `X commits analyzed`); paid tier ⇒ "". */
+function capLine(provenance: ReportProvenance | undefined): string {
+  if (provenance?.entitlement?.tier !== "free") {
+    return "";
+  }
+  const analyzed = provenance.scale?.analyzedCommits;
+  if (analyzed === undefined) {
+    return "";
+  }
+  const total = provenance.scale?.totalCommits;
+  const detail =
+    total === undefined
+      ? `${formatCount(analyzed)} commits analyzed`
+      : `${formatCount(analyzed)} of ${formatCount(total)} commits analyzed`;
+  return `Free · ${detail}`;
+}
+
+/** Deterministic thousands-grouping (locale-INDEPENDENT — the renderer must be pure; never `toLocaleString`). */
+function formatCount(n: number): string {
+  if (!Number.isFinite(n)) {
+    return "0";
+  }
+  const negative = n < 0;
+  const digits = Math.abs(Math.trunc(n)).toString();
+  let grouped = "";
+  for (let i = 0; i < digits.length; i++) {
+    if (i > 0 && (digits.length - i) % 3 === 0) {
+      grouped += ",";
+    }
+    grouped += digits[i];
+  }
+  return negative ? `-${grouped}` : grouped;
+}
+
+/** The date component (`YYYY-MM-DD`) of an ISO-8601 timestamp, for the "analyzed <date>" chip. */
+function isoDate(iso: string): string {
+  return iso.slice(0, 10);
 }
 
 /**
@@ -105,28 +203,71 @@ function confidenceBand(confidence: Confidence | undefined, c: Colors): string[]
   return lines;
 }
 
-/** Hand-rolled metrics table (id-ordered as the engine emitted them — deterministic). */
-function metricsTable(analysis: ReportAnalysis, c: Colors): string {
+/**
+ * The Metrics section: A→F groups present in the analysis, each with its title +
+ * description, and every metric carrying its health band, value, and — when a
+ * narrative explanation exists — its four-facet bullets. This is the SAME content
+ * the Markdown/HTML renderers carry, so the terminal no longer diverges (it omits
+ * only the format-specific visuals/charts).
+ */
+function metricsSection(analysis: ReportAnalysis, explanations: MetricExplanations | undefined, c: Colors): string {
   if (analysis.metrics.length === 0) {
     return c.dim("No metrics computed.");
   }
-  const rows = analysis.metrics.map((metric) => ({
-    title: metric.title,
-    status: metric.status,
-    detail: metric.status === "computed" ? formatValue(metric.value) : metric.reason ?? "",
-  }));
-  const titleW = maxWidth(rows.map((row) => row.title), "Metric".length);
-  const statusW = maxWidth(rows.map((row) => row.status), "Status".length);
+  const present = GROUPS.filter((group) => analysis.metrics.some((metric) => metric.group === group.id));
+  const sections = present.map((group) => {
+    const metrics = analysis.metrics.filter((metric) => metric.group === group.id);
+    const cards = metrics.map((metric) => metricCard(metric, explanations, c)).join("\n\n");
+    return [c.bold(`${group.id} · ${group.title}`), c.dim(group.description), "", cards].join("\n");
+  });
+  return [c.bold("Metrics"), "", sections.join("\n\n")].join("\n");
+}
 
-  const lines = [c.bold(`${pad("Metric", titleW)}  ${pad("Status", statusW)}  Detail`)];
-  for (const row of rows) {
-    const status =
-      row.status === "computed"
-        ? c.green(pad(row.status, statusW))
-        : c.yellow(pad(row.status, statusW));
-    lines.push(`${pad(row.title, titleW)}  ${status}  ${c.dim(row.detail)}`);
+/** One metric: a title + health-band heading, the Value bullet, and the four-facet bullets when present. */
+function metricCard(metric: Metric, explanations: MetricExplanations | undefined, c: Colors): string {
+  const band = classifyHealth(metric);
+  const heading = `${c.bold(metric.title)}  ${healthTag(band, c)}`;
+  const lines = [heading, valueBullet(metric, c)];
+  const explanation = explanations?.[metric.id];
+  if (explanation !== undefined) {
+    lines.push(...facetBullets(explanation, c));
   }
   return lines.join("\n");
+}
+
+/** The color-coded health glyph + word (shape carries the signal; color is the only TTY-sensitive surface). */
+function healthTag(band: HealthBand, c: Colors): string {
+  const paintByBand = { ok: c.green, watch: c.yellow, risk: c.red, na: c.dim } as const;
+  return paintByBand[band](`${HEALTH_GLYPH[band]} ${HEALTH_LABEL[band]}`);
+}
+
+/** The Value bullet — the computed value, or a not-available note carrying the reason. */
+function valueBullet(metric: Metric, c: Colors): string {
+  const label = `  ${c.cyan("•")} ${c.bold("Value")}`;
+  if (metric.status !== "computed") {
+    const reason = metric.reason === undefined ? "" : ` — ${metric.reason}`;
+    const note = `not available${reason}`;
+    return `${label} — ${c.dim(note)}`;
+  }
+  return `${label} — ${formatValue(metric.value)}`;
+}
+
+/** The four facets as labeled bullets in the fixed order (mirrors the Markdown/HTML facet order). */
+function facetBullets(explanation: MetricExplanations[string], c: Colors): string[] {
+  return [
+    `  ${c.cyan("•")} ${c.bold("What it means")} — ${explanation.explanation}`,
+    ...arrayFacet("Strengths", explanation.goodBehaviours, c),
+    ...arrayFacet("Needs improvement", explanation.needsImprovement, c),
+    ...arrayFacet("Suggestions", explanation.suggestions, c),
+  ];
+}
+
+/** A list facet: an em-dash "none" when empty, else one indented sub-bullet per item. */
+function arrayFacet(label: string, items: readonly string[], c: Colors): string[] {
+  if (items.length === 0) {
+    return [`  ${c.cyan("•")} ${c.bold(label)} — —`];
+  }
+  return [`  ${c.cyan("•")} ${c.bold(label)}`, ...items.map((item) => `    ${c.dim("-")} ${item}`)];
 }
 
 /** Compact, width-bounded rendering of a metric value (the value is arbitrary JSON). */
@@ -139,12 +280,4 @@ function formatValue(value: unknown): string {
     return "";
   }
   return json.length > 60 ? `${json.slice(0, 59)}…` : json;
-}
-
-function maxWidth(values: string[], floor: number): number {
-  return values.reduce((width, value) => Math.max(width, value.length), floor);
-}
-
-function pad(value: string, width: number): string {
-  return value.length >= width ? value : value + " ".repeat(width - value.length);
 }

@@ -65,7 +65,8 @@ export interface LicenseValidation {
   status: string;
   variantName?: string;
   variantId?: number;
-  activationLimit?: number;
+  /** Device-activation cap. `1` ⇒ Single-device; `null` / `0` / `> 1` ⇒ unlimited devices. */
+  activationLimit?: number | null;
   activationUsage?: number;
   error?: string;
 }
@@ -80,7 +81,7 @@ export type LicenseValidator = (input: {
 interface LemonSqueezyValidateResponse {
   valid?: boolean;
   error?: string | null;
-  license_key?: { status?: string; activation_limit?: number; activation_usage?: number };
+  license_key?: { status?: string; activation_limit?: number | null; activation_usage?: number };
   meta?: { variant_id?: number; variant_name?: string };
 }
 
@@ -137,6 +138,8 @@ export interface LicenseActivation {
   instanceId?: string;
   variantName?: string;
   variantId?: number;
+  /** Device-activation cap. `1` ⇒ Single-device; `null` / `0` / `> 1` ⇒ unlimited devices. */
+  activationLimit?: number | null;
   error?: string;
 }
 
@@ -150,6 +153,7 @@ export type LicenseActivator = (input: {
 interface LemonSqueezyActivateResponse {
   activated?: boolean;
   error?: string | null;
+  license_key?: { activation_limit?: number | null };
   instance?: { id?: string; name?: string };
   meta?: { variant_id?: number; variant_name?: string };
 }
@@ -173,6 +177,7 @@ export function createLemonSqueezyActivator(deps: ClientDeps = {}): LicenseActiv
       instanceId: json.instance?.id,
       variantName: json.meta?.variant_name,
       variantId: json.meta?.variant_id,
+      activationLimit: json.license_key?.activation_limit,
       error: json.error ?? undefined,
     };
   };

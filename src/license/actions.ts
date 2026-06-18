@@ -14,7 +14,7 @@
 
 import type { Tier } from "../config/run-config.js";
 import type { LicenseActivator, LicenseDeactivator } from "./lemonsqueezy.js";
-import { tierForVariantName } from "./tiers.js";
+import { tierForLicense } from "./tiers.js";
 
 export type ActivationOutcome = { ok: true; tier: Tier } | { ok: false; reason: string };
 
@@ -48,7 +48,7 @@ export async function activateLicense(deps: ActivateDeps): Promise<ActivationOut
       reason: `Activated online, but couldn't save it on this device (${detail}). Set COMMIT_WHISPER_LICENSE_KEY so it applies on your next run — do NOT re-activate (that would use another device slot).`,
     };
   }
-  return { ok: true, tier: tierForVariantName(result.variantName) };
+  return { ok: true, tier: tierForLicense({ variantName: result.variantName, activationLimit: result.activationLimit }) };
 }
 
 export type DeactivationOutcome = { ok: true } | { ok: false; reason: string };

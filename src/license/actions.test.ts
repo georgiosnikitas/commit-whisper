@@ -38,6 +38,30 @@ describe("activateLicense (Story 7.2)", () => {
     expect(persisted).toEqual([{ instanceId: "inst-1", licenseKey: "LIC" }]);
   });
 
+  it("resolves the Unlimited tier from a null activation limit even when the variant name is generic (e.g. 'Default')", async () => {
+    // Regression: a single-variant Lemon Squeezy product reports variant_name "Default",
+    // which the name heuristic cannot map — the unlimited activation_limit must win.
+    const act = fakeActivator({ activated: true, instanceId: "inst-1", variantName: "Default", activationLimit: null });
+    const outcome = await activateLicense({
+      licenseKey: "LIC",
+      instanceName: "laptop",
+      activate: act.activate,
+      persist: async () => {},
+    });
+    expect(outcome).toEqual({ ok: true, tier: "unlimited" });
+  });
+
+  it("resolves Single-device from an activation limit of 1 regardless of the variant name", async () => {
+    const act = fakeActivator({ activated: true, instanceId: "inst-1", variantName: "Default", activationLimit: 1 });
+    const outcome = await activateLicense({
+      licenseKey: "LIC",
+      instanceName: "laptop",
+      activate: act.activate,
+      persist: async () => {},
+    });
+    expect(outcome).toEqual({ ok: true, tier: "single-device" });
+  });
+
   it("a second-device activation-limit refusal returns ok:false and persists nothing (AC3)", async () => {
     const act = fakeActivator({ activated: false, error: "activation limit reached" });
     const persisted: unknown[] = [];

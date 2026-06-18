@@ -17,7 +17,8 @@ import type { LicenseValidation } from "./lemonsqueezy.js";
 export const FREE_ENTITLEMENT: Entitlement = { tier: "free", commitCap: FREE_TIER_COMMIT_CAP };
 
 /**
- * Resolve the tier from a license variant name (shared by validate + activate).
+ * Resolve the tier from a license variant name (the name-only heuristic, used as
+ * a fallback when no usable activation limit is present).
  * `unlimited`/`automation` → Unlimited; `single`/`device` → Single-device; an
  * unknown or absent variant on a valid key → Single-device (a valid key is at
  * least Single-device).
@@ -34,14 +35,33 @@ export function tierForVariantName(variantName?: string): Tier {
 }
 
 /**
+ * Resolve the tier from a license's signals (shared by validate + activate). The
+ * server's `activation_limit` is the AUTHORITATIVE device-count signal and wins
+ * when present: exactly `1` ⇒ Single-device; `null` / `0` / `> 1` ⇒ Unlimited
+ * (Lemon Squeezy encodes "unlimited devices" as a blank limit → `null`). Only
+ * when no usable limit is reported do we fall back to the fragile variant-name
+ * heuristic (e.g. a single-variant product whose name is "Default").
+ */
+export function tierForLicense(input: { variantName?: string; activationLimit?: number | null }): Tier {
+  const limit = input.activationLimit;
+  if (limit === undefined) {
+    // No usable limit reported — fall back to the variant-name heuristic.
+    return tierForVariantName(input.variantName);
+  }
+  // `null` / `0` / `> 1` all mean "no single-device cap" ⇒ Unlimited; exactly 1 ⇒ Single-device.
+  return limit === 1 ? "single-device" : "unlimited";
+}
+
+/**
  * Resolve the tier from a validation. An invalid validation → `free` (defensive;
- * the gate already routes failures to Free). A valid key maps by `variantName`.
+ * the gate already routes failures to Free). A valid key maps by its signals
+ * (activation limit first, then variant name).
  */
 export function tierForValidation(v: LicenseValidation): Tier {
   if (!v.valid) {
     return "free";
   }
-  return tierForVariantName(v.variantName);
+  return tierForLicense({ variantName: v.variantName, activationLimit: v.activationLimit });
 }
 
 /** The entitlement for a tier — Free carries the 100-commit cap; paid tiers are uncapped. A fresh object per call. */
