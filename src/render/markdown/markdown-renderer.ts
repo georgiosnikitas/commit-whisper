@@ -28,6 +28,7 @@ import type { Report, ReportAnalysis, ReportNarrative, ReportProvenance } from "
 import type { MetricGroup } from "../../analyze/metric.js";
 import { classifyReport, type ShowpieceReport, type SubstrateFraming } from "../render.port.js";
 import { classifyHealth, HEALTH_GLYPH, HEALTH_LABEL } from "../html/health.js";
+import { detectShape, extractSeries } from "../html/shape.js";
 import { escapeCell, inlineProse } from "./escape.js";
 import { groupOverview, metricVisualMarkdown } from "./visuals.js";
 
@@ -239,7 +240,10 @@ function metricBullets(metric: Metric, explanations: MetricExplanations | undefi
   if (explanation === undefined) {
     return value;
   }
-  return [value, ...facetBullets(explanation)].join("\n");
+  // A table-valued bullet is a multi-line block; separate it from the facet list with a
+  // blank line so the table closes cleanly. Inline values stay tight one-per-line.
+  const separator = value.includes("\n") ? "\n\n" : "\n";
+  return [value, facetBullets(explanation).join("\n")].join(separator);
 }
 
 function valueBullet(metric: Metric): string {
@@ -247,7 +251,34 @@ function valueBullet(metric: Metric): string {
     const reason = metric.reason === undefined ? "" : ` — ${escapeCell(metric.reason)}`;
     return `- **Value** — _not available${reason}_`;
   }
-  return `- **Value** — ${escapeCell(formatValue(metric.value))}`;
+  const value = metric.value;
+  // Scalars (and rare un-series-able shapes) stay inline; structured multi-field
+  // values become a compact 2-column table (the data-table the HTML report shows)
+  // rather than a raw JSON blob.
+  if (value === null || typeof value !== "object") {
+    return `- **Value** — ${escapeCell(formatValue(value))}`;
+  }
+  const series = extractSeries(value);
+  if (series.length === 0) {
+    return `- **Value** — ${escapeCell(formatValue(value))}`;
+  }
+  if (series.length === 1) {
+    return `- **Value** — ${escapeCell(formatNumber(series[0].value))}`;
+  }
+  return valueTable(value);
+}
+
+/** A finite number rounded to 2 decimals for table cells (locale-independent, byte-stable). */
+function formatNumber(n: number): string {
+  return Number.isFinite(n) ? String(Math.round(n * 100) / 100) : "0";
+}
+
+/** The structured value as a 2-column Markdown table; the label column header follows the value shape. */
+function valueTable(value: object): string {
+  const shape = detectShape(value);
+  const labelHeader = shape === "timeseries" ? "Period" : shape === "distribution" ? "Item" : "Field";
+  const rows = extractSeries(value).map((point) => `| ${escapeCell(point.label)} | ${escapeCell(formatNumber(point.value))} |`);
+  return [`- **Value**`, "", `| ${labelHeader} | Value |`, "| --- | --- |", ...rows].join("\n");
 }
 
 /** The four facets as bold-label bullets in the fixed order — NEVER a wide table (the locked rule). */
