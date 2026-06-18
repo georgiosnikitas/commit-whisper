@@ -39,7 +39,7 @@ import { createRetrieve } from "../retrieve/retrieve.js";
 import type { RetrievePort, RawCommit } from "../retrieve/retrieve.port.js";
 import { NarrationError, RenderError } from "../shared/errors.js";
 import type { Secret } from "../shared/secret.js";
-import { ui as defaultUi, type Ui } from "../shared/ui.js";
+import { noopProgress, ui as defaultUi, type Progress, type Ui } from "../shared/ui.js";
 import { ExitCode } from "./exit-codes.js";
 import { buildProvenance } from "./provenance.js";
 import { VERSION } from "./version.js";
@@ -63,6 +63,8 @@ export interface RunDeps {
   /** Whether to auto-open a written HTML report (the shell sets this from `interactive && !--no-open`). */
   autoOpen?: boolean;
   ui?: Ui;
+  /** Injected live stage-progress reporter (defaults to the no-op; the shell injects a TTY spinner). */
+  progress?: Progress;
 }
 
 export async function runPipeline(config: RunConfig, deps: RunDeps = {}): Promise<number> {
@@ -70,6 +72,7 @@ export async function runPipeline(config: RunConfig, deps: RunDeps = {}): Promis
   const narrate = deps.narrate ?? createNarrate();
   const preflight = deps.preflight ?? preflightProvider;
   const ui = deps.ui ?? defaultUi;
+  const progress = deps.progress ?? noopProgress;
   const writeStdout =
     deps.writeStdout ??
     ((text: string): void => {
@@ -97,7 +100,8 @@ export async function runPipeline(config: RunConfig, deps: RunDeps = {}): Promis
   }
 
   // — Pipeline —
-  const history = await retrieve(config); // RetrieveError → exit 4
+  const history = await stage(progress, "Retrieving commit history…", () => retrieve(config)); // RetrieveError → exit 4
+  progress.done(`Retrieved ${history.commits.length} commit(s) from ${history.repoTarget}`);
   ui.debug?.(`Retrieved ${history.commits.length} commit(s) from ${history.repoTarget}.`);
   // Narrow the analyzed commit set per the selection inputs BEFORE analyze, so all
   // 32 catalog metrics compute over exactly the selected slice (Story 2.6); the
@@ -113,10 +117,15 @@ export async function runPipeline(config: RunConfig, deps: RunDeps = {}): Promis
     timezone: config.timezone,
     mailmap: emptyMailmap(), // real .mailmap ingestion is deferred
   };
-  const analysis = analyze(selection.history, ctx); // MetricsError → exit 5
+  const analysis = await stage(progress, "Computing metrics…", () => analyze(selection.history, ctx)); // MetricsError → exit 5
+  progress.done(`Computed metrics over ${selection.history.commits.length} commit(s)`);
   ui.debug?.(`Analyzed ${selection.history.commits.length} commit(s); aiMode=${config.aiMode}.`);
 
-  const outcome = await narrateOutcome(config, narrateConfig, analysis, narrate, preflightReason);
+  const outcome = await narrateStage(
+    progress,
+    config,
+    () => narrateOutcome(config, narrateConfig, analysis, narrate, preflightReason),
+  );
   // Build the FR-17 run-metadata subtree from facts the pipeline already holds.
   // It is sourced once here and emitted verbatim in the JSON; the assembler keeps
   // the `ai` field only when narration actually ran. Never touches `analysis`.
@@ -139,6 +148,11 @@ export async function runPipeline(config: RunConfig, deps: RunDeps = {}): Promis
   // LLM call) and emit each to its planned destination (Story 4.4). The default
   // ["terminal"] selection is one stdout target — back-compatible with 1.8. —
   const targets = planOutputs(config.outputFormats, config.outputPath); // UsageError (2) on ambiguous path
+  // Close the live progress chrome BEFORE the report is written to stdout: the
+  // spinner lives on stderr, but on a TTY both share the screen, so we wipe it
+  // first so the (terminal-format) report is the clean final thing the user sees.
+  progress.start("Rendering report…");
+  progress.done("Report ready");
   const htmlFilePath = await emitOutputs(report, targets, { writeStdout, writeFile, ui });
 
   // — Auto-open the written HTML in a browser (Story 4.5) — only when the shell
@@ -150,6 +164,48 @@ export async function runPipeline(config: RunConfig, deps: RunDeps = {}): Promis
   }
 
   return report.degraded ? ExitCode.Degraded : ExitCode.Success;
+}
+
+/**
+ * Run one pipeline stage under the live progress reporter: announce `label`,
+ * await the work, and on a throw mark the stage failed (✗) before rethrowing so
+ * the typed error still maps to its exit code. The caller closes the SUCCESS
+ * state itself (`progress.done(...)`) so it can name a result-derived label.
+ * Accepts a sync or async `fn` (e.g. the synchronous `analyze`).
+ */
+async function stage<T>(progress: Progress, label: string, fn: () => T | Promise<T>): Promise<T> {
+  progress.start(label);
+  try {
+    return await fn();
+  } catch (err) {
+    progress.fail();
+    throw err;
+  }
+}
+
+/**
+ * Run the narrate stage under the progress reporter. Intentional metrics-only
+ * runs (`aiMode: off`) show NO narrative chrome; otherwise announce the (often
+ * slow, network-bound) generation and close with a verdict line that reflects
+ * whether the narrative actually landed or the run fell open to metrics-only.
+ */
+async function narrateStage(
+  progress: Progress,
+  config: RunConfig,
+  run: () => Promise<NarrateOutcome>,
+): Promise<NarrateOutcome> {
+  if (config.aiMode === "off") {
+    return run(); // metrics-only — no narrative stage chrome
+  }
+  progress.start("Generating AI narrative…");
+  try {
+    const outcome = await run();
+    progress.done(outcome.kind === "narrated" ? "AI narrative ready" : "Narrative unavailable — metrics-only");
+    return outcome;
+  } catch (err) {
+    progress.fail("AI narrative failed");
+    throw err;
+  }
 }
 
 /**

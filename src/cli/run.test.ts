@@ -483,5 +483,94 @@ describe("runPipeline — HTML auto-open (Story 4.5)", () => {
   });
 });
 
+/** A `Progress` recorder capturing the ordered stage timeline the pipeline drives. */
+function progressRecorder() {
+  const events: string[] = [];
+  const progress = {
+    start: (label: string) => events.push(`start:${label}`),
+    update: (label: string) => events.push(`update:${label}`),
+    done: (label?: string) => events.push(`done:${label ?? ""}`),
+    fail: (label?: string) => events.push(`fail:${label ?? ""}`),
+    clear: () => events.push("clear"),
+  };
+  return { events, progress };
+}
+
+describe("runPipeline — live stage progress", () => {
+  it("drives retrieve → metrics → narrate → render, each opened and closed (✓) in order", async () => {
+    const r = recorder();
+    const p = progressRecorder();
+    const code = await runPipeline(makeConfig({ aiMode: "auto", provider: "gemini", llmModel: "m" }), {
+      retrieve: async () => EMPTY_HISTORY,
+      preflight: reachable,
+      narrate: async (): Promise<NarrateOutcome> => ({ kind: "narrated", narrative: NARRATIVE }),
+      ui: r.ui,
+      writeStdout: r.writeStdout,
+      progress: p.progress,
+    });
+    expect(code).toBe(ExitCode.Success);
+    const starts = p.events.filter((e) => e.startsWith("start:"));
+    expect(starts).toEqual([
+      "start:Retrieving commit history…",
+      "start:Computing metrics…",
+      "start:Generating AI narrative…",
+      "start:Rendering report…",
+    ]);
+    // Every started stage is closed with a ✓ (done) — no dangling spinner, no fail.
+    expect(p.events.filter((e) => e.startsWith("done:"))).toHaveLength(4);
+    expect(p.events.some((e) => e.startsWith("fail:"))).toBe(false);
+  });
+
+  it("metrics-only (off) shows NO narrative stage chrome", async () => {
+    const r = recorder();
+    const p = progressRecorder();
+    await runPipeline(makeConfig({ aiMode: "off" }), {
+      retrieve: async () => EMPTY_HISTORY,
+      ui: r.ui,
+      writeStdout: r.writeStdout,
+      progress: p.progress,
+    });
+    expect(p.events.some((e) => e.includes("AI narrative"))).toBe(false);
+    expect(p.events.filter((e) => e.startsWith("start:"))).toEqual([
+      "start:Retrieving commit history…",
+      "start:Computing metrics…",
+      "start:Rendering report…",
+    ]);
+  });
+
+  it("a retrieve failure marks the stage failed (✗) before the typed error propagates", async () => {
+    const r = recorder();
+    const p = progressRecorder();
+    await expect(
+      runPipeline(makeConfig({ aiMode: "off" }), {
+        retrieve: async () => {
+          throw new RetrieveError("clone failed");
+        },
+        ui: r.ui,
+        writeStdout: r.writeStdout,
+        progress: p.progress,
+      }),
+    ).rejects.toMatchObject({ exitCode: ExitCode.Retrieve });
+    expect(p.events).toContain("start:Retrieving commit history…");
+    expect(p.events.some((e) => e.startsWith("fail:"))).toBe(true);
+    expect(p.events.some((e) => e.startsWith("done:"))).toBe(false);
+  });
+
+  it("an unreachable provider in auto closes narrate as 'unavailable' (fail-open, not ✗)", async () => {
+    const r = recorder();
+    const p = progressRecorder();
+    const code = await runPipeline(makeConfig({ aiMode: "auto", provider: "gemini", llmModel: "m" }), {
+      retrieve: async () => EMPTY_HISTORY,
+      preflight: unreachable("offline"),
+      ui: r.ui,
+      writeStdout: r.writeStdout,
+      progress: p.progress,
+    });
+    expect(code).toBe(ExitCode.Degraded);
+    expect(p.events).toContain("done:Narrative unavailable — metrics-only");
+    expect(p.events.some((e) => e.startsWith("fail:"))).toBe(false);
+  });
+});
+
 
 

@@ -7,6 +7,7 @@ import type { GitRunner } from "../retrieve/git.js";
 import type { LaunchpadDeps, LaunchpadState } from "./interactive.js";
 import type { RunDeps } from "./run.js";
 import type { Ui } from "../shared/ui.js";
+import { noopProgress } from "../shared/ui.js";
 
 function recorder() {
   const errors: string[] = [];
@@ -96,6 +97,19 @@ describe("main — strict single-shot wiring", () => {
     const code = await main([".", "--no-ai"], { ...BASE, env: {}, ui: recorder().ui, run: cap.run });
     expect(code).toBe(ExitCode.Success);
     expect(cap.calls[0].deps.gitToken).toBeUndefined();
+  });
+
+  it("a TTY stderr injects a live (non-noop) progress reporter into the pipeline", async () => {
+    const cap = captureRun();
+    await main([".", "--no-ai"], { ...BASE, stderrIsTTY: true, ui: recorder().ui, run: cap.run });
+    expect(cap.calls[0].deps.progress).toBeDefined();
+    expect(cap.calls[0].deps.progress).not.toBe(noopProgress);
+  });
+
+  it("a non-TTY stderr injects the no-op progress reporter (no spinner in CI/pipes)", async () => {
+    const cap = captureRun();
+    await main([".", "--no-ai"], { ...BASE, stderrIsTTY: false, ui: recorder().ui, run: cap.run });
+    expect(cap.calls[0].deps.progress).toBe(noopProgress);
   });
 });
 

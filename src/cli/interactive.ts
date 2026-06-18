@@ -899,7 +899,7 @@ async function runStatusDoctor(deps: LaunchpadDeps, output: Writable): Promise<v
 /**
  * The Settings screen (Story 6.5): collect the NON-SECRET everyday choices —
  * provider (closed enum), model, base URL (only for ollama / openai-compatible),
- * default output format, timezone, max-commits — and persist them via the
+ * default output format, timezone — and persist them via the
  * injected `saveSettings` (atomic write). A cancel at any prompt saves nothing.
  * No secret is ever collected — a cloud key stays env-only (named in the note).
  */
@@ -967,17 +967,7 @@ async function runSettings(deps: LaunchpadDeps, output: Writable): Promise<void>
     return;
   }
 
-  const limitRaw = await prompts.text({
-    message: "Default max-commits (optional)",
-    placeholder: "blank = all history",
-    initialValue: optionalNumberText(current.maxCommits),
-    validate: (v) => errorOf(interpretLimit(v)),
-  });
-  if (limitRaw === null) {
-    return;
-  }
-
-  const data = assembleSettings({ provider, model, baseUrl, formats, timezone, limitRaw });
+  const data = assembleSettings({ provider, model, baseUrl, formats, timezone });
   if (deps.saveSettings === undefined) {
     return;
   }
@@ -1012,11 +1002,6 @@ async function refreshAiState(deps: LaunchpadDeps): Promise<void> {
   }
 }
 
-/** Render an optional saved number as pre-fill text for a text prompt (absent ⇒ no pre-fill). */
-function optionalNumberText(value: number | undefined): string | undefined {
-  return value === undefined ? undefined : String(value);
-}
-
 /** Assemble a non-secret `SettingsData` from the collected Settings answers (omitting blanks). */
 function assembleSettings(input: {
   provider: string;
@@ -1024,7 +1009,6 @@ function assembleSettings(input: {
   baseUrl: string;
   formats: OutputFormat[];
   timezone: string;
-  limitRaw: string;
 }): SettingsData {
   const outputFormats = input.formats.length > 0 ? input.formats : ["terminal" as OutputFormat];
   const data: SettingsData = { provider: input.provider as Provider, outputFormats };
@@ -1039,10 +1023,6 @@ function assembleSettings(input: {
   const timezone = input.timezone.trim();
   if (timezone !== "") {
     data.timezone = timezone;
-  }
-  const limit = interpretLimit(input.limitRaw);
-  if ("maxCommits" in limit && limit.maxCommits !== undefined) {
-    data.maxCommits = limit.maxCommits;
   }
   return data;
 }

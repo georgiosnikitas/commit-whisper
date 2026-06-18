@@ -50,7 +50,7 @@ import { FREE_ENTITLEMENT } from "../license/tiers.js";
 import { execFileGitRunner, type GitRunner } from "../retrieve/git.js";
 import { defaultOpenBrowser } from "./open-browser.js";
 import { LicenseError, MissingRequiredConfigError, UsageError } from "../shared/errors.js";
-import { createUi, resolveColor, resolveLogLevel, type Ui } from "../shared/ui.js";
+import { createUi, createProgress, noopProgress, resolveColor, resolveLogLevel, type LogLevel, type Progress, type Ui } from "../shared/ui.js";
 import { exitCodeForError, ExitCode, messageForError } from "./exit-codes.js";
 import { runLaunchpad, type DoctorConfig, type LaunchpadState, type Reachability } from "./interactive.js";
 import { readRepoContext } from "./repo-context.js";
@@ -92,6 +92,8 @@ export interface CliDeps {
   stderrIsTTY?: boolean;
   analysisTimestamp?: string;
   ui?: Ui;
+  /** Inject a fake stage-progress reporter; defaults to a stderr TTY spinner (no-op off a TTY). */
+  progress?: Progress;
   writeStdout?: (text: string) => void;
   /** Inject a fake pipeline to isolate shell logic; defaults to the real `runPipeline`. */
   run?: typeof runPipeline;
@@ -202,7 +204,7 @@ export async function main(argv: string[], deps: CliDeps = {}): Promise<number> 
     if (argv.length === 0) {
       // The sole interactive entry point: the bare zero-arg command in a TTY
       // opens the launchpad (Story 6.1); a non-TTY / CI 0-arg fails fast.
-      return await runZeroArg({ deps, ui, env, cwd, stdinIsTTY, stdoutIsTTY });
+      return await runZeroArg({ deps, ui, env, cwd, stdinIsTTY, stdoutIsTTY, stderrIsTTY });
     }
 
     const program = buildProgram();
@@ -258,12 +260,10 @@ export async function main(argv: string[], deps: CliDeps = {}): Promise<number> 
 
     // The run `ui` honours the verbosity flags (`--verbose`/`--quiet`) on top of
     // the env colour policy — stderr only, never stdout.
-    const runUi =
-      deps.ui ??
-      createUi(process.stderr, {
-        level: resolveLogLevel({ verbose: opts.verbose, quiet: opts.quiet, env }),
-        color: resolveColor({ env, isTTY: Boolean(stderrIsTTY) }),
-      });
+    const runLevel = resolveLogLevel({ verbose: opts.verbose, quiet: opts.quiet, env });
+    const runColor = resolveColor({ env, isTTY: Boolean(stderrIsTTY) });
+    const runUi = deps.ui ?? createUi(process.stderr, { level: runLevel, color: runColor });
+    const progress = makeProgress(deps, stderrIsTTY, runLevel, runColor);
 
     const config = resolveRunConfig({
       cwd,
@@ -286,6 +286,7 @@ export async function main(argv: string[], deps: CliDeps = {}): Promise<number> 
       openAllowed: opts.open !== false, // honoured only when interactive (false here)
       deps,
       ui: runUi,
+      progress,
     });
   } catch (err) {
     ui.error(messageForError(err));
@@ -322,6 +323,8 @@ interface ResolveAndRunInput {
   entitlement?: Entitlement;
   deps: CliDeps;
   ui: Ui;
+  /** The live stage-progress reporter for the pipeline run. */
+  progress: Progress;
 }
 
 /**
@@ -351,6 +354,7 @@ async function resolveAndRun(input: ResolveAndRunInput): Promise<number> {
     openAllowed: input.openAllowed,
     deps: input.deps,
     ui: input.ui,
+    progress: input.progress,
   });
 }
 
@@ -364,6 +368,8 @@ interface RunResolvedInput {
   openAllowed: boolean;
   deps: CliDeps;
   ui: Ui;
+  /** The live stage-progress reporter for the pipeline run. */
+  progress: Progress;
 }
 
 /**
@@ -386,10 +392,27 @@ async function runResolved(input: RunResolvedInput): Promise<number> {
     aiKey,
     gitToken,
     ui: input.ui,
+    progress: input.progress,
     writeStdout: input.deps.writeStdout,
     autoOpen,
     ...input.deps.runDeps,
   });
+}
+
+/**
+ * Build the live stage-progress reporter for a pipeline run. An injected one
+ * wins (tests); otherwise a stderr braille spinner ONLY when stderr is a TTY —
+ * off a TTY (CI, pipes) it is a no-op so logs stay clean (the `ui.debug`/`info`
+ * lines already narrate there). `quiet` self-suppresses inside `createProgress`.
+ */
+function makeProgress(deps: CliDeps, stderrIsTTY: boolean | undefined, level: LogLevel, color: boolean): Progress {
+  if (deps.progress !== undefined) {
+    return deps.progress;
+  }
+  if (stderrIsTTY !== true) {
+    return noopProgress;
+  }
+  return createProgress(process.stderr, { tty: true, level, color });
 }
 
 interface ZeroArgContext {
@@ -399,6 +422,7 @@ interface ZeroArgContext {
   cwd: string;
   stdinIsTTY: boolean | undefined;
   stdoutIsTTY: boolean | undefined;
+  stderrIsTTY: boolean | undefined;
 }
 
 /**
@@ -475,6 +499,12 @@ async function runZeroArg(ctx: ZeroArgContext): Promise<number> {
         entitlement,
         deps: ctx.deps,
         ui: ctx.ui,
+        progress: makeProgress(
+          ctx.deps,
+          ctx.stderrIsTTY,
+          resolveLogLevel({ env: ctx.env }),
+          resolveColor({ env: ctx.env, isTTY: Boolean(ctx.stderrIsTTY) }),
+        ),
       });
     } catch (err) {
       ctx.ui.error(messageForError(err));

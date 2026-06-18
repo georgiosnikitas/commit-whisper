@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, afterEach } from "vitest";
 
-import { createUi, resolveColor, resolveLogLevel } from "./ui.js";
+import { createProgress, createUi, noopProgress, resolveColor, resolveLogLevel } from "./ui.js";
 
 function fakeStream(): { stream: NodeJS.WritableStream; chunks: string[] } {
   const chunks: string[] = [];
@@ -157,5 +157,79 @@ describe("resolveColor (Story 6.4)", () => {
   it("with no colour vars, mirrors the TTY", () => {
     expect(resolveColor({ env: {}, isTTY: true })).toBe(true);
     expect(resolveColor({ env: {}, isTTY: false })).toBe(false);
+  });
+});
+
+describe("createProgress — non-TTY (plain status lines)", () => {
+  it("writes a working line on start and a ✓ verdict on done (final label wins)", () => {
+    const { stream, chunks } = fakeStream();
+    const progress = createProgress(stream, { tty: false });
+    progress.start("Retrieving…");
+    progress.done(); // no final label ⇒ closes on the current label
+    progress.start("Computing…");
+    progress.done("Computed 10 commits");
+    expect(chunks).toEqual(["Retrieving…\n", "✓ Retrieving…\n", "Computing…\n", "✓ Computed 10 commits\n"]);
+  });
+
+  it("never animates (no carriage returns) and never writes to stdout", () => {
+    const stdoutSpy = vi.spyOn(process.stdout, "write").mockReturnValue(true);
+    const { stream, chunks } = fakeStream();
+    const progress = createProgress(stream, { tty: false });
+    progress.start("Working…");
+    progress.update("Still working…");
+    progress.fail("Boom");
+    expect(chunks.join("")).not.toContain("\r");
+    expect(chunks).toEqual(["Working…\n", "Still working…\n", "✗ Boom\n"]);
+    expect(stdoutSpy).not.toHaveBeenCalled();
+  });
+});
+
+describe("createProgress — TTY (animated spinner)", () => {
+  it("animates one rewritten line and closes with a ✓ verdict line", () => {
+    const { stream, chunks } = fakeStream();
+    const progress = createProgress(stream, { tty: true });
+    progress.start("Retrieving…");
+    progress.done("Retrieved 5 commits");
+    // First write is the initial spinner frame; the close rewrites the line in place.
+    expect(chunks[0]).toContain("Retrieving…");
+    expect(chunks[0]).toContain("\r");
+    const last = chunks.at(-1) ?? "";
+    expect(last).toContain("✓ Retrieved 5 commits\n");
+    expect(last.startsWith("\r")).toBe(true);
+  });
+
+  it("clear() wipes the line without a verdict", () => {
+    const { stream, chunks } = fakeStream();
+    const progress = createProgress(stream, { tty: true });
+    progress.start("Working…");
+    progress.clear();
+    const last = chunks.at(-1) ?? "";
+    expect(last).not.toContain("✓");
+    expect(last).not.toContain("✗");
+    expect(last).toContain("\r");
+  });
+});
+
+describe("createProgress — quiet + noopProgress", () => {
+  it("quiet self-suppresses to the no-op (parity with ui.info)", () => {
+    const { stream, chunks } = fakeStream();
+    const progress = createProgress(stream, { tty: true, level: "quiet" });
+    progress.start("Retrieving…");
+    progress.update("More…");
+    progress.done("Done");
+    progress.fail("Nope");
+    expect(chunks).toEqual([]);
+  });
+
+  it("noopProgress writes nothing anywhere", () => {
+    const stdoutSpy = vi.spyOn(process.stdout, "write").mockReturnValue(true);
+    const stderrSpy = vi.spyOn(process.stderr, "write").mockReturnValue(true);
+    noopProgress.start("x");
+    noopProgress.update("y");
+    noopProgress.done("z");
+    noopProgress.fail("w");
+    noopProgress.clear();
+    expect(stdoutSpy).not.toHaveBeenCalled();
+    expect(stderrSpy).not.toHaveBeenCalled();
   });
 });
