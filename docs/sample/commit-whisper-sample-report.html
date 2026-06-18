@@ -205,7 +205,7 @@ a:focus-visible, :focus-visible { outline: 2px solid var(--accent); outline-offs
 <p class="tagline">Deterministic git-history analysis with a grounded AI narrative.</p>
 <p class="prov-chips"><span class="prov-chip">payments-api</span><span class="prov-sep" aria-hidden="true">·</span><span class="prov-chip">main</span><span class="prov-sep" aria-hidden="true">·</span><span class="prov-chip">765 commits</span><span class="prov-sep" aria-hidden="true">·</span><span class="prov-chip">7 contributors</span><span class="prov-sep" aria-hidden="true">·</span><span class="prov-chip">analyzed 2026-06-12</span></p>
 <div class="confidence confidence-high">
-<p><span class="confidence-label">Confidence:</span> <strong>HIGH</strong> — 33 of 34 metrics computed cleanly with full grounding-pass coverage; the single not_available signal (stale branches) is an explained environmental limitation, not a data-quality gap.</p>
+<p><span class="confidence-label">Confidence:</span> <strong>HIGH</strong> — 31 of 32 metrics computed cleanly with full grounding-pass coverage; the single not_available signal (long-lived branches) is an explained environmental limitation, not a data-quality gap.</p>
 
 </div>
 </header>
@@ -214,7 +214,7 @@ a:focus-visible, :focus-visible { outline: 2px solid var(--accent); outline-offs
 <p class="headline">A healthy, steadily-accelerating repository with strong message hygiene and one watch-area: knowledge is concentrating around a couple of files.</p>
 <p>Across the last twelve months this repository shows a confident upward cadence — 765 commits over 214 active days, climbing to a March peak and holding a strong rhythm into June. Message quality is a genuine strength (82% Conventional-Commits adherence), and ownership is reasonably spread across the render, analyze, and narrate subsystems. The signals worth attention are a rising direct-to-default share and a bus factor that dips to two when measured against the heaviest-churn files.</p>
 <ul class="key-findings">
-<li>Commit cadence accelerated ~2.3× from the July trough to the March peak, then settled into a healthy sustained rhythm.</li>
+<li>Commit cadence accelerated ~2.5× from the December trough to the March peak, then settled into a healthy sustained rhythm.</li>
 <li>82% of messages follow Conventional Commits — well above the healthy threshold — though 16% remain low-information.</li>
 <li>34% of commits land directly on the default branch, a workflow signal worth tightening as the team grows.</li>
 <li>Churn concentrates in the HTML renderer and the analysis engine — expected for actively-evolving surfaces, but worth a refactor watch.</li>
@@ -238,8 +238,8 @@ a:focus-visible, :focus-visible { outline: 2px solid var(--accent); outline-offs
 <section id="explanation" class="band" aria-labelledby="explanation-h">
 <h2 id="explanation-h"><span class="kicker">What the metrics show</span> Explanation</h2>
 <p>The activity picture is the story of a project finding its stride. The monthly commit series climbs from 38 in July to a 96-commit peak in March before settling into the 60–88 band — not a burst-then-abandon pattern, but a team that ramped up and stayed engaged. Two hundred and fourteen active days across the year means work happened on roughly four days in seven: a sustainable, human cadence rather than a crunch.</p>
-<p>Message quality is where this history genuinely shines. Eighty-two percent Conventional-Commits adherence means the log is machine-parseable and human-readable — changelogs, releases, and git blame archaeology all benefit. The 16% low-information remainder (the &#39;fix stuff&#39;, &#39;wip&#39; commits) is the small, addressable gap between good and excellent.</p>
-<p>The structural signals are where to focus. A 34% direct-to-default share and a recent merge cadence that bounces between 9 and 22 per month suggest the branching discipline is still forming. Paired with churn that concentrates heavily in two files and a bus factor of two for those hotspots, the through-line is clear: the repository is healthy, and the next gain is in spreading both review and knowledge more evenly.</p>
+<p>Message quality is where this history genuinely shines. Eighty-two percent Conventional-Commits adherence means the log is machine-parseable and human-readable — changelogs, releases, and git-blame archaeology all benefit. The 16% low-information remainder (the &#39;fix stuff&#39;, &#39;wip&#39; commits) is the small, addressable gap between good and excellent.</p>
+<p>The structural signals are where to focus. A 34% direct-to-default share and a merge cadence that climbs from 9 to 22 per month suggest the branching discipline is still forming. Paired with churn that concentrates heavily in two files and a bus factor of two for those hotspots, the through-line is clear: the repository is healthy, and the next gain is in spreading both review and knowledge more evenly.</p>
 </section>
 <section id="coaching" class="band" aria-labelledby="coaching-h">
 <h2 id="coaching-h"><span class="kicker">Improvement plan</span> Coaching</h2>
@@ -248,7 +248,7 @@ a:focus-visible, :focus-visible { outline: 2px solid var(--accent); outline-offs
 <h3>Tighten branching discipline</h3>
 <ol>
 <li>Introduce a lightweight branch-protection rule on the default branch so the 34% direct-to-default share trends toward zero — even a single required review catches most regressions.</li>
-<li>Smooth the merge cadence: the swing from 9 to 22 merges per month hints at batchy integration. Aim for smaller, more frequent merges to keep review load and conflict risk low.</li>
+<li>Smooth the merge cadence: the climb from 9 to 22 merges per month hints at batchy integration. Aim for smaller, more frequent merges to keep review load and conflict risk low.</li>
 <li>Adopt a short-lived-branch convention so stale-branch detection (currently unavailable on the shallow clone) becomes meaningful once full history is enabled.</li>
 </ol>
 </article>
@@ -301,12 +301,12 @@ a:focus-visible, :focus-visible { outline: 2px solid var(--accent); outline-offs
 </details>
 </div>
 <div class="chart-sub">
-<h4>Weekly cadence (recent weeks)</h4>
-<svg class="chart-svg chart-bars" viewBox="0 0 640 240" preserveAspectRatio="xMidYMid meet" role="img" aria-label="Group A — Weekly cadence (recent weeks)"><defs><linearGradient id="cw-bar-1krcv92" x1="0" y1="0" x2="0" y2="1"><stop offset="0" class="grad-fill-1"/><stop offset="1" class="grad-fill-2"/></linearGradient></defs><line class="chart-grid" x1="46" y1="210" x2="624" y2="210"/><text class="chart-tick" x="40" y="213.5" text-anchor="end">0</text><line class="chart-grid" x1="46" y1="177.33" x2="624" y2="177.33"/><text class="chart-tick" x="40" y="180.83" text-anchor="end">5</text><line class="chart-grid" x1="46" y1="144.67" x2="624" y2="144.67"/><text class="chart-tick" x="40" y="148.17" text-anchor="end">10</text><line class="chart-grid" x1="46" y1="112" x2="624" y2="112"/><text class="chart-tick" x="40" y="115.5" text-anchor="end">15</text><line class="chart-grid" x1="46" y1="79.33" x2="624" y2="79.33"/><text class="chart-tick" x="40" y="82.83" text-anchor="end">20</text><line class="chart-grid" x1="46" y1="46.67" x2="624" y2="46.67"/><text class="chart-tick" x="40" y="50.17" text-anchor="end">25</text><line class="chart-grid" x1="46" y1="14" x2="624" y2="14"/><text class="chart-tick" x="40" y="17.5" text-anchor="end">30</text><line class="chart-axis" x1="46" y1="210" x2="624" y2="210"/><path class="bar" d="M 64.3 210 L 64.3 124.53 Q 64.3 118.53 70.3 118.53 L 118.03 118.53 Q 124.03 118.53 124.03 124.53 L 124.03 210 Z" fill="url(#cw-bar-1krcv92)"/><path class="bar" d="M 160.64 210 L 160.64 78.8 Q 160.64 72.8 166.64 72.8 L 214.36 72.8 Q 220.36 72.8 220.36 78.8 L 220.36 210 Z" fill="url(#cw-bar-1krcv92)"/><path class="bar" d="M 256.97 210 L 256.97 157.2 Q 256.97 151.2 262.97 151.2 L 310.7 151.2 Q 316.7 151.2 316.7 157.2 L 316.7 210 Z" fill="url(#cw-bar-1krcv92)"/><path class="bar" d="M 353.3 210 L 353.3 39.6 Q 353.3 33.6 359.3 33.6 L 407.03 33.6 Q 413.03 33.6 413.03 39.6 L 413.03 210 Z" fill="url(#cw-bar-1krcv92)"/><path class="bar" d="M 449.64 210 L 449.64 98.4 Q 449.64 92.4 455.64 92.4 L 503.36 92.4 Q 509.36 92.4 509.36 98.4 L 509.36 210 Z" fill="url(#cw-bar-1krcv92)"/><path class="bar" d="M 545.97 210 L 545.97 59.2 Q 545.97 53.2 551.97 53.2 L 599.7 53.2 Q 605.7 53.2 605.7 59.2 L 605.7 210 Z" fill="url(#cw-bar-1krcv92)"/><text class="chart-label" x="94.17" y="230" text-anchor="middle">W18</text><text class="chart-label" x="190.5" y="230" text-anchor="middle">W19</text><text class="chart-label" x="286.83" y="230" text-anchor="middle">W20</text><text class="chart-label" x="383.17" y="230" text-anchor="middle">W21</text><text class="chart-label" x="479.5" y="230" text-anchor="middle">W22</text><text class="chart-label" x="575.83" y="230" text-anchor="middle">W23</text></svg>
+<h4>Commit frequency / cadence</h4>
+<svg class="chart-svg chart-bars" viewBox="0 0 640 240" preserveAspectRatio="xMidYMid meet" role="img" aria-label="Group A — Commit frequency / cadence"><defs><linearGradient id="cw-bar-s2i1uk" x1="0" y1="0" x2="0" y2="1"><stop offset="0" class="grad-fill-1"/><stop offset="1" class="grad-fill-2"/></linearGradient></defs><line class="chart-grid" x1="46" y1="210" x2="624" y2="210"/><text class="chart-tick" x="40" y="213.5" text-anchor="end">0</text><line class="chart-grid" x1="46" y1="177.33" x2="624" y2="177.33"/><text class="chart-tick" x="40" y="180.83" text-anchor="end">5</text><line class="chart-grid" x1="46" y1="144.67" x2="624" y2="144.67"/><text class="chart-tick" x="40" y="148.17" text-anchor="end">10</text><line class="chart-grid" x1="46" y1="112" x2="624" y2="112"/><text class="chart-tick" x="40" y="115.5" text-anchor="end">15</text><line class="chart-grid" x1="46" y1="79.33" x2="624" y2="79.33"/><text class="chart-tick" x="40" y="82.83" text-anchor="end">20</text><line class="chart-grid" x1="46" y1="46.67" x2="624" y2="46.67"/><text class="chart-tick" x="40" y="50.17" text-anchor="end">25</text><line class="chart-grid" x1="46" y1="14" x2="624" y2="14"/><text class="chart-tick" x="40" y="17.5" text-anchor="end">30</text><line class="chart-axis" x1="46" y1="210" x2="624" y2="210"/><path class="bar" d="M 64.3 210 L 64.3 124.53 Q 64.3 118.53 70.3 118.53 L 118.03 118.53 Q 124.03 118.53 124.03 124.53 L 124.03 210 Z" fill="url(#cw-bar-s2i1uk)"/><path class="bar" d="M 160.64 210 L 160.64 78.8 Q 160.64 72.8 166.64 72.8 L 214.36 72.8 Q 220.36 72.8 220.36 78.8 L 220.36 210 Z" fill="url(#cw-bar-s2i1uk)"/><path class="bar" d="M 256.97 210 L 256.97 157.2 Q 256.97 151.2 262.97 151.2 L 310.7 151.2 Q 316.7 151.2 316.7 157.2 L 316.7 210 Z" fill="url(#cw-bar-s2i1uk)"/><path class="bar" d="M 353.3 210 L 353.3 39.6 Q 353.3 33.6 359.3 33.6 L 407.03 33.6 Q 413.03 33.6 413.03 39.6 L 413.03 210 Z" fill="url(#cw-bar-s2i1uk)"/><path class="bar" d="M 449.64 210 L 449.64 98.4 Q 449.64 92.4 455.64 92.4 L 503.36 92.4 Q 509.36 92.4 509.36 98.4 L 509.36 210 Z" fill="url(#cw-bar-s2i1uk)"/><path class="bar" d="M 545.97 210 L 545.97 59.2 Q 545.97 53.2 551.97 53.2 L 599.7 53.2 Q 605.7 53.2 605.7 59.2 L 605.7 210 Z" fill="url(#cw-bar-s2i1uk)"/><text class="chart-label" x="94.17" y="230" text-anchor="middle">W18</text><text class="chart-label" x="190.5" y="230" text-anchor="middle">W19</text><text class="chart-label" x="286.83" y="230" text-anchor="middle">W20</text><text class="chart-label" x="383.17" y="230" text-anchor="middle">W21</text><text class="chart-label" x="479.5" y="230" text-anchor="middle">W22</text><text class="chart-label" x="575.83" y="230" text-anchor="middle">W23</text></svg>
 <details class="data-table" open>
 <summary>Show data table</summary>
 <table>
-<caption>Weekly cadence (recent weeks)</caption>
+<caption>Commit frequency / cadence</caption>
 <thead><tr><th scope="col">Item</th><th scope="col">Value</th></tr></thead>
 <tbody>
 <tr><th scope="row">2025-W18</th><td>14</td></tr>
@@ -327,7 +327,7 @@ a:focus-visible, :focus-visible { outline: 2px solid var(--accent); outline-offs
 <div class="metric-body">
 
 <div class="facets">
-<p class="facet-meaning">The monthly commit series shows a clear ramp-to-rhythm: a July trough of 38 climbing to a March peak of 96, then holding a healthy 60–88 band. This is the signature of sustained engagement rather than a one-off burst.</p>
+<p class="facet-meaning">The monthly series ramps from a July trough of 38 to a March peak of 96, then holds a healthy 60–88 band — sustained engagement, not a one-off burst.</p>
 <h4>Good behaviours</h4>
 <ul>
 <li>No multi-month gaps — the project never stalled.</li>
@@ -337,35 +337,104 @@ a:focus-visible, :focus-visible { outline: 2px solid var(--accent); outline-offs
 <p>None.</p>
 <h4>Suggestions</h4>
 <ul>
-<li>Keep an eye on the December dip (31) — a seasonal lull is normal, but a recurring one is worth planning around.</li>
+<li>Watch the December dip (31): a seasonal lull is fine, a recurring one is worth planning around.</li>
 </ul>
 </div>
 </div>
 </details>
 <details class="metric-card" data-status="computed" data-health="ok" open>
-<summary><h3 class="metric-title">Active days</h3> <span class="health health-ok"><span class="health-glyph" aria-hidden="true">●</span> ok</span><span class="metric-stat">214</span></summary>
+<summary><h3 class="metric-title">Commit frequency / cadence</h3> <span class="health health-ok"><span class="health-glyph" aria-hidden="true">●</span> ok</span></summary>
 <div class="metric-body">
 
 <div class="facets">
-<p class="facet-meaning">Work landed on 214 distinct days — roughly four days in seven — a sustainable, human cadence rather than a crunch.</p>
+<p class="facet-meaning">Recent weekly counts swing between 9 and 27, averaging around 19 commits/week — a brisk but human rhythm.</p>
 <h4>Good behaviours</h4>
 <ul>
-<li>Steady engagement spread across the year.</li>
+<li>Every recent week saw activity — no dead weeks.</li>
+</ul>
+<h4>Needs improvement</h4>
+<ul>
+<li>The 9-vs-27 swing hints at batchy weeks.</li>
+</ul>
+<h4>Suggestions</h4>
+<ul>
+<li>Aim for steadier weekly flow to keep review load predictable.</li>
+</ul>
+</div>
+</div>
+</details>
+<details class="metric-card" data-status="computed" data-health="ok" open>
+<summary><h3 class="metric-title">Active vs. dormant periods</h3> <span class="health health-ok"><span class="health-glyph" aria-hidden="true">●</span> ok</span></summary>
+<div class="metric-body">
+
+<div class="facets">
+<p class="facet-meaning">214 active days across the year with no dormant period beyond the 14-day threshold — the project stayed continuously alive.</p>
+<h4>Good behaviours</h4>
+<ul>
+<li>Zero dormant stretches over twelve months.</li>
 </ul>
 <h4>Needs improvement</h4>
 <p>None.</p>
 <h4>Suggestions</h4>
 <ul>
-<li>Protect the rhythm; avoid long silent stretches that erode momentum.</li>
+<li>Keep the cadence; continuous activity is a strong retention signal.</li>
 </ul>
 </div>
 </div>
 </details>
 <details class="metric-card" data-status="computed" data-health="ok" open>
-<summary><h3 class="metric-title">Weekly cadence (recent weeks)</h3> <span class="health health-ok"><span class="health-glyph" aria-hidden="true">●</span> ok</span></summary>
+<summary><h3 class="metric-title">Project age &amp; lifespan</h3> <span class="health health-ok"><span class="health-glyph" aria-hidden="true">●</span> ok</span></summary>
 <div class="metric-body">
 
+<div class="facets">
+<p class="facet-meaning">A 360-day lifespan with the latest commit only days before analysis — a mature, currently-active repository.</p>
+<h4>Good behaviours</h4>
+<ul>
+<li>Actively maintained right up to the analysis date.</li>
+</ul>
+<h4>Needs improvement</h4>
+<p>None.</p>
+<h4>Suggestions</h4>
+<p>None.</p>
+</div>
+</div>
+</details>
+<details class="metric-card" data-status="computed" data-health="ok" open>
+<summary><h3 class="metric-title">Commit size distribution</h3> <span class="health health-ok"><span class="health-glyph" aria-hidden="true">●</span> ok</span></summary>
+<div class="metric-body">
 
+<div class="facets">
+<p class="facet-meaning">A median of 34 changed lines with a long tail to 1,840 — most commits are small and reviewable, with a few outsized events.</p>
+<h4>Good behaviours</h4>
+<ul>
+<li>Median well under 50 lines — easy-to-review changes.</li>
+</ul>
+<h4>Needs improvement</h4>
+<ul>
+<li>A p90 of 210 and a 1,840-line max point to occasional large drops.</li>
+</ul>
+<h4>Suggestions</h4>
+<ul>
+<li>Split the largest changes into reviewable increments where practical.</li>
+</ul>
+</div>
+</div>
+</details>
+<details class="metric-card" data-status="computed" data-health="ok" open>
+<summary><h3 class="metric-title">Time-of-day / day-of-week pattern</h3> <span class="health health-ok"><span class="health-glyph" aria-hidden="true">●</span> ok</span></summary>
+<div class="metric-body">
+
+<div class="facets">
+<p class="facet-meaning">Commits cluster Tuesday–Thursday around 09:00–15:00 UTC with almost nothing on weekends — a healthy working-hours pattern.</p>
+<h4>Good behaviours</h4>
+<ul>
+<li>Negligible weekend activity — low burnout signal.</li>
+</ul>
+<h4>Needs improvement</h4>
+<p>None.</p>
+<h4>Suggestions</h4>
+<p>None.</p>
+</div>
 </div>
 </details>
 </div>
@@ -376,33 +445,30 @@ a:focus-visible, :focus-visible { outline: 2px solid var(--accent); outline-offs
 <figcaption>How the work is distributed across the team.</figcaption>
 <div class="chart-cells two">
 <div class="chart-sub">
-<h4>Ownership spread by area</h4>
-<svg class="chart-svg chart-donut" viewBox="0 0 360 200" preserveAspectRatio="xMidYMid meet" role="img" aria-label="Group B — Ownership spread by area"><path class="donut-seg slice-0" d="M 100 18 A 82 82 0 0 1 176.24 130.19 L 146.49 118.41 A 50 50 0 0 0 100 50 Z"/><path class="donut-seg slice-1" d="M 176.24 130.19 A 82 82 0 0 1 60.5 171.86 L 75.91 143.82 A 50 50 0 0 0 146.49 118.41 Z"/><path class="donut-seg slice-2" d="M 60.5 171.86 A 82 82 0 0 1 18.65 89.72 L 50.39 93.73 A 50 50 0 0 0 75.91 143.82 Z"/><path class="donut-seg slice-3" d="M 18.65 89.72 A 82 82 0 0 1 47.73 36.82 L 68.13 61.47 A 50 50 0 0 0 50.39 93.73 Z"/><path class="donut-seg slice-4" d="M 47.73 36.82 A 82 82 0 0 1 100 18 L 100 50 A 50 50 0 0 0 68.13 61.47 Z"/><rect class="slice-0" x="200" y="44" width="13" height="13" rx="3"/><text class="donut-label" x="220" y="55">render · 31%</text><rect class="slice-1" x="200" y="68" width="13" height="13" rx="3"/><text class="donut-label" x="220" y="79">analyze · 27%</text><rect class="slice-2" x="200" y="92" width="13" height="13" rx="3"/><text class="donut-label" x="220" y="103">narrate · 19%</text><rect class="slice-3" x="200" y="116" width="13" height="13" rx="3"/><text class="donut-label" x="220" y="127">config · 12%</text><rect class="slice-4" x="200" y="140" width="13" height="13" rx="3"/><text class="donut-label" x="220" y="151">retrieve · 11%</text></svg>
+<h4>Contributor count</h4>
+<svg class="chart-svg chart-donut" viewBox="0 0 360 200" preserveAspectRatio="xMidYMid meet" role="img" aria-label="Group B — Contributor count"><path class="donut-seg slice-0" d="M 100 18 A 82 82 0 1 1 20.06 118.25 L 51.25 111.13 A 50 50 0 1 0 100 50 Z"/><path class="donut-seg slice-1" d="M 20.06 118.25 A 82 82 0 0 1 100 18 L 100 50 A 50 50 0 0 0 51.25 111.13 Z"/><rect class="slice-0" x="200" y="44" width="13" height="13" rx="3"/><text class="donut-label" x="220" y="55">active · 71%</text><rect class="slice-1" x="200" y="68" width="13" height="13" rx="3"/><text class="donut-label" x="220" y="79">inactive · 29%</text></svg>
 <details class="data-table" open>
 <summary>Show data table</summary>
 <table>
-<caption>Ownership spread by area</caption>
+<caption>Contributor count</caption>
 <thead><tr><th scope="col">Item</th><th scope="col">Value</th></tr></thead>
 <tbody>
-<tr><th scope="row">src/render</th><td>31</td></tr>
-<tr><th scope="row">src/analyze</th><td>27</td></tr>
-<tr><th scope="row">src/narrate</th><td>19</td></tr>
-<tr><th scope="row">src/config</th><td>12</td></tr>
-<tr><th scope="row">src/retrieve</th><td>11</td></tr>
+<tr><th scope="row">active</th><td>5</td></tr>
+<tr><th scope="row">inactive</th><td>2</td></tr>
 </tbody>
 </table>
 </details>
 </div>
 <div class="chart-sub">
-<h4>Contribution concentration</h4>
-<svg class="chart-svg chart-radialgauge" viewBox="0 0 200 200" preserveAspectRatio="xMidYMid meet" role="img" aria-label="Group B — Contribution concentration"><defs><linearGradient id="cw-rgauge-1lftfhx" x1="0" y1="0" x2="1" y2="0"><stop offset="0" class="grad-fill-1"/><stop offset="1" class="grad-fill-2"/></linearGradient></defs><circle class="gauge-ring-track" cx="100" cy="100" r="74" fill="none" stroke-width="20"/><circle class="gauge-ring-fill" cx="100" cy="100" r="74" fill="none" stroke="url(#cw-rgauge-1lftfhx)" stroke-width="20" stroke-linecap="round" stroke-dasharray="190.63 464.96" transform="rotate(-90 100 100)"/><text class="gauge-value" x="100" y="100" text-anchor="middle" dominant-baseline="central">41%</text></svg>
+<h4>Contribution distribution</h4>
+<svg class="chart-svg chart-radialgauge" viewBox="0 0 200 200" preserveAspectRatio="xMidYMid meet" role="img" aria-label="Group B — Contribution distribution"><defs><linearGradient id="cw-rgauge-rzxdsi" x1="0" y1="0" x2="1" y2="0"><stop offset="0" class="grad-fill-1"/><stop offset="1" class="grad-fill-2"/></linearGradient></defs><circle class="gauge-ring-track" cx="100" cy="100" r="74" fill="none" stroke-width="20"/><circle class="gauge-ring-fill" cx="100" cy="100" r="74" fill="none" stroke="url(#cw-rgauge-rzxdsi)" stroke-width="20" stroke-linecap="round" stroke-dasharray="195.28 464.96" transform="rotate(-90 100 100)"/><text class="gauge-value" x="100" y="100" text-anchor="middle" dominant-baseline="central">42%</text></svg>
 <details class="data-table" open>
 <summary>Show data table</summary>
 <table>
-<caption>Contribution concentration</caption>
+<caption>Contribution distribution</caption>
 <thead><tr><th scope="col">Item</th><th scope="col">Value</th></tr></thead>
 <tbody>
-<tr><th scope="row">Contribution concentration</th><td>41</td></tr>
+<tr><th scope="row">Contribution distribution</th><td>42</td></tr>
 </tbody>
 </table>
 </details>
@@ -411,24 +477,127 @@ a:focus-visible, :focus-visible { outline: 2px solid var(--accent); outline-offs
 </figure>
 <div class="cards">
 <details class="metric-card" data-status="computed" data-health="ok" open>
-<summary><h3 class="metric-title">Contribution concentration</h3> <span class="health health-ok"><span class="health-glyph" aria-hidden="true">●</span> ok</span><span class="metric-stat">41%</span></summary>
+<summary><h3 class="metric-title">Contributor count</h3> <span class="health health-ok"><span class="health-glyph" aria-hidden="true">●</span> ok</span></summary>
 <div class="metric-body">
 
-
+<div class="facets">
+<p class="facet-meaning">Seven contributors total, five active within the last 90 days — a small, stable core team.</p>
+<h4>Good behaviours</h4>
+<ul>
+<li>A consistent active core of five.</li>
+</ul>
+<h4>Needs improvement</h4>
+<ul>
+<li>Two contributors have gone quiet recently.</li>
+</ul>
+<h4>Suggestions</h4>
+<ul>
+<li>Confirm whether the two inactive contributors are a knowledge-transfer risk.</li>
+</ul>
+</div>
 </div>
 </details>
 <details class="metric-card" data-status="computed" data-health="ok" open>
-<summary><h3 class="metric-title">Ownership spread by area</h3> <span class="health health-ok"><span class="health-glyph" aria-hidden="true">●</span> ok</span></summary>
+<summary><h3 class="metric-title">Contribution distribution</h3> <span class="health health-ok"><span class="health-glyph" aria-hidden="true">●</span> ok</span><span class="metric-stat">42%</span></summary>
 <div class="metric-body">
 
-
+<div class="facets">
+<p class="facet-meaning">The top author holds 42% of commits and the top three hold 77% (Gini 0.38) — concentrated but not dominated by one person.</p>
+<h4>Good behaviours</h4>
+<ul>
+<li>No single author owns a majority of the work.</li>
+</ul>
+<h4>Needs improvement</h4>
+<ul>
+<li>A 77% top-three share leaves the long tail thin.</li>
+</ul>
+<h4>Suggestions</h4>
+<ul>
+<li>Rotate ownership of core areas to broaden the contribution base.</li>
+</ul>
+</div>
 </div>
 </details>
 <details class="metric-card" data-status="computed" data-health="ok" open>
-<summary><h3 class="metric-title">Bus factor</h3> <span class="health health-ok"><span class="health-glyph" aria-hidden="true">●</span> ok</span><span class="metric-stat">3</span></summary>
+<summary><h3 class="metric-title">Bus-factor / knowledge concentration</h3> <span class="health health-ok"><span class="health-glyph" aria-hidden="true">●</span> ok</span><span class="metric-stat">42%</span></summary>
 <div class="metric-body">
 
+<div class="facets">
+<p class="facet-meaning">A bus factor of three means losing any two key contributors would still leave coverage — a moderate, manageable concentration.</p>
+<h4>Good behaviours</h4>
+<ul>
+<li>Three people cover the majority of commits.</li>
+</ul>
+<h4>Needs improvement</h4>
+<ul>
+<li>The hotspot files drop to a bus factor of two.</li>
+</ul>
+<h4>Suggestions</h4>
+<ul>
+<li>Pair-review the heaviest-churn files to lift their effective bus factor.</li>
+</ul>
+</div>
+</div>
+</details>
+<details class="metric-card" data-status="computed" data-health="ok" open>
+<summary><h3 class="metric-title">New vs. departed contributors</h3> <span class="health health-ok"><span class="health-glyph" aria-hidden="true">●</span> ok</span></summary>
+<div class="metric-body">
 
+<div class="facets">
+<p class="facet-meaning">Two contributors onboarded in the last 90 days against one departure — the team is growing slightly.</p>
+<h4>Good behaviours</h4>
+<ul>
+<li>Healthy onboarding outpaces attrition.</li>
+</ul>
+<h4>Needs improvement</h4>
+<p>None.</p>
+<h4>Suggestions</h4>
+<ul>
+<li>Give new contributors early ownership of a low-risk area to accelerate ramp-up.</li>
+</ul>
+</div>
+</div>
+</details>
+<details class="metric-card" data-status="computed" data-health="ok" open>
+<summary><h3 class="metric-title">Ownership by area</h3> <span class="health health-ok"><span class="health-glyph" aria-hidden="true">●</span> ok</span></summary>
+<div class="metric-body">
+
+<div class="facets">
+<p class="facet-meaning">The HTML render directory carries the highest concentration (61% top-author share over 142 touches); analysis and config are more broadly held.</p>
+<h4>Good behaviours</h4>
+<ul>
+<li>Config and analysis areas are touched by 4–5 authors each.</li>
+</ul>
+<h4>Needs improvement</h4>
+<ul>
+<li>src/render/html is concentrated in one author at 61%.</li>
+</ul>
+<h4>Suggestions</h4>
+<ul>
+<li>Spread review of src/render/html to reduce single-owner risk.</li>
+</ul>
+</div>
+</div>
+</details>
+<details class="metric-card" data-status="computed" data-health="ok" open>
+<summary><h3 class="metric-title">Co-authorship / collaboration signal</h3> <span class="health health-ok"><span class="health-glyph" aria-hidden="true">●</span> ok</span><span class="metric-stat">6.3%</span></summary>
+<div class="metric-body">
+
+<div class="facets">
+<p class="facet-meaning">About 6% of commits carry Co-authored-by trailers across six distinct collaborators — some pairing, with room to grow.</p>
+<h4>Good behaviours</h4>
+<ul>
+<li>Real co-authorship signal present in the history.</li>
+</ul>
+<h4>Needs improvement</h4>
+<ul>
+<li>Only 6% of commits show explicit pairing.</li>
+</ul>
+<h4>Suggestions</h4>
+<ul>
+<li>Adopt Co-authored-by trailers consistently when pairing to make collaboration visible.</li>
+</ul>
+</div>
 </div>
 </details>
 </div>
@@ -439,20 +608,17 @@ a:focus-visible, :focus-visible { outline: 2px solid var(--accent); outline-offs
 <figcaption>How clearly the history communicates intent.</figcaption>
 <div class="chart-cells two">
 <div class="chart-sub">
-<h4>Message categories</h4>
-<svg class="chart-svg chart-bars" viewBox="0 0 640 240" preserveAspectRatio="xMidYMid meet" role="img" aria-label="Group C — Message categories"><defs><linearGradient id="cw-bar-1htmx1a" x1="0" y1="0" x2="0" y2="1"><stop offset="0" class="grad-fill-1"/><stop offset="1" class="grad-fill-2"/></linearGradient></defs><line class="chart-grid" x1="46" y1="210" x2="624" y2="210"/><text class="chart-tick" x="40" y="213.5" text-anchor="end">0</text><line class="chart-grid" x1="46" y1="161" x2="624" y2="161"/><text class="chart-tick" x="40" y="164.5" text-anchor="end">50</text><line class="chart-grid" x1="46" y1="112" x2="624" y2="112"/><text class="chart-tick" x="40" y="115.5" text-anchor="end">100</text><line class="chart-grid" x1="46" y1="63" x2="624" y2="63"/><text class="chart-tick" x="40" y="66.5" text-anchor="end">150</text><line class="chart-grid" x1="46" y1="14" x2="624" y2="14"/><text class="chart-tick" x="40" y="17.5" text-anchor="end">200</text><line class="chart-axis" x1="46" y1="210" x2="624" y2="210"/><path class="bar" d="M 64.3 210 L 64.3 35.68 Q 64.3 29.68 70.3 29.68 L 118.03 29.68 Q 124.03 29.68 124.03 35.68 L 124.03 210 Z" fill="url(#cw-bar-1htmx1a)"/><path class="bar" d="M 160.64 210 L 160.64 76.84 Q 160.64 70.84 166.64 70.84 L 214.36 70.84 Q 220.36 70.84 220.36 76.84 L 220.36 210 Z" fill="url(#cw-bar-1htmx1a)"/><path class="bar" d="M 256.97 210 L 256.97 144.46 Q 256.97 138.46 262.97 138.46 L 310.7 138.46 Q 316.7 138.46 316.7 144.46 L 316.7 210 Z" fill="url(#cw-bar-1htmx1a)"/><path class="bar" d="M 353.3 210 L 353.3 161.12 Q 353.3 155.12 359.3 155.12 L 407.03 155.12 Q 413.03 155.12 413.03 161.12 L 413.03 210 Z" fill="url(#cw-bar-1htmx1a)"/><path class="bar" d="M 449.64 210 L 449.64 153.28 Q 449.64 147.28 455.64 147.28 L 503.36 147.28 Q 509.36 147.28 509.36 153.28 L 509.36 210 Z" fill="url(#cw-bar-1htmx1a)"/><path class="bar" d="M 545.97 210 L 545.97 126.82 Q 545.97 120.82 551.97 120.82 L 599.7 120.82 Q 605.7 120.82 605.7 126.82 L 605.7 210 Z" fill="url(#cw-bar-1htmx1a)"/><text class="chart-label" x="94.17" y="230" text-anchor="middle">feat</text><text class="chart-label" x="190.5" y="230" text-anchor="middle">fix</text><text class="chart-label" x="286.83" y="230" text-anchor="middle">refactor</text><text class="chart-label" x="383.17" y="230" text-anchor="middle">docs</text><text class="chart-label" x="479.5" y="230" text-anchor="middle">test</text><text class="chart-label" x="575.83" y="230" text-anchor="middle">chore</text></svg>
+<h4>Message length distribution</h4>
+<svg class="chart-svg chart-bars" viewBox="0 0 640 240" preserveAspectRatio="xMidYMid meet" role="img" aria-label="Group C — Message length distribution"><defs><linearGradient id="cw-bar-10d7ds4" x1="0" y1="0" x2="0" y2="1"><stop offset="0" class="grad-fill-1"/><stop offset="1" class="grad-fill-2"/></linearGradient></defs><line class="chart-grid" x1="46" y1="210" x2="624" y2="210"/><text class="chart-tick" x="40" y="213.5" text-anchor="end">0</text><line class="chart-grid" x1="46" y1="170.8" x2="624" y2="170.8"/><text class="chart-tick" x="40" y="174.3" text-anchor="end">100</text><line class="chart-grid" x1="46" y1="131.6" x2="624" y2="131.6"/><text class="chart-tick" x="40" y="135.1" text-anchor="end">200</text><line class="chart-grid" x1="46" y1="92.4" x2="624" y2="92.4"/><text class="chart-tick" x="40" y="95.9" text-anchor="end">300</text><line class="chart-grid" x1="46" y1="53.2" x2="624" y2="53.2"/><text class="chart-tick" x="40" y="56.7" text-anchor="end">400</text><line class="chart-grid" x1="46" y1="14" x2="624" y2="14"/><text class="chart-tick" x="40" y="17.5" text-anchor="end">500</text><line class="chart-axis" x1="46" y1="210" x2="624" y2="210"/><path class="bar" d="M 110.33 210 L 110.33 54.5 Q 110.33 48.5 116.33 48.5 L 168.33 48.5 Q 174.33 48.5 174.33 54.5 L 174.33 210 Z" fill="url(#cw-bar-10d7ds4)"/><path class="bar" d="M 303 210 L 303 110.94 Q 303 104.94 309 104.94 L 361 104.94 Q 367 104.94 367 110.94 L 367 210 Z" fill="url(#cw-bar-10d7ds4)"/><path class="bar" d="M 495.67 210 L 495.67 182.68 Q 495.67 176.68 501.67 176.68 L 553.67 176.68 Q 559.67 176.68 559.67 182.68 L 559.67 210 Z" fill="url(#cw-bar-10d7ds4)"/><text class="chart-label" x="142.33" y="230" text-anchor="middle">≤ 50 chars</text><text class="chart-label" x="335" y="230" text-anchor="middle">51–72 chars</text><text class="chart-label" x="527.67" y="230" text-anchor="middle">&gt; 72 chars</text></svg>
 <details class="data-table" open>
 <summary>Show data table</summary>
 <table>
-<caption>Message categories</caption>
+<caption>Message length distribution</caption>
 <thead><tr><th scope="col">Item</th><th scope="col">Value</th></tr></thead>
 <tbody>
-<tr><th scope="row">feat</th><td>184</td></tr>
-<tr><th scope="row">fix</th><td>142</td></tr>
-<tr><th scope="row">refactor</th><td>73</td></tr>
-<tr><th scope="row">docs</th><td>56</td></tr>
-<tr><th scope="row">test</th><td>64</td></tr>
-<tr><th scope="row">chore</th><td>91</td></tr>
+<tr><th scope="row">≤ 50 chars</th><td>412</td></tr>
+<tr><th scope="row">51–72 chars</th><td>268</td></tr>
+<tr><th scope="row">&gt; 72 chars</th><td>85</td></tr>
 </tbody>
 </table>
 </details>
@@ -475,10 +641,24 @@ a:focus-visible, :focus-visible { outline: 2px solid var(--accent); outline-offs
 </figure>
 <div class="cards">
 <details class="metric-card" data-status="computed" data-health="ok" open>
-<summary><h3 class="metric-title">Message categories</h3> <span class="health health-ok"><span class="health-glyph" aria-hidden="true">●</span> ok</span></summary>
+<summary><h3 class="metric-title">Message length distribution</h3> <span class="health health-ok"><span class="health-glyph" aria-hidden="true">●</span> ok</span></summary>
 <div class="metric-body">
 
-
+<div class="facets">
+<p class="facet-meaning">Most subjects (412) stay within the 50-character ideal, with a small tail past 72 characters — concise and scannable on the whole.</p>
+<h4>Good behaviours</h4>
+<ul>
+<li>The bulk of subjects respect the 50-char guideline.</li>
+</ul>
+<h4>Needs improvement</h4>
+<ul>
+<li>85 subjects run past 72 characters.</li>
+</ul>
+<h4>Suggestions</h4>
+<ul>
+<li>Trim the long subjects and push detail into the body.</li>
+</ul>
+</div>
 </div>
 </details>
 <details class="metric-card" data-status="computed" data-health="ok" open>
@@ -486,40 +666,96 @@ a:focus-visible, :focus-visible { outline: 2px solid var(--accent); outline-offs
 <div class="metric-body">
 
 <div class="facets">
-<p class="facet-meaning">At 82% adherence, the vast majority of commits follow the Conventional Commits specification — comfortably above the 70% healthy threshold. The log is machine-parseable for changelogs and releases.</p>
+<p class="facet-meaning">82% of subjects follow Conventional Commits — well above the healthy threshold, making the log machine-parseable for changelogs and releases.</p>
 <h4>Good behaviours</h4>
 <ul>
-<li>Strong, consistent adoption across the team.</li>
-<li>Enables automated changelog and semantic-version tooling.</li>
+<li>High, consistent adherence to a shared convention.</li>
 </ul>
 <h4>Needs improvement</h4>
 <ul>
-<li>The remaining 18% breaks tooling that expects a typed prefix.</li>
+<li>The remaining 18% break automated tooling.</li>
 </ul>
 <h4>Suggestions</h4>
 <ul>
-<li>Add commitlint to a pre-commit hook to close the last 18% with zero ongoing effort.</li>
+<li>Add commitlint to nudge the last fraction toward the standard.</li>
 </ul>
 </div>
 </div>
 </details>
-<details class="metric-card" data-status="computed" data-health="watch" open>
-<summary><h3 class="metric-title">Low-information messages</h3> <span class="health health-watch"><span class="health-glyph" aria-hidden="true">◐</span> watch</span><span class="metric-stat">16%</span></summary>
+<details class="metric-card" data-status="computed" data-health="ok" open>
+<summary><h3 class="metric-title">Imperative-mood / style signal</h3> <span class="health health-ok"><span class="health-glyph" aria-hidden="true">●</span> ok</span><span class="metric-stat">88%</span></summary>
 <div class="metric-body">
 
 <div class="facets">
-<p class="facet-meaning">16% of messages carry little intent (&#39;wip&#39;, &#39;fix stuff&#39;) — the small, addressable gap between good and excellent message hygiene.</p>
+<p class="facet-meaning">88% of subjects use the imperative mood, 91% are capitalized, and 96% omit a trailing period — strong stylistic consistency.</p>
 <h4>Good behaviours</h4>
 <ul>
-<li>The large majority of messages are descriptive.</li>
+<li>Style conventions are followed almost universally.</li>
+</ul>
+<h4>Needs improvement</h4>
+<p>None.</p>
+<h4>Suggestions</h4>
+<p>None.</p>
+</div>
+</div>
+</details>
+<details class="metric-card" data-status="computed" data-health="watch" open>
+<summary><h3 class="metric-title">Low-information message rate</h3> <span class="health health-watch"><span class="health-glyph" aria-hidden="true">◐</span> watch</span><span class="metric-stat">16%</span></summary>
+<div class="metric-body">
+
+<div class="facets">
+<p class="facet-meaning">16% of messages are low-information (&#39;wip&#39;, single words) — the addressable gap between good and excellent message quality.</p>
+<h4>Good behaviours</h4>
+<ul>
+<li>No empty commit messages at all.</li>
 </ul>
 <h4>Needs improvement</h4>
 <ul>
-<li>One message in six is low-information.</li>
+<li>84 single-word and 38 boilerplate subjects dilute the log.</li>
 </ul>
 <h4>Suggestions</h4>
 <ul>
-<li>Nudge contributors toward a one-line &#39;why&#39; on terse commits.</li>
+<li>Encourage a one-line body explaining the &#39;why&#39; on terse commits.</li>
+</ul>
+</div>
+</div>
+</details>
+<details class="metric-card" data-status="computed" data-health="ok" open>
+<summary><h3 class="metric-title">Issue/ticket reference rate</h3> <span class="health health-ok"><span class="health-glyph" aria-hidden="true">●</span> ok</span><span class="metric-stat">58%</span></summary>
+<div class="metric-body">
+
+<div class="facets">
+<p class="facet-meaning">58% of commits reference an issue or ticket — solid traceability between code and planning.</p>
+<h4>Good behaviours</h4>
+<ul>
+<li>A majority of changes link back to a tracked item.</li>
+</ul>
+<h4>Needs improvement</h4>
+<ul>
+<li>Just under half carry no reference.</li>
+</ul>
+<h4>Suggestions</h4>
+<ul>
+<li>Reference the ticket in the commit body to complete the audit trail.</li>
+</ul>
+</div>
+</div>
+</details>
+<details class="metric-card" data-status="computed" data-health="ok" open>
+<summary><h3 class="metric-title">Revert / fixup / amend signal</h3> <span class="health health-ok"><span class="health-glyph" aria-hidden="true">●</span> ok</span><span class="metric-stat">3.1%</span></summary>
+<div class="metric-body">
+
+<div class="facets">
+<p class="facet-meaning">Reverts, fixups and squashes total 3.1% of commits — a low churn-of-intent rate indicating stable, deliberate changes.</p>
+<h4>Good behaviours</h4>
+<ul>
+<li>Very few corrective commits relative to volume.</li>
+</ul>
+<h4>Needs improvement</h4>
+<p>None.</p>
+<h4>Suggestions</h4>
+<ul>
+<li>Keep squashing fixup! commits before merge to keep history clean.</li>
 </ul>
 </div>
 </div>
@@ -532,34 +768,40 @@ a:focus-visible, :focus-visible { outline: 2px solid var(--accent); outline-offs
 <figcaption>How branching and merging are structured.</figcaption>
 <div class="chart-cells two">
 <div class="chart-sub">
-<h4>Merge cadence over time</h4>
-<svg class="chart-svg chart-line" viewBox="0 0 640 240" preserveAspectRatio="xMidYMid meet" role="img" aria-label="Group D — Merge cadence over time"><defs><linearGradient id="cw-area-inwobc" x1="0" y1="0" x2="0" y2="1"><stop offset="0" class="grad-area-top"/><stop offset="1" class="grad-area-bottom"/></linearGradient></defs><defs><linearGradient id="cw-stroke-inwobc" x1="0" y1="0" x2="1" y2="0"><stop offset="0" class="grad-fill-1"/><stop offset="1" class="grad-fill-2"/></linearGradient></defs><line class="chart-grid" x1="46" y1="210" x2="624" y2="210"/><text class="chart-tick" x="40" y="213.5" text-anchor="end">0</text><line class="chart-grid" x1="46" y1="170.8" x2="624" y2="170.8"/><text class="chart-tick" x="40" y="174.3" text-anchor="end">5</text><line class="chart-grid" x1="46" y1="131.6" x2="624" y2="131.6"/><text class="chart-tick" x="40" y="135.1" text-anchor="end">10</text><line class="chart-grid" x1="46" y1="92.4" x2="624" y2="92.4"/><text class="chart-tick" x="40" y="95.9" text-anchor="end">15</text><line class="chart-grid" x1="46" y1="53.2" x2="624" y2="53.2"/><text class="chart-tick" x="40" y="56.7" text-anchor="end">20</text><line class="chart-grid" x1="46" y1="14" x2="624" y2="14"/><text class="chart-tick" x="40" y="17.5" text-anchor="end">25</text><line class="chart-axis" x1="46" y1="210" x2="624" y2="210"/><path class="chart-area" d="M 46 139.44 C 65.27 132.91, 123.07 117.23, 161.6 100.24 C 200.13 83.25, 238.67 41.44, 277.2 37.52 C 315.73 33.6, 354.27 63.65, 392.8 76.72 C 431.33 89.79, 469.87 118.53, 508.4 115.92 C 546.93 113.31, 604.73 70.19, 624 61.04 L 624 210 L 46 210 Z" fill="url(#cw-area-inwobc)"/><path class="chart-stroke" d="M 46 139.44 C 65.27 132.91, 123.07 117.23, 161.6 100.24 C 200.13 83.25, 238.67 41.44, 277.2 37.52 C 315.73 33.6, 354.27 63.65, 392.8 76.72 C 431.33 89.79, 469.87 118.53, 508.4 115.92 C 546.93 113.31, 604.73 70.19, 624 61.04" fill="none" stroke="url(#cw-stroke-inwobc)" stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round"/><text class="chart-label" x="46" y="230" text-anchor="middle">Jan</text><text class="chart-label" x="161.6" y="230" text-anchor="middle">Feb</text><text class="chart-label" x="277.2" y="230" text-anchor="middle">Mar</text><text class="chart-label" x="392.8" y="230" text-anchor="middle">Apr</text><text class="chart-label" x="508.4" y="230" text-anchor="middle">May</text><text class="chart-label" x="624" y="230" text-anchor="middle">Jun</text></svg>
+<h4>Branch/merge topology summary</h4>
+<svg class="chart-svg chart-line" viewBox="0 0 640 240" preserveAspectRatio="xMidYMid meet" role="img" aria-label="Group D — Branch/merge topology summary"><defs><linearGradient id="cw-area-16p0vuo" x1="0" y1="0" x2="0" y2="1"><stop offset="0" class="grad-area-top"/><stop offset="1" class="grad-area-bottom"/></linearGradient></defs><defs><linearGradient id="cw-stroke-16p0vuo" x1="0" y1="0" x2="1" y2="0"><stop offset="0" class="grad-fill-1"/><stop offset="1" class="grad-fill-2"/></linearGradient></defs><line class="chart-grid" x1="46" y1="210" x2="624" y2="210"/><text class="chart-tick" x="40" y="213.5" text-anchor="end">0</text><line class="chart-grid" x1="46" y1="170.8" x2="624" y2="170.8"/><text class="chart-tick" x="40" y="174.3" text-anchor="end">5</text><line class="chart-grid" x1="46" y1="131.6" x2="624" y2="131.6"/><text class="chart-tick" x="40" y="135.1" text-anchor="end">10</text><line class="chart-grid" x1="46" y1="92.4" x2="624" y2="92.4"/><text class="chart-tick" x="40" y="95.9" text-anchor="end">15</text><line class="chart-grid" x1="46" y1="53.2" x2="624" y2="53.2"/><text class="chart-tick" x="40" y="56.7" text-anchor="end">20</text><line class="chart-grid" x1="46" y1="14" x2="624" y2="14"/><text class="chart-tick" x="40" y="17.5" text-anchor="end">25</text><line class="chart-axis" x1="46" y1="210" x2="624" y2="210"/><path class="chart-area" d="M 46 139.44 C 54.76 136.83, 81.04 130.29, 98.55 123.76 C 116.07 117.23, 133.58 98.93, 151.09 100.24 C 168.61 101.55, 186.13 134.21, 203.64 131.6 C 221.15 128.99, 238.67 80.64, 256.18 84.56 C 273.7 88.48, 291.22 149.89, 308.73 155.12 C 326.25 160.35, 343.76 130.29, 361.27 115.92 C 378.79 101.55, 396.31 81.95, 413.82 68.88 C 431.34 55.81, 448.85 36.21, 466.36 37.52 C 483.88 38.83, 501.4 64.96, 518.91 76.72 C 536.42 88.48, 553.94 110.69, 571.45 108.08 C 588.97 105.47, 615.24 68.88, 624 61.04 L 624 210 L 46 210 Z" fill="url(#cw-area-16p0vuo)"/><path class="chart-stroke" d="M 46 139.44 C 54.76 136.83, 81.04 130.29, 98.55 123.76 C 116.07 117.23, 133.58 98.93, 151.09 100.24 C 168.61 101.55, 186.13 134.21, 203.64 131.6 C 221.15 128.99, 238.67 80.64, 256.18 84.56 C 273.7 88.48, 291.22 149.89, 308.73 155.12 C 326.25 160.35, 343.76 130.29, 361.27 115.92 C 378.79 101.55, 396.31 81.95, 413.82 68.88 C 431.34 55.81, 448.85 36.21, 466.36 37.52 C 483.88 38.83, 501.4 64.96, 518.91 76.72 C 536.42 88.48, 553.94 110.69, 571.45 108.08 C 588.97 105.47, 615.24 68.88, 624 61.04" fill="none" stroke="url(#cw-stroke-16p0vuo)" stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round"/><text class="chart-label" x="46" y="230" text-anchor="middle">Jul</text><text class="chart-label" x="98.55" y="230" text-anchor="middle">Aug</text><text class="chart-label" x="151.09" y="230" text-anchor="middle">Sep</text><text class="chart-label" x="203.64" y="230" text-anchor="middle">Oct</text><text class="chart-label" x="256.18" y="230" text-anchor="middle">Nov</text><text class="chart-label" x="308.73" y="230" text-anchor="middle">Dec</text><text class="chart-label" x="361.27" y="230" text-anchor="middle">Jan</text><text class="chart-label" x="413.82" y="230" text-anchor="middle">Feb</text><text class="chart-label" x="466.36" y="230" text-anchor="middle">Mar</text><text class="chart-label" x="518.91" y="230" text-anchor="middle">Apr</text><text class="chart-label" x="571.45" y="230" text-anchor="middle">May</text><text class="chart-label" x="624" y="230" text-anchor="middle">Jun</text></svg>
 <details class="data-table" open>
 <summary>Show data table</summary>
 <table>
-<caption>Merge cadence over time</caption>
+<caption>Branch/merge topology summary</caption>
 <thead><tr><th scope="col">Item</th><th scope="col">Value</th></tr></thead>
 <tbody>
-<tr><th scope="row">2025-01</th><td>9</td></tr>
-<tr><th scope="row">2025-02</th><td>14</td></tr>
+<tr><th scope="row">2024-07</th><td>9</td></tr>
+<tr><th scope="row">2024-08</th><td>11</td></tr>
+<tr><th scope="row">2024-09</th><td>14</td></tr>
+<tr><th scope="row">2024-10</th><td>10</td></tr>
+<tr><th scope="row">2024-11</th><td>16</td></tr>
+<tr><th scope="row">2024-12</th><td>7</td></tr>
+<tr><th scope="row">2025-01</th><td>12</td></tr>
+<tr><th scope="row">2025-02</th><td>18</td></tr>
 <tr><th scope="row">2025-03</th><td>22</td></tr>
 <tr><th scope="row">2025-04</th><td>17</td></tr>
-<tr><th scope="row">2025-05</th><td>12</td></tr>
+<tr><th scope="row">2025-05</th><td>13</td></tr>
 <tr><th scope="row">2025-06</th><td>19</td></tr>
 </tbody>
 </table>
 </details>
 </div>
 <div class="chart-sub">
-<h4>Direct-to-default commits</h4>
-<svg class="chart-svg chart-radialgauge" viewBox="0 0 200 200" preserveAspectRatio="xMidYMid meet" role="img" aria-label="Group D — Direct-to-default commits"><defs><linearGradient id="cw-rgauge-hwg8t7" x1="0" y1="0" x2="1" y2="0"><stop offset="0" class="grad-fill-1"/><stop offset="1" class="grad-fill-2"/></linearGradient></defs><circle class="gauge-ring-track" cx="100" cy="100" r="74" fill="none" stroke-width="20"/><circle class="gauge-ring-fill" cx="100" cy="100" r="74" fill="none" stroke="url(#cw-rgauge-hwg8t7)" stroke-width="20" stroke-linecap="round" stroke-dasharray="158.08 464.96" transform="rotate(-90 100 100)"/><text class="gauge-value" x="100" y="100" text-anchor="middle" dominant-baseline="central">34%</text></svg>
+<h4>Direct-to-default-branch rate</h4>
+<svg class="chart-svg chart-radialgauge" viewBox="0 0 200 200" preserveAspectRatio="xMidYMid meet" role="img" aria-label="Group D — Direct-to-default-branch rate"><defs><linearGradient id="cw-rgauge-t4uuza" x1="0" y1="0" x2="1" y2="0"><stop offset="0" class="grad-fill-1"/><stop offset="1" class="grad-fill-2"/></linearGradient></defs><circle class="gauge-ring-track" cx="100" cy="100" r="74" fill="none" stroke-width="20"/><circle class="gauge-ring-fill" cx="100" cy="100" r="74" fill="none" stroke="url(#cw-rgauge-t4uuza)" stroke-width="20" stroke-linecap="round" stroke-dasharray="158.08 464.96" transform="rotate(-90 100 100)"/><text class="gauge-value" x="100" y="100" text-anchor="middle" dominant-baseline="central">34%</text></svg>
 <details class="data-table" open>
 <summary>Show data table</summary>
 <table>
-<caption>Direct-to-default commits</caption>
+<caption>Direct-to-default-branch rate</caption>
 <thead><tr><th scope="col">Item</th><th scope="col">Value</th></tr></thead>
 <tbody>
-<tr><th scope="row">Direct-to-default commits</th><td>34</td></tr>
+<tr><th scope="row">Direct-to-default-branch rate</th><td>34</td></tr>
 </tbody>
 </table>
 </details>
@@ -568,47 +810,100 @@ a:focus-visible, :focus-visible { outline: 2px solid var(--accent); outline-offs
 </figure>
 <div class="cards">
 <details class="metric-card" data-status="computed" data-health="ok" open>
-<summary><h3 class="metric-title">Merge cadence over time</h3> <span class="health health-ok"><span class="health-glyph" aria-hidden="true">●</span> ok</span></summary>
-<div class="metric-body">
-
-
-</div>
-</details>
-<details class="metric-card" data-status="computed" data-health="watch" open>
-<summary><h3 class="metric-title">Direct-to-default commits</h3> <span class="health health-watch"><span class="health-glyph" aria-hidden="true">◐</span> watch</span><span class="metric-stat">34%</span></summary>
+<summary><h3 class="metric-title">Branch/merge topology summary</h3> <span class="health health-ok"><span class="health-glyph" aria-hidden="true">●</span> ok</span><span class="metric-stat">168</span></summary>
 <div class="metric-body">
 
 <div class="facets">
-<p class="facet-meaning">A 34% direct-to-default share means roughly one commit in three skips a branch-and-review flow. That is acceptable for a small team but becomes a review-coverage gap as the team grows.</p>
+<p class="facet-meaning">168 merge commits with a monthly cadence climbing from 9 to 22 — an increasingly merge-based, branch-and-integrate workflow.</p>
 <h4>Good behaviours</h4>
 <ul>
-<li>Two-thirds of work already flows through branches.</li>
+<li>A genuine branching workflow rather than a flat history.</li>
 </ul>
 <h4>Needs improvement</h4>
 <ul>
-<li>A third of commits bypass peer review entirely.</li>
+<li>The 9-to-22 monthly swing suggests batchy integration.</li>
 </ul>
 <h4>Suggestions</h4>
 <ul>
-<li>Enable branch protection requiring at least one review on the default branch.</li>
-<li>Reserve direct commits for docs/typo fixes via a narrow exception.</li>
+<li>Smaller, more frequent merges keep conflict risk and review load low.</li>
+</ul>
+</div>
+</div>
+</details>
+<details class="metric-card" data-status="computed" data-health="watch" open>
+<summary><h3 class="metric-title">Direct-to-default-branch rate</h3> <span class="health health-watch"><span class="health-glyph" aria-hidden="true">◐</span> watch</span><span class="metric-stat">34%</span></summary>
+<div class="metric-body">
+
+<div class="facets">
+<p class="facet-meaning">34% of commits land directly on the default branch — a workflow signal worth tightening as the team grows.</p>
+<h4>Good behaviours</h4>
+<ul>
+<li>Two-thirds of changes still arrive via a branch and merge.</li>
+</ul>
+<h4>Needs improvement</h4>
+<ul>
+<li>A third of commits skip the branch/review path.</li>
+</ul>
+<h4>Suggestions</h4>
+<ul>
+<li>Add a lightweight branch-protection rule so direct-to-default trends toward zero.</li>
+</ul>
+</div>
+</div>
+</details>
+<details class="metric-card" data-status="computed" data-health="ok" open>
+<summary><h3 class="metric-title">Merge vs. rebase tendency</h3> <span class="health health-ok"><span class="health-glyph" aria-hidden="true">●</span> ok</span></summary>
+<div class="metric-body">
+
+<div class="facets">
+<p class="facet-meaning">A mixed tendency with 78% first-parent linearity — the team blends merges with a mostly-linear mainline.</p>
+<h4>Good behaviours</h4>
+<ul>
+<li>A clean, mostly-linear mainline is easy to read.</li>
+</ul>
+<h4>Needs improvement</h4>
+<p>None.</p>
+<h4>Suggestions</h4>
+<ul>
+<li>Pick one integration style per branch type to keep history predictable.</li>
 </ul>
 </div>
 </div>
 </details>
 <details class="metric-card" data-status="not_available" data-health="na" open>
-<summary><h3 class="metric-title">Stale branch detection</h3> <span class="health health-na"><span class="health-glyph" aria-hidden="true">○</span> n/a</span></summary>
+<summary><h3 class="metric-title">Long-lived branch signal</h3> <span class="health health-na"><span class="health-glyph" aria-hidden="true">○</span> n/a</span></summary>
 <div class="metric-body">
-<p class="why">Remote branch metadata is unavailable on a shallow clone — re-run with a full clone to enable.</p>
+<p class="why">Stale-branch lifespans need full ref history; this run analyzed a shallow HEAD-only clone.</p>
 <div class="facets">
-<p class="facet-meaning">This metric could not be computed because remote branch metadata is unavailable on a shallow clone. Re-running with a full clone will enable stale-branch detection.</p>
+<p class="facet-meaning">This signal could not be computed: stale-branch lifespans require full ref history, but the run used a shallow HEAD-only clone.</p>
 <h4>Good behaviours</h4>
 <p>None.</p>
 <h4>Needs improvement</h4>
 <p>None.</p>
 <h4>Suggestions</h4>
 <ul>
-<li>Re-run the analysis against a full (non-shallow) clone to populate this signal.</li>
+<li>Re-run against a full clone to enable long-lived-branch detection.</li>
+</ul>
+</div>
+</div>
+</details>
+<details class="metric-card" data-status="computed" data-health="ok" open>
+<summary><h3 class="metric-title">Average changes per merge</h3> <span class="health health-ok"><span class="health-glyph" aria-hidden="true">●</span> ok</span></summary>
+<div class="metric-body">
+
+<div class="facets">
+<p class="facet-meaning">Merges integrate a median of 132 changed lines (mean 248) — right-sized branches, with a few larger 2,960-line integrations.</p>
+<h4>Good behaviours</h4>
+<ul>
+<li>Typical merges are small and reviewable.</li>
+</ul>
+<h4>Needs improvement</h4>
+<ul>
+<li>A handful of merges integrate very large branches.</li>
+</ul>
+<h4>Suggestions</h4>
+<ul>
+<li>Keep feature branches short-lived to hold integration size down.</li>
 </ul>
 </div>
 </div>
@@ -621,38 +916,45 @@ a:focus-visible, :focus-visible { outline: 2px solid var(--accent); outline-offs
 <figcaption>Where change and instability concentrate.</figcaption>
 <div class="chart-cells two">
 <div class="chart-sub">
-<h4>Change hotspots (lines churned)</h4>
-<svg class="chart-svg chart-hbars" viewBox="0 0 640 194" preserveAspectRatio="xMidYMid meet" role="img" aria-label="Group E — Change hotspots (lines churned)"><defs><linearGradient id="cw-hbar-19sksi0" x1="0" y1="0" x2="1" y2="0"><stop offset="0" class="grad-fill-1"/><stop offset="1" class="grad-fill-2"/></linearGradient></defs><line class="chart-grid" x1="150" y1="14" x2="150" y2="164"/><text class="chart-tick" x="150" y="184" text-anchor="middle">0</text><line class="chart-grid" x1="267" y1="14" x2="267" y2="164"/><text class="chart-tick" x="267" y="184" text-anchor="middle">500</text><line class="chart-grid" x1="384" y1="14" x2="384" y2="164"/><text class="chart-tick" x="384" y="184" text-anchor="middle">1000</text><line class="chart-grid" x1="501" y1="14" x2="501" y2="164"/><text class="chart-tick" x="501" y="184" text-anchor="middle">1500</text><line class="chart-grid" x1="618" y1="14" x2="618" y2="164"/><text class="chart-tick" x="618" y="184" text-anchor="middle">2000</text><line class="chart-axis" x1="150" y1="14" x2="150" y2="164"/><path class="bar" d="M 150 20 L 575.56 20 Q 580.56 20 580.56 25 L 580.56 33 Q 580.56 38 575.56 38 L 150 38 Z" fill="url(#cw-hbar-19sksi0)"/><path class="bar" d="M 150 50 L 453.88 50 Q 458.88 50 458.88 55 L 458.88 63 Q 458.88 68 453.88 68 L 150 68 Z" fill="url(#cw-hbar-19sksi0)"/><path class="bar" d="M 150 80 L 374.32 80 Q 379.32 80 379.32 85 L 379.32 93 Q 379.32 98 374.32 98 L 150 98 Z" fill="url(#cw-hbar-19sksi0)"/><path class="bar" d="M 150 110 L 318.16 110 Q 323.16 110 323.16 115 L 323.16 123 Q 323.16 128 318.16 128 L 150 128 Z" fill="url(#cw-hbar-19sksi0)"/><path class="bar" d="M 150 140 L 287.74 140 Q 292.74 140 292.74 145 L 292.74 153 Q 292.74 158 287.74 158 L 150 158 Z" fill="url(#cw-hbar-19sksi0)"/><text class="chart-label" x="142" y="32.5" text-anchor="end">html-renderer.ts</text><text class="chart-label" x="142" y="62.5" text-anchor="end">engine.ts</text><text class="chart-label" x="142" y="92.5" text-anchor="end">generate.ts</text><text class="chart-label" x="142" y="122.5" text-anchor="end">resolve.ts</text><text class="chart-label" x="142" y="152.5" text-anchor="end">local.ts</text></svg>
+<h4>Most-changed files / directories</h4>
+<svg class="chart-svg chart-hbars" viewBox="0 0 640 224" preserveAspectRatio="xMidYMid meet" role="img" aria-label="Group E — Most-changed files / directories"><defs><linearGradient id="cw-hbar-amrfa2" x1="0" y1="0" x2="1" y2="0"><stop offset="0" class="grad-fill-1"/><stop offset="1" class="grad-fill-2"/></linearGradient></defs><line class="chart-grid" x1="150" y1="14" x2="150" y2="194"/><text class="chart-tick" x="150" y="214" text-anchor="middle">0</text><line class="chart-grid" x1="243.6" y1="14" x2="243.6" y2="194"/><text class="chart-tick" x="243.6" y="214" text-anchor="middle">20</text><line class="chart-grid" x1="337.2" y1="14" x2="337.2" y2="194"/><text class="chart-tick" x="337.2" y="214" text-anchor="middle">40</text><line class="chart-grid" x1="430.8" y1="14" x2="430.8" y2="194"/><text class="chart-tick" x="430.8" y="214" text-anchor="middle">60</text><line class="chart-grid" x1="524.4" y1="14" x2="524.4" y2="194"/><text class="chart-tick" x="524.4" y="214" text-anchor="middle">80</text><line class="chart-grid" x1="618" y1="14" x2="618" y2="194"/><text class="chart-tick" x="618" y="214" text-anchor="middle">100</text><line class="chart-axis" x1="150" y1="14" x2="150" y2="194"/><path class="bar" d="M 150 20 L 575.56 20 Q 580.56 20 580.56 25 L 580.56 33 Q 580.56 38 575.56 38 L 150 38 Z" fill="url(#cw-hbar-amrfa2)"/><path class="bar" d="M 150 50 L 510.04 50 Q 515.04 50 515.04 55 L 515.04 63 Q 515.04 68 510.04 68 L 150 68 Z" fill="url(#cw-hbar-amrfa2)"/><path class="bar" d="M 150 80 L 430.48 80 Q 435.48 80 435.48 85 L 435.48 93 Q 435.48 98 430.48 98 L 150 98 Z" fill="url(#cw-hbar-amrfa2)"/><path class="bar" d="M 150 110 L 397.72 110 Q 402.72 110 402.72 115 L 402.72 123 Q 402.72 128 397.72 128 L 150 128 Z" fill="url(#cw-hbar-amrfa2)"/><path class="bar" d="M 150 140 L 364.96 140 Q 369.96 140 369.96 145 L 369.96 153 Q 369.96 158 364.96 158 L 150 158 Z" fill="url(#cw-hbar-amrfa2)"/><path class="bar" d="M 150 170 L 327.52 170 Q 332.52 170 332.52 175 L 332.52 183 Q 332.52 188 327.52 188 L 150 188 Z" fill="url(#cw-hbar-amrfa2)"/><text class="chart-label" x="142" y="32.5" text-anchor="end">html-renderer.ts</text><text class="chart-label" x="142" y="62.5" text-anchor="end">engine.ts</text><text class="chart-label" x="142" y="92.5" text-anchor="end">narrate.ts</text><text class="chart-label" x="142" y="122.5" text-anchor="end">run-config.ts</text><text class="chart-label" x="142" y="152.5" text-anchor="end">charts.ts</text><text class="chart-label" x="142" y="182.5" text-anchor="end">README.md</text></svg>
 <details class="data-table" open>
 <summary>Show data table</summary>
 <table>
-<caption>Change hotspots (lines churned)</caption>
+<caption>Most-changed files / directories</caption>
 <thead><tr><th scope="col">Item</th><th scope="col">Value</th></tr></thead>
 <tbody>
-<tr><th scope="row">src/render/html/html-renderer.ts</th><td>1840</td></tr>
-<tr><th scope="row">src/analyze/engine.ts</th><td>1320</td></tr>
-<tr><th scope="row">src/narrate/generate.ts</th><td>980</td></tr>
-<tr><th scope="row">src/config/resolve.ts</th><td>740</td></tr>
-<tr><th scope="row">src/retrieve/local.ts</th><td>610</td></tr>
+<tr><th scope="row">src/render/html/html-renderer.ts</th><td>92</td></tr>
+<tr><th scope="row">src/analyze/engine.ts</th><td>78</td></tr>
+<tr><th scope="row">src/narrate/narrate.ts</th><td>61</td></tr>
+<tr><th scope="row">src/config/run-config.ts</th><td>54</td></tr>
+<tr><th scope="row">src/render/html/charts.ts</th><td>47</td></tr>
+<tr><th scope="row">README.md</th><td>39</td></tr>
 </tbody>
 </table>
 </details>
 </div>
 <div class="chart-sub">
-<h4>Churn trend (recent weeks)</h4>
-<svg class="chart-svg chart-line" viewBox="0 0 640 240" preserveAspectRatio="xMidYMid meet" role="img" aria-label="Group E — Churn trend (recent weeks)"><defs><linearGradient id="cw-area-15z597b" x1="0" y1="0" x2="0" y2="1"><stop offset="0" class="grad-area-top"/><stop offset="1" class="grad-area-bottom"/></linearGradient></defs><defs><linearGradient id="cw-stroke-15z597b" x1="0" y1="0" x2="1" y2="0"><stop offset="0" class="grad-fill-1"/><stop offset="1" class="grad-fill-2"/></linearGradient></defs><line class="chart-grid" x1="46" y1="210" x2="624" y2="210"/><text class="chart-tick" x="40" y="213.5" text-anchor="end">0</text><line class="chart-grid" x1="46" y1="170.8" x2="624" y2="170.8"/><text class="chart-tick" x="40" y="174.3" text-anchor="end">1000</text><line class="chart-grid" x1="46" y1="131.6" x2="624" y2="131.6"/><text class="chart-tick" x="40" y="135.1" text-anchor="end">2000</text><line class="chart-grid" x1="46" y1="92.4" x2="624" y2="92.4"/><text class="chart-tick" x="40" y="95.9" text-anchor="end">3000</text><line class="chart-grid" x1="46" y1="53.2" x2="624" y2="53.2"/><text class="chart-tick" x="40" y="56.7" text-anchor="end">4000</text><line class="chart-grid" x1="46" y1="14" x2="624" y2="14"/><text class="chart-tick" x="40" y="17.5" text-anchor="end">5000</text><line class="chart-axis" x1="46" y1="210" x2="624" y2="210"/><path class="chart-area" d="M 46 115.92 C 65.27 111.35, 123.07 84.56, 161.6 88.48 C 200.13 92.4, 238.67 146.63, 277.2 139.44 C 315.73 132.25, 354.27 50.59, 392.8 45.36 C 431.33 40.13, 469.87 99.59, 508.4 108.08 C 546.93 116.57, 604.73 98.28, 624 96.32 L 624 210 L 46 210 Z" fill="url(#cw-area-15z597b)"/><path class="chart-stroke" d="M 46 115.92 C 65.27 111.35, 123.07 84.56, 161.6 88.48 C 200.13 92.4, 238.67 146.63, 277.2 139.44 C 315.73 132.25, 354.27 50.59, 392.8 45.36 C 431.33 40.13, 469.87 99.59, 508.4 108.08 C 546.93 116.57, 604.73 98.28, 624 96.32" fill="none" stroke="url(#cw-stroke-15z597b)" stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round"/><text class="chart-label" x="46" y="230" text-anchor="middle">W18</text><text class="chart-label" x="161.6" y="230" text-anchor="middle">W19</text><text class="chart-label" x="277.2" y="230" text-anchor="middle">W20</text><text class="chart-label" x="392.8" y="230" text-anchor="middle">W21</text><text class="chart-label" x="508.4" y="230" text-anchor="middle">W22</text><text class="chart-label" x="624" y="230" text-anchor="middle">W23</text></svg>
+<h4>Churn rate over time</h4>
+<svg class="chart-svg chart-line" viewBox="0 0 640 240" preserveAspectRatio="xMidYMid meet" role="img" aria-label="Group E — Churn rate over time"><defs><linearGradient id="cw-area-lz3ya6" x1="0" y1="0" x2="0" y2="1"><stop offset="0" class="grad-area-top"/><stop offset="1" class="grad-area-bottom"/></linearGradient></defs><defs><linearGradient id="cw-stroke-lz3ya6" x1="0" y1="0" x2="1" y2="0"><stop offset="0" class="grad-fill-1"/><stop offset="1" class="grad-fill-2"/></linearGradient></defs><line class="chart-grid" x1="46" y1="210" x2="624" y2="210"/><text class="chart-tick" x="40" y="213.5" text-anchor="end">0</text><line class="chart-grid" x1="46" y1="161" x2="624" y2="161"/><text class="chart-tick" x="40" y="164.5" text-anchor="end">2000</text><line class="chart-grid" x1="46" y1="112" x2="624" y2="112"/><text class="chart-tick" x="40" y="115.5" text-anchor="end">4000</text><line class="chart-grid" x1="46" y1="63" x2="624" y2="63"/><text class="chart-tick" x="40" y="66.5" text-anchor="end">6000</text><line class="chart-grid" x1="46" y1="14" x2="624" y2="14"/><text class="chart-tick" x="40" y="17.5" text-anchor="end">8000</text><line class="chart-axis" x1="46" y1="210" x2="624" y2="210"/><path class="chart-area" d="M 46 151.2 C 54.76 148.34, 81.04 141.4, 98.55 134.05 C 116.07 126.7, 133.58 105.88, 151.09 107.1 C 168.61 108.32, 186.13 145.08, 203.64 141.4 C 221.15 137.73, 238.67 80.15, 256.18 85.05 C 273.7 89.95, 291.22 163.45, 308.73 170.8 C 326.25 178.15, 343.76 142.22, 361.27 129.15 C 378.79 116.08, 396.31 104.24, 413.82 92.4 C 431.34 80.56, 448.85 55.24, 466.36 58.1 C 483.88 60.96, 501.4 98.53, 518.91 109.55 C 536.42 120.58, 553.94 129.56, 571.45 124.25 C 588.97 118.94, 615.24 85.46, 624 77.7 L 624 210 L 46 210 Z" fill="url(#cw-area-lz3ya6)"/><path class="chart-stroke" d="M 46 151.2 C 54.76 148.34, 81.04 141.4, 98.55 134.05 C 116.07 126.7, 133.58 105.88, 151.09 107.1 C 168.61 108.32, 186.13 145.08, 203.64 141.4 C 221.15 137.73, 238.67 80.15, 256.18 85.05 C 273.7 89.95, 291.22 163.45, 308.73 170.8 C 326.25 178.15, 343.76 142.22, 361.27 129.15 C 378.79 116.08, 396.31 104.24, 413.82 92.4 C 431.34 80.56, 448.85 55.24, 466.36 58.1 C 483.88 60.96, 501.4 98.53, 518.91 109.55 C 536.42 120.58, 553.94 129.56, 571.45 124.25 C 588.97 118.94, 615.24 85.46, 624 77.7" fill="none" stroke="url(#cw-stroke-lz3ya6)" stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round"/><text class="chart-label" x="46" y="230" text-anchor="middle">Jul</text><text class="chart-label" x="98.55" y="230" text-anchor="middle">Aug</text><text class="chart-label" x="151.09" y="230" text-anchor="middle">Sep</text><text class="chart-label" x="203.64" y="230" text-anchor="middle">Oct</text><text class="chart-label" x="256.18" y="230" text-anchor="middle">Nov</text><text class="chart-label" x="308.73" y="230" text-anchor="middle">Dec</text><text class="chart-label" x="361.27" y="230" text-anchor="middle">Jan</text><text class="chart-label" x="413.82" y="230" text-anchor="middle">Feb</text><text class="chart-label" x="466.36" y="230" text-anchor="middle">Mar</text><text class="chart-label" x="518.91" y="230" text-anchor="middle">Apr</text><text class="chart-label" x="571.45" y="230" text-anchor="middle">May</text><text class="chart-label" x="624" y="230" text-anchor="middle">Jun</text></svg>
 <details class="data-table" open>
 <summary>Show data table</summary>
 <table>
-<caption>Churn trend (recent weeks)</caption>
+<caption>Churn rate over time</caption>
 <thead><tr><th scope="col">Item</th><th scope="col">Value</th></tr></thead>
 <tbody>
-<tr><th scope="row">2025-W18</th><td>2400</td></tr>
-<tr><th scope="row">2025-W19</th><td>3100</td></tr>
-<tr><th scope="row">2025-W20</th><td>1800</td></tr>
-<tr><th scope="row">2025-W21</th><td>4200</td></tr>
-<tr><th scope="row">2025-W22</th><td>2600</td></tr>
-<tr><th scope="row">2025-W23</th><td>2900</td></tr>
+<tr><th scope="row">2024-07</th><td>2400</td></tr>
+<tr><th scope="row">2024-08</th><td>3100</td></tr>
+<tr><th scope="row">2024-09</th><td>4200</td></tr>
+<tr><th scope="row">2024-10</th><td>2800</td></tr>
+<tr><th scope="row">2024-11</th><td>5100</td></tr>
+<tr><th scope="row">2024-12</th><td>1600</td></tr>
+<tr><th scope="row">2025-01</th><td>3300</td></tr>
+<tr><th scope="row">2025-02</th><td>4800</td></tr>
+<tr><th scope="row">2025-03</th><td>6200</td></tr>
+<tr><th scope="row">2025-04</th><td>4100</td></tr>
+<tr><th scope="row">2025-05</th><td>3500</td></tr>
+<tr><th scope="row">2025-06</th><td>5400</td></tr>
 </tbody>
 </table>
 </details>
@@ -661,31 +963,104 @@ a:focus-visible, :focus-visible { outline: 2px solid var(--accent); outline-offs
 </figure>
 <div class="cards">
 <details class="metric-card" data-status="computed" data-health="ok" open>
-<summary><h3 class="metric-title">Change hotspots (lines churned)</h3> <span class="health health-ok"><span class="health-glyph" aria-hidden="true">●</span> ok</span></summary>
+<summary><h3 class="metric-title">Most-changed files / directories</h3> <span class="health health-ok"><span class="health-glyph" aria-hidden="true">●</span> ok</span></summary>
 <div class="metric-body">
 
 <div class="facets">
-<p class="facet-meaning">Change concentrates heavily in the HTML renderer (1,840 lines churned) and the analysis engine (1,320). High churn on actively-evolving surfaces is expected, but sustained concentration is a refactor and knowledge-sharing signal.</p>
+<p class="facet-meaning">Change concentrates in the HTML renderer (92 touches) and the analysis engine (78) — expected for actively-evolving surfaces, but worth a refactor watch.</p>
 <h4>Good behaviours</h4>
 <ul>
-<li>Churn maps to genuinely active feature areas, not thrash.</li>
+<li>Hotspots map cleanly to the areas under active development.</li>
 </ul>
 <h4>Needs improvement</h4>
 <ul>
-<li>The top two files carry a disproportionate share of all change.</li>
+<li>Two files absorb a disproportionate share of churn.</li>
 </ul>
 <h4>Suggestions</h4>
 <ul>
-<li>Pair-review the hotspots and consider decomposing the HTML renderer to lower its churn share.</li>
+<li>Schedule a deliberate refactor of the HTML renderer to ease future change.</li>
 </ul>
 </div>
 </div>
 </details>
 <details class="metric-card" data-status="computed" data-health="ok" open>
-<summary><h3 class="metric-title">Churn trend (recent weeks)</h3> <span class="health health-ok"><span class="health-glyph" aria-hidden="true">●</span> ok</span></summary>
+<summary><h3 class="metric-title">Churn rate over time</h3> <span class="health health-ok"><span class="health-glyph" aria-hidden="true">●</span> ok</span><span class="metric-stat">46500</span></summary>
 <div class="metric-body">
 
+<div class="facets">
+<p class="facet-meaning">Monthly churn tracks the activity curve, peaking at 6,200 lines in March — variable but never alarming, with no runaway months.</p>
+<h4>Good behaviours</h4>
+<ul>
+<li>Churn rises and falls with feature cycles, not chaos.</li>
+</ul>
+<h4>Needs improvement</h4>
+<ul>
+<li>The March spike is worth a glance for risky drops.</li>
+</ul>
+<h4>Suggestions</h4>
+<ul>
+<li>Tie large-churn months back to specific initiatives for context.</li>
+</ul>
+</div>
+</div>
+</details>
+<details class="metric-card" data-status="computed" data-health="ok" open>
+<summary><h3 class="metric-title">Add/delete ratio</h3> <span class="health health-ok"><span class="health-glyph" aria-hidden="true">●</span> ok</span></summary>
+<div class="metric-body">
 
+<div class="facets">
+<p class="facet-meaning">An add/delete ratio of 1.63 (net +12,100 lines) — the codebase is growing steadily while still pruning meaningfully.</p>
+<h4>Good behaviours</h4>
+<ul>
+<li>Healthy deletion volume — the team removes as well as adds.</li>
+</ul>
+<h4>Needs improvement</h4>
+<p>None.</p>
+<h4>Suggestions</h4>
+<p>None.</p>
+</div>
+</div>
+</details>
+<details class="metric-card" data-status="computed" data-health="ok" open>
+<summary><h3 class="metric-title">File survival / age</h3> <span class="health health-ok"><span class="health-glyph" aria-hidden="true">●</span> ok</span></summary>
+<div class="metric-body">
+
+<div class="facets">
+<p class="facet-meaning">A median file age of 96 days with 207 single-touch files — a maturing codebase with a sizable set of write-once files.</p>
+<h4>Good behaviours</h4>
+<ul>
+<li>Core files survive and keep evolving.</li>
+</ul>
+<h4>Needs improvement</h4>
+<ul>
+<li>Many files were touched exactly once.</li>
+</ul>
+<h4>Suggestions</h4>
+<ul>
+<li>Review single-touch files for dead code or missing tests.</li>
+</ul>
+</div>
+</div>
+</details>
+<details class="metric-card" data-status="computed" data-health="ok" open>
+<summary><h3 class="metric-title">Large-change events</h3> <span class="health health-ok"><span class="health-glyph" aria-hidden="true">●</span> ok</span><span class="metric-stat">1.2%</span></summary>
+<div class="metric-body">
+
+<div class="facets">
+<p class="facet-meaning">Nine commits exceed 1,000 changed lines (1.2% of history) — outsized events are rare and identifiable.</p>
+<h4>Good behaviours</h4>
+<ul>
+<li>Large changes are the exception, not the rule.</li>
+</ul>
+<h4>Needs improvement</h4>
+<ul>
+<li>The biggest event touched 41 files at once.</li>
+</ul>
+<h4>Suggestions</h4>
+<ul>
+<li>Split bulk changes so each merge stays independently reviewable.</li>
+</ul>
+</div>
 </div>
 </details>
 </div>
@@ -696,34 +1071,33 @@ a:focus-visible, :focus-visible { outline: 2px solid var(--accent); outline-offs
 <figcaption>Overall repository health signals.</figcaption>
 <div class="chart-cells two">
 <div class="chart-sub">
-<h4>Health components</h4>
-<svg class="chart-svg chart-radar" viewBox="0 0 300 230" preserveAspectRatio="xMidYMid meet" role="img" aria-label="Group F — Health components"><defs><linearGradient id="cw-radar-1410q0" x1="0" y1="0" x2="0" y2="1"><stop offset="0" class="grad-fill-1"/><stop offset="1" class="grad-fill-2"/></linearGradient></defs><polygon class="radar-grid" points="150,90 165.59,99 165.59,117 150,126 134.41,117 134.41,99"/><polygon class="radar-grid" points="150,72 181.18,90 181.18,126 150,144 118.82,126 118.82,90"/><polygon class="radar-grid" points="150,54 196.77,81 196.77,135 150,162 103.23,135 103.23,81"/><polygon class="radar-grid" points="150,36 212.35,72 212.35,144 150,180 87.65,144 87.65,72"/><line class="radar-axis" x1="150" y1="108" x2="150" y2="36"/><line class="radar-axis" x1="150" y1="108" x2="212.35" y2="72"/><line class="radar-axis" x1="150" y1="108" x2="212.35" y2="144"/><line class="radar-axis" x1="150" y1="108" x2="150" y2="180"/><line class="radar-axis" x1="150" y1="108" x2="87.65" y2="144"/><line class="radar-axis" x1="150" y1="108" x2="87.65" y2="72"/><polygon class="radar-area" points="150,47.52 191.78,83.88 201.13,137.52 150,149.76 105.73,133.56 99.49,78.84" fill="url(#cw-radar-1410q0)"/><circle class="radar-dot" cx="150" cy="47.52" r="2.4"/><circle class="radar-dot" cx="191.78" cy="83.88" r="2.4"/><circle class="radar-dot" cx="201.13" cy="137.52" r="2.4"/><circle class="radar-dot" cx="150" cy="149.76" r="2.4"/><circle class="radar-dot" cx="105.73" cy="133.56" r="2.4"/><circle class="radar-dot" cx="99.49" cy="78.84" r="2.4"/><text class="radar-label" x="150" y="23" text-anchor="middle">Cadence</text><text class="radar-label" x="226.21" y="67" text-anchor="start">Ownership</text><text class="radar-label" x="226.21" y="155" text-anchor="start">Messages</text><text class="radar-label" x="150" y="199" text-anchor="middle">Branching</text><text class="radar-label" x="73.79" y="155" text-anchor="end">Churn</text><text class="radar-label" x="73.79" y="67" text-anchor="end">Hygiene</text></svg>
+<h4>Hygiene strengths &amp; weaknesses</h4>
+<svg class="chart-svg chart-radar" viewBox="0 0 300 230" preserveAspectRatio="xMidYMid meet" role="img" aria-label="Group F — Hygiene strengths &amp; weaknesses"><defs><linearGradient id="cw-radar-1nbetms" x1="0" y1="0" x2="0" y2="1"><stop offset="0" class="grad-fill-1"/><stop offset="1" class="grad-fill-2"/></linearGradient></defs><polygon class="radar-grid" points="150,90 167.12,102.44 160.58,122.56 139.42,122.56 132.88,102.44"/><polygon class="radar-grid" points="150,72 184.24,96.88 171.16,137.12 128.84,137.12 115.76,96.88"/><polygon class="radar-grid" points="150,54 201.36,91.31 181.74,151.69 118.26,151.69 98.64,91.31"/><polygon class="radar-grid" points="150,36 218.48,85.75 192.32,166.25 107.68,166.25 81.52,85.75"/><line class="radar-axis" x1="150" y1="108" x2="150" y2="36"/><line class="radar-axis" x1="150" y1="108" x2="218.48" y2="85.75"/><line class="radar-axis" x1="150" y1="108" x2="192.32" y2="166.25"/><line class="radar-axis" x1="150" y1="108" x2="107.68" y2="166.25"/><line class="radar-axis" x1="150" y1="108" x2="81.52" y2="85.75"/><polygon class="radar-area" points="150,47.52 213,87.53 177.93,146.44 125.45,141.78 101.38,92.2" fill="url(#cw-radar-1nbetms)"/><circle class="radar-dot" cx="150" cy="47.52" r="2.4"/><circle class="radar-dot" cx="213" cy="87.53" r="2.4"/><circle class="radar-dot" cx="177.93" cy="146.44" r="2.4"/><circle class="radar-dot" cx="125.45" cy="141.78" r="2.4"/><circle class="radar-dot" cx="101.38" cy="92.2" r="2.4"/><text class="radar-label" x="150" y="23" text-anchor="middle">Message Qua…</text><text class="radar-label" x="233.69" y="83.81" text-anchor="start">Commit Size</text><text class="radar-label" x="201.73" y="182.19" text-anchor="start">Branching</text><text class="radar-label" x="98.27" y="182.19" text-anchor="end">Collaborati…</text><text class="radar-label" x="66.31" y="83.81" text-anchor="end">Churn Stabi…</text></svg>
 <details class="data-table" open>
 <summary>Show data table</summary>
 <table>
-<caption>Health components</caption>
+<caption>Hygiene strengths &amp; weaknesses</caption>
 <thead><tr><th scope="col">Item</th><th scope="col">Value</th></tr></thead>
 <tbody>
-<tr><th scope="row">Cadence</th><td>84</td></tr>
-<tr><th scope="row">Ownership</th><td>67</td></tr>
-<tr><th scope="row">Messages</th><td>82</td></tr>
-<tr><th scope="row">Branching</th><td>58</td></tr>
-<tr><th scope="row">Churn</th><td>71</td></tr>
-<tr><th scope="row">Hygiene</th><td>81</td></tr>
+<tr><th scope="row">Message Quality</th><td>84</td></tr>
+<tr><th scope="row">Commit Size</th><td>92</td></tr>
+<tr><th scope="row">Branching</th><td>66</td></tr>
+<tr><th scope="row">Collaboration</th><td>58</td></tr>
+<tr><th scope="row">Churn Stability</th><td>71</td></tr>
 </tbody>
 </table>
 </details>
 </div>
 <div class="chart-sub">
 <h4>Overall hygiene score</h4>
-<svg class="chart-svg chart-radialgauge" viewBox="0 0 200 200" preserveAspectRatio="xMidYMid meet" role="img" aria-label="Group F — Overall hygiene score"><defs><linearGradient id="cw-rgauge-v1xok6" x1="0" y1="0" x2="1" y2="0"><stop offset="0" class="grad-fill-1"/><stop offset="1" class="grad-fill-2"/></linearGradient></defs><circle class="gauge-ring-track" cx="100" cy="100" r="74" fill="none" stroke-width="20"/><circle class="gauge-ring-fill" cx="100" cy="100" r="74" fill="none" stroke="url(#cw-rgauge-v1xok6)" stroke-width="20" stroke-linecap="round" stroke-dasharray="376.61 464.96" transform="rotate(-90 100 100)"/><text class="gauge-value" x="100" y="100" text-anchor="middle" dominant-baseline="central">81%</text></svg>
+<svg class="chart-svg chart-radialgauge" viewBox="0 0 200 200" preserveAspectRatio="xMidYMid meet" role="img" aria-label="Group F — Overall hygiene score"><defs><linearGradient id="cw-rgauge-v1xok6" x1="0" y1="0" x2="1" y2="0"><stop offset="0" class="grad-fill-1"/><stop offset="1" class="grad-fill-2"/></linearGradient></defs><circle class="gauge-ring-track" cx="100" cy="100" r="74" fill="none" stroke-width="20"/><circle class="gauge-ring-fill" cx="100" cy="100" r="74" fill="none" stroke="url(#cw-rgauge-v1xok6)" stroke-width="20" stroke-linecap="round" stroke-dasharray="362.67 464.96" transform="rotate(-90 100 100)"/><text class="gauge-value" x="100" y="100" text-anchor="middle" dominant-baseline="central">78%</text></svg>
 <details class="data-table" open>
 <summary>Show data table</summary>
 <table>
 <caption>Overall hygiene score</caption>
 <thead><tr><th scope="col">Item</th><th scope="col">Value</th></tr></thead>
 <tbody>
-<tr><th scope="row">Overall hygiene score</th><td>81</td></tr>
+<tr><th scope="row">Overall hygiene score</th><td>78</td></tr>
 </tbody>
 </table>
 </details>
@@ -732,48 +1106,83 @@ a:focus-visible, :focus-visible { outline: 2px solid var(--accent); outline-offs
 </figure>
 <div class="cards">
 <details class="metric-card" data-status="computed" data-health="ok" open>
-<summary><h3 class="metric-title">Health components</h3> <span class="health health-ok"><span class="health-glyph" aria-hidden="true">●</span> ok</span></summary>
-<div class="metric-body">
-
-
-</div>
-</details>
-<details class="metric-card" data-status="computed" data-health="ok" open>
-<summary><h3 class="metric-title">Overall hygiene score</h3> <span class="health health-ok"><span class="health-glyph" aria-hidden="true">●</span> ok</span><span class="metric-stat">81%</span></summary>
+<summary><h3 class="metric-title">Overall hygiene score</h3> <span class="health health-ok"><span class="health-glyph" aria-hidden="true">●</span> ok</span><span class="metric-stat">78%</span></summary>
 <div class="metric-body">
 
 <div class="facets">
-<p class="facet-meaning">An overall hygiene score of 81/100 places this repository in a strong, healthy band across cadence, messages, ownership and structure.</p>
+<p class="facet-meaning">A composite hygiene score of 78/100 — a healthy &#39;good, not yet exemplary&#39; repository, weighted across five transparent components.</p>
 <h4>Good behaviours</h4>
 <ul>
-<li>Above the 75 healthy threshold.</li>
+<li>Strong commit-size discipline (92) and message quality (84) carry the score.</li>
+</ul>
+<h4>Needs improvement</h4>
+<ul>
+<li>Collaboration breadth (58) and branching (66) are the drag factors.</li>
+</ul>
+<h4>Suggestions</h4>
+<ul>
+<li>Target branching discipline first — it has the most headroom.</li>
+</ul>
+</div>
+</div>
+</details>
+<details class="metric-card" data-status="computed" data-health="ok" open>
+<summary><h3 class="metric-title">Hygiene strengths &amp; weaknesses</h3> <span class="health health-ok"><span class="health-glyph" aria-hidden="true">●</span> ok</span></summary>
+<div class="metric-body">
+
+<div class="facets">
+<p class="facet-meaning">Commit-size discipline and message quality are the standout strengths; collaboration breadth and branching discipline are the clearest opportunities.</p>
+<h4>Good behaviours</h4>
+<ul>
+<li>Two components score in the 80s–90s.</li>
+</ul>
+<h4>Needs improvement</h4>
+<ul>
+<li>Collaboration breadth sits at 58 — the lowest dimension.</li>
+</ul>
+<h4>Suggestions</h4>
+<ul>
+<li>Spread ownership and tighten branching to raise the two laggards.</li>
+</ul>
+</div>
+</div>
+</details>
+<details class="metric-card" data-status="computed" data-health="ok" open>
+<summary><h3 class="metric-title">Bus-factor risk flag</h3> <span class="health health-ok"><span class="health-glyph" aria-hidden="true">●</span> ok</span><span class="metric-stat">42%</span></summary>
+<div class="metric-body">
+
+<div class="facets">
+<p class="facet-meaning">A team-level bus-factor risk of &#39;low&#39; (factor 3) — no single point of failure, though the heaviest-churn areas remain thinner.</p>
+<h4>Good behaviours</h4>
+<ul>
+<li>No critical single-owner risk at the repository level.</li>
+</ul>
+<h4>Needs improvement</h4>
+<ul>
+<li>Hotspot areas concentrate around fewer owners.</li>
+</ul>
+<h4>Suggestions</h4>
+<ul>
+<li>Document hotspot invariants so knowledge is shared, not tribal.</li>
+</ul>
+</div>
+</div>
+</details>
+<details class="metric-card" data-status="computed" data-health="ok" open>
+<summary><h3 class="metric-title">Trend deltas</h3> <span class="health health-ok"><span class="health-glyph" aria-hidden="true">●</span> ok</span><span class="metric-stat">74%</span></summary>
+<div class="metric-body">
+
+<div class="facets">
+<p class="facet-meaning">Hygiene improved +4 points (74 → 78) versus the prior report — a clear upward trend.</p>
+<h4>Good behaviours</h4>
+<ul>
+<li>Measurable improvement since the last analysis.</li>
 </ul>
 <h4>Needs improvement</h4>
 <p>None.</p>
 <h4>Suggestions</h4>
 <ul>
-<li>Protect the score by addressing the branching and hotspot watch-areas.</li>
-</ul>
-</div>
-</div>
-</details>
-<details class="metric-card" data-status="computed" data-health="watch" open>
-<summary><h3 class="metric-title">Knowledge-concentration risk</h3> <span class="health health-watch"><span class="health-glyph" aria-hidden="true">◐</span> watch</span><span class="metric-stat">2</span></summary>
-<div class="metric-body">
-
-<div class="facets">
-<p class="facet-meaning">Measured against the highest-churn files, the bus factor drops to two — meaning the loss of two key contributors would meaningfully stall the most active areas. The overall bus factor of three is healthier.</p>
-<h4>Good behaviours</h4>
-<ul>
-<li>The repository-wide bus factor of three is in a healthy band.</li>
-</ul>
-<h4>Needs improvement</h4>
-<ul>
-<li>Knowledge of the hotspot files concentrates in too few people.</li>
-</ul>
-<h4>Suggestions</h4>
-<ul>
-<li>Rotate reviewers through the hotspot files to lift the local bus factor to three.</li>
+<li>Keep the current practices; the trend is working.</li>
 </ul>
 </div>
 </div>
@@ -782,7 +1191,7 @@ a:focus-visible, :focus-visible { outline: 2px solid var(--accent); outline-offs
 </section>
 </main>
 <footer class="footer">
-<p>Generated by commit-whisper v1.0.8 · schemaVersion 1.0.0 · anthropic/claude-sonnet-4 · 2026-06-12T00:00:00Z</p>
+<p>Generated by commit-whisper v1.0.8 · schemaVersion 1.0.0 · anthropic/claude-sonnet-4 · 2026-06-12T09:30:00Z</p>
 </footer>
 <script>
 document.querySelectorAll('details.data-table').forEach(function(d){d.open=false;});
