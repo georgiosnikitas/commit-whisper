@@ -80,6 +80,8 @@ export interface GuidedTextOptions {
   message: string;
   placeholder?: string;
   defaultValue?: string;
+  /** Pre-fills the editable input so a saved value is visible (and editable) on open. */
+  initialValue?: string;
   validate?: (value: string) => string | undefined;
 }
 
@@ -533,6 +535,7 @@ function clackGuidedPrompts(output: Writable): GuidedPrompts {
         message: opts.message,
         placeholder: opts.placeholder,
         defaultValue: opts.defaultValue,
+        initialValue: opts.initialValue,
         // `@clack` may pass `undefined` (empty input); our validators are total over strings.
         validate: validate === undefined ? undefined : (value) => validate(value ?? ""),
         output,
@@ -741,7 +744,7 @@ async function runSettings(deps: LaunchpadDeps, output: Writable): Promise<void>
   const model = await prompts.text({
     message: "Model",
     placeholder: "e.g. llama3 / gpt-4o",
-    defaultValue: current.llmModel,
+    initialValue: current.llmModel,
     // A model is REQUIRED: every run narrates with it, and there is no default —
     // saving a provider without one persists a config that fails at run time
     // ("llmModel is missing"). Require it here so Settings can't save a dead config.
@@ -756,6 +759,7 @@ async function runSettings(deps: LaunchpadDeps, output: Writable): Promise<void>
     baseUrl = await prompts.text({
       message: "Base URL",
       placeholder: "e.g. http://localhost:11434",
+      initialValue: current.llmBaseUrl,
     });
     if (baseUrl === null) {
       return;
@@ -771,7 +775,11 @@ async function runSettings(deps: LaunchpadDeps, output: Writable): Promise<void>
     return;
   }
 
-  const timezone = await prompts.text({ message: "Timezone (optional)", placeholder: "e.g. UTC / Europe/Athens" });
+  const timezone = await prompts.text({
+    message: "Timezone (optional)",
+    placeholder: "e.g. UTC / Europe/Athens",
+    initialValue: current.timezone,
+  });
   if (timezone === null) {
     return;
   }
@@ -779,6 +787,7 @@ async function runSettings(deps: LaunchpadDeps, output: Writable): Promise<void>
   const limitRaw = await prompts.text({
     message: "Default max-commits (optional)",
     placeholder: "blank = all history",
+    initialValue: optionalNumberText(current.maxCommits),
     validate: (v) => errorOf(interpretLimit(v)),
   });
   if (limitRaw === null) {
@@ -819,6 +828,11 @@ async function refreshAiState(deps: LaunchpadDeps, output: Writable): Promise<vo
   } catch {
     // Leave the header as-is — the persisted change still applies next run.
   }
+}
+
+/** Render an optional saved number as pre-fill text for a text prompt (absent ⇒ no pre-fill). */
+function optionalNumberText(value: number | undefined): string | undefined {
+  return value === undefined ? undefined : String(value);
 }
 
 /** Assemble a non-secret `SettingsData` from the collected Settings answers (omitting blanks). */
