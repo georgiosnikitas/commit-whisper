@@ -661,7 +661,15 @@ async function runSettings(deps: LaunchpadDeps, output: Writable): Promise<void>
     return;
   }
 
-  const model = await prompts.text({ message: "Model (optional)", placeholder: "e.g. llama3 / gpt-4o" });
+  const model = await prompts.text({
+    message: "Model",
+    placeholder: "e.g. llama3 / gpt-4o",
+    defaultValue: current.llmModel,
+    // A model is REQUIRED: every run narrates with it, and there is no default —
+    // saving a provider without one persists a config that fails at run time
+    // ("llmModel is missing"). Require it here so Settings can't save a dead config.
+    validate: (v) => (v.trim() === "" ? "A model is required — every run narrates with it (e.g. gpt-4o, llama3)." : undefined),
+  });
   if (model === null) {
     return;
   }

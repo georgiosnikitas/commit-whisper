@@ -774,6 +774,41 @@ describe("runSettings via runLaunchpad (Story 6.5)", () => {
     expect(out.text()).toContain(formatReadinessLine({ ...state, provider: "openai", llmModel: "gpt-4o" }));
   });
 
+  it("requires a model — rejects a blank value so a dead config can't be saved", async () => {
+    const out = captureStream();
+    const sel = scriptedSelect(["settings", "quit"]);
+    const save = captureSave();
+    let modelValidate: ((v: string) => string | undefined) | undefined;
+    // Capture the validator the Settings screen attaches to the Model prompt.
+    const prompts: GuidedPrompts = {
+      async text(opts) {
+        if (opts.message === "Model") {
+          modelValidate = opts.validate;
+          return "gpt-4o";
+        }
+        return "";
+      },
+      async multiselect() {
+        return ["terminal"];
+      },
+      async selectOne() {
+        return "openai";
+      },
+    };
+    await runLaunchpad({
+      state: FREE_CONFIGURED,
+      helpText: "HELP",
+      output: out.stream,
+      select: sel.select,
+      prompts,
+      saveSettings: save.saveSettings,
+    });
+    expect(modelValidate).toBeDefined();
+    expect(modelValidate?.("")).toMatch(/required/i); // blank is rejected
+    expect(modelValidate?.("gpt-4o")).toBeUndefined(); // a real model passes
+    expect(save.saved[0]?.llmModel).toBe("gpt-4o");
+  });
+
   it("a reloadAiState failure after a save is non-fatal (the save still applies)", async () => {
     const out = captureStream();
     const sel = scriptedSelect(["settings", "quit"]);
