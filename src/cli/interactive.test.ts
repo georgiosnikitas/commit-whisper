@@ -565,7 +565,7 @@ describe("runGuidedAnalyze via runLaunchpad (AC1, AC2, AC3)", () => {
   });
 });
 
-// ── Story 6.3: Status/doctor + first-run-no-AI guidance ─────────────────────
+// ── Story 6.3: Doctor + first-run-no-AI guidance ─────────────────────
 
 const ENV_OK: EnvVarStatus[] = [
   { name: "OPENAI_API_KEY", set: true },
@@ -744,7 +744,7 @@ describe("runStatusDoctor via runLaunchpad (AC1)", () => {
       probeReachability: p.probeReachability,
     });
     expect(p.calls()).toBe(1);
-    expect(out.text()).toContain("Status / doctor");
+    expect(out.text()).toContain("Doctor");
     expect(out.text()).toContain("✓ reachable");
     expect(sel.calls()).toBe(2); // looped back to the menu
   });

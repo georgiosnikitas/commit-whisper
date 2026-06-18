@@ -101,7 +101,7 @@ export interface CliDeps {
   gitRunner?: GitRunner;
   /** Inject a fake launchpad to isolate the 0-arg shell wiring; defaults to the real `runLaunchpad`. */
   launchpad?: typeof runLaunchpad;
-  /** Inject a fake provider preflight for the Status/doctor probe; defaults to the real `preflightProvider`. */
+  /** Inject a fake provider preflight for the Doctor probe; defaults to the real `preflightProvider`. */
   preflight?: typeof preflightProvider;
   /** Inject the persisted config-file layer (Story 6.5); defaults to reading `~/.commit-whisper`. */
   configFile?: PartialRunConfig;
@@ -482,7 +482,7 @@ async function runZeroArg(ctx: ZeroArgContext): Promise<number> {
     }
   };
 
-  // Status/doctor diagnostics (Story 6.3): the env-var presence list (names only)
+  // Doctor diagnostics (Story 6.3): the env-var presence list (names only)
   // and an async reachability probe wrapping `preflightProvider`. `aiMode: "auto"`
   // forces a real probe regardless of the user's resolved mode.
   const envDiagnostics = readEnvDiagnostics(ctx.env, aiLayer.provider);

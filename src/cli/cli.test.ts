@@ -342,7 +342,7 @@ describe("main — zero-arg launchpad (Story 6.1)", () => {
     expect(r.errors.join(" ")).toContain("Required configuration");
   });
 
-  it("wires Status/doctor diagnostics (env-var names) + a reachability probe into the launchpad (Story 6.3)", async () => {
+  it("wires Doctor diagnostics (env-var names) + a reachability probe into the launchpad (Story 6.3)", async () => {
     const lp = captureLaunchpad();
     await main([], {
       ...BASE,

@@ -470,7 +470,7 @@ rendering (I2), license enforcement (I3).
   This is **TOCTOU mitigation, not a guarantee** — reachable at preflight ≠ reachable when
   `narrate` actually runs — but it converts the most common failure (no Ollama, bad base URL,
   dead key) from a late, expensive event into an instant, well-localized one, and in `auto`
-  mode lets us skip a doomed narration attempt. Status / doctor consumes the **same probe
+  mode lets us skip a doomed narration attempt. Doctor consumes the **same probe
   read-only** to report *configured vs reachable*.
 - **Structured output:** `generateObject` bound to the **C1 Zod schemas** — the model is
   constrained to the Coaching object `{introduction, chapters[], summary}` and the
@@ -842,7 +842,7 @@ and the hexagonal boundary all stand.
 3. **Provider reachability preflight** (C3, `narrate/preflight.ts`). One cheap round-trip in
    the **pre-pipeline gate band** (`license gate → provider preflight → retrieve`) fails an
    unreachable provider with **exit 6 before any clone** — TOCTOU mitigation, and the
-   compensating control for the AI-required ruling. Status / doctor reads the same probe.
+   compensating control for the AI-required ruling. Doctor reads the same probe.
    (Subsequently made **`aiMode`-gated** by *Fail-Open & Metrics-Only*: hard exit 6 only in
    `required`; skipped in `off`; non-blocking — fail-open — in `auto`.)
 4. **JSON default destination** (source matrix `outputPath`). `{html, markdown, json}` are
@@ -1200,7 +1200,7 @@ commit-whisper/
 │   ├── index.ts              # entrypoint: bootstrap → cli (only top-level await)
 │   ├── cli/
 │   │   ├── cli.ts            # commander wiring; arg-count → mode (STRICT); --ai/--no-ai → aiMode; flags + license subcommands
-│   │   ├── interactive.ts    # @clack menu (0-arg TTY): run · settings · activate · buy/restore · deactivate · status/doctor + guided prompts
+│   │   ├── interactive.ts    # @clack menu (0-arg TTY): run · settings · activate · buy/restore · deactivate · doctor + guided prompts
 │   │   ├── show-config.ts    # --show-config: resolved values + per-field provenance (secrets ***), then exit
 │   │   ├── run.ts            # pre-pipeline gate band (license → aiMode-gated preflight → retrieve), orchestrates pipeline from frozen RunConfig; maps clean→0, substrate-fallback→9
 │   │   └── exit-codes.ts     # C4 enum 0–9 (9 = degraded: analysis rendered, narrative unavailable)
@@ -1407,7 +1407,7 @@ empirical validations, future spikes, or tracked reliability risks — not missi
    cloud key, a wrong base URL, or an **Ollama daemon that is installed but not running** would,
    in `aiMode: required`, turn the report's AI dependency into a failed run. *Mitigation (now
    two-layer):* the reachability **preflight** (`narrate/preflight.ts`, C3) surfaces the problem
-   early — *configured vs reachable* in Status / doctor — and, crucially, the **fail-open** path
+   early — *configured vs reachable* in Doctor — and, crucially, the **fail-open** path
    means an unreachable provider in the default `auto` mode **degrades to the deterministic
    substrate (exit 9) rather than failing the whole run**, so the risk is now *graceful
    degradation* for the common case and a hard **exit 6** only when the user *forced* `--ai`.

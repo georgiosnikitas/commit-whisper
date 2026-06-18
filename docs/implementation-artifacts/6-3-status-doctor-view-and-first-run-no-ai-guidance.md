@@ -1,11 +1,11 @@
 ---
 epic: 6
 story: 3
-title: Status/doctor view and first-run-no-AI guidance
+title: Doctor view and first-run-no-AI guidance
 baseline_commit: ae930fb
 ---
 
-# Story 6.3: Status/doctor view and first-run-no-AI guidance
+# Story 6.3: Doctor view and first-run-no-AI guidance
 
 Status: Done
 
@@ -19,19 +19,19 @@ so that I can fix configuration before running.
 
 ## Acceptance Criteria
 
-1. **The Status/doctor action shows tier, configured provider/model, REACHABILITY (probed), and required env vars set vs missing — read-only, never collecting a secret (AC1).** **Given** the Status/doctor action, **when** it runs, **then** it shows the current license tier, the configured provider/model, **whether the provider is reachable (probed, not merely configured)**, and which required environment variables are set vs missing (**named, never their values**), **and** it is read-only and never collects a secret.
+1. **The Doctor action shows tier, configured provider/model, REACHABILITY (probed), and required env vars set vs missing — read-only, never collecting a secret (AC1).** **Given** the Doctor action, **when** it runs, **then** it shows the current license tier, the configured provider/model, **whether the provider is reachable (probed, not merely configured)**, and which required environment variables are set vs missing (**named, never their values**), **and** it is read-only and never collects a secret.
 
-2. **A first run with no AI provider configured names the fix and surfaces Ollama as the zero-cost local path (AC2).** **Given** a first run with **no AI provider configured**, **when** the Status/doctor view renders, **then** it names the fix (**"set `OPENAI_API_KEY`, or use a local Ollama provider"**) and surfaces **Ollama** as the zero-cost local path.
+2. **A first run with no AI provider configured names the fix and surfaces Ollama as the zero-cost local path (AC2).** **Given** a first run with **no AI provider configured**, **when** the Doctor view renders, **then** it names the fix (**"set `OPENAI_API_KEY`, or use a local Ollama provider"**) and surfaces **Ollama** as the zero-cost local path.
 
 3. **Choosing an Analyze action with no provider shows a calm no-AI interstitial (teach, never wall), and the Ollama path notes it must be running (AC3).** **Given** a user chooses an Analyze action **while no provider is configured**, **when** the choice is made, **then** the Analyze row is **not disabled** — a calm no-AI interstitial appears that names the env var / points to the zero-cost Ollama path (**teach, never wall**) instead of proceeding to a doomed run, **and** the Ollama path is accompanied by a note that it must be **running** (`ollama serve` / `ollama pull <model>`), since selection alone is not reachability.
 
 ## Tasks / Subtasks
 
-- [ ] **Task 1 — Env-var diagnostics reader (AC1) [src/config/env.ts].** [Source: env.ts is the single `process.env` reader; MENUS.md "Status / doctor" Environment block]
+- [ ] **Task 1 — Env-var diagnostics reader (AC1) [src/config/env.ts].** [Source: env.ts is the single `process.env` reader; MENUS.md "Doctor" Environment block]
   - [ ] `export interface EnvVarStatus { name: string; set: boolean; note?: string }`.
   - [ ] `export function readEnvDiagnostics(env: NodeJS.ProcessEnv, provider: Provider | undefined): EnvVarStatus[]` — pure over the injected `env`. The AI key var for the configured provider (`OPENAI_API_KEY` for openai / openai-compatible · `ANTHROPIC_API_KEY` · `GOOGLE_GENERATIVE_AI_API_KEY` for gemini · **none** for ollama · `OPENAI_API_KEY` as the canonical example when **no provider** is configured), with `set` derived from the SAME single-source logic as `readAiKey` (so the gemini `GEMINI_API_KEY` alias is honored and the two can't drift — `set: readAiKey(env, provider ?? "openai") !== undefined`, but skip the row entirely for ollama); plus always `COMMIT_WHISPER_GIT_TOKEN` with `set: readGitToken(env) !== undefined` and `note: "only needed for private remotes"`. **NAMES only — never a value.**
 
-- [ ] **Task 2 — Pure Status/doctor formatter + the no-AI fix copy (AC1, AC2, AC3) [src/cli/interactive.ts].** [Source: MENUS.md "Status / doctor", "No-AI interstitial"; narrate/preflight.ts `PreflightResult`]
+- [ ] **Task 2 — Pure Doctor formatter + the no-AI fix copy (AC1, AC2, AC3) [src/cli/interactive.ts].** [Source: MENUS.md "Doctor", "No-AI interstitial"; narrate/preflight.ts `PreflightResult`]
   - [ ] `export type Reachability = { kind: "not-configured" } | { kind: "reachable" } | { kind: "unreachable"; reason: string }` and `export type ProbeReachability = () => Promise<Reachability>`.
   - [ ] `export function formatStatusReport(state: LaunchpadState, envVars: EnvVarStatus[], reachability: Reachability): string` — pure, line-oriented (no `@clack` box — the calm posture from 6.1/6.2). Blocks: **License** (`<Tier>` + the Free `100-commit cap` note only for free); **AI** (`<provider> (<model>)` or `⚠ not configured`, then a `status` line: `✓ reachable` / `⚠ unreachable — <reason>` / `⚠ not configured`); **Environment** (each `EnvVarStatus` as `✓ <NAME> set` / `✗ <NAME> missing` + optional `note` — glyph + word, never color alone); **Repository** (`✓ <cwdLabel> (<branch>)` or `— not a git repo`). When `reachability.kind === "not-configured"`, append the **fix line** (Task 2's shared `NO_AI_FIX`).
   - [ ] `export const NO_AI_FIX` (shared lines, used by Status AC2 + the interstitial AC3): names `set OPENAI_API_KEY` (cloud) AND the zero-cost **Ollama** local path WITH the must-be-running note (`ollama serve`, then `ollama pull <model>`) — "commit-whisper never stores keys".
@@ -56,7 +56,7 @@ so that I can fix configuration before running.
 
 ### Scope discipline — what this story does and does NOT include
 
-**In scope:** the read-only **Status/doctor** screen (tier · configured provider/model · **probed reachability** · env-var presence by name) wired into the launchpad's `status` row; the **first-run-no-AI** guidance (the shared fix copy naming `OPENAI_API_KEY` + the zero-cost Ollama path with its must-be-running note) shown both in Status (AC2) and as the **no-AI interstitial** that pre-empts a no-provider Analyze (AC3, teach-don't-wall); the `config/env.ts` `readEnvDiagnostics` reader; the cli wiring (the `preflightProvider` reachability probe + the diagnostics injection). Reuses the existing `preflightProvider` (Story 1.6) verbatim — no new probe logic. All offline-testable (injected `probeReachability` / `preflight` / `envDiagnostics`).
+**In scope:** the read-only **Doctor** screen (tier · configured provider/model · **probed reachability** · env-var presence by name) wired into the launchpad's `status` row; the **first-run-no-AI** guidance (the shared fix copy naming `OPENAI_API_KEY` + the zero-cost Ollama path with its must-be-running note) shown both in Status (AC2) and as the **no-AI interstitial** that pre-empts a no-provider Analyze (AC3, teach-don't-wall); the `config/env.ts` `readEnvDiagnostics` reader; the cli wiring (the `preflightProvider` reachability probe + the diagnostics injection). Reuses the existing `preflightProvider` (Story 1.6) verbatim — no new probe logic. All offline-testable (injected `probeReachability` / `preflight` / `envDiagnostics`).
 
 **Out of scope / deferred (do NOT build here):**
 - **The Settings screen + live "→ open Settings" navigation** — Story **6.5**. The Status view and the interstitial name the **env-only** fix (`OPENAI_API_KEY` / configure Ollama), not a working jump to Settings (that row is still a `COMING_SOON` placeholder). Mentioning a future Settings screen in copy is avoided to prevent a dead link. [Source: epics.md Story 6.5; MENUS.md "Settings"]
@@ -78,8 +78,8 @@ so that I can fix configuration before running.
 
 ### References
 
-- epics.md → Epic 6 / **Story 6.3: Status/doctor view and first-run-no-AI guidance** (the three ACs).
-- MENUS.md → "Status / doctor" (License / AI / Environment / Repository blocks; `✓ set` / `✗ missing` by name only; the configured-vs-reachable distinction + the reachability line), "No-AI interstitial".
+- epics.md → Epic 6 / **Story 6.3: Doctor view and first-run-no-AI guidance** (the three ACs).
+- MENUS.md → "Doctor" (License / AI / Environment / Repository blocks; `✓ set` / `✗ missing` by name only; the configured-vs-reachable distinction + the reachability line), "No-AI interstitial".
 - EXPERIENCE.md → "AI-first by default" (the concrete name-the-variable + offer-Ollama guidance), "Accessibility Floor".
 - architecture.md → exit-code enum, the gate band (preflight), hexagonal layering.
 - Reuse: `narrate/preflight.ts` (`preflightProvider`, `PreflightResult`), `narrate/narrate.port.ts` (`NarrateConfig`), `config/env.ts` (`readEnvLayer`, `readAiKey`, `readGitToken`), `cli/interactive.ts` (6.1/6.2 `LaunchpadDeps`/`runLaunchpad`/`runGuidedAnalyze`/`COMING_SOON`/`writeLine`), `config/run-config.ts` (`Tier`, `Provider`).
@@ -88,7 +88,7 @@ so that I can fix configuration before running.
 
 ### Summary
 
-The launchpad's `status` row is now the live, read-only Status/doctor view: license tier, the configured provider/model, **probed reachability** (configured ≠ reachable), and the relevant env vars by **name + set/missing** (never a value). A first run with no provider names the concrete fix (`OPENAI_API_KEY` or a local Ollama) and surfaces the zero-cost Ollama path with its must-be-running note. Choosing an Analyze action with no provider now shows a calm no-AI **interstitial** that pre-empts the doomed run (teach, never wall) — the row stays enabled.
+The launchpad's `status` row is now the live, read-only Doctor view: license tier, the configured provider/model, **probed reachability** (configured ≠ reachable), and the relevant env vars by **name + set/missing** (never a value). A first run with no provider names the concrete fix (`OPENAI_API_KEY` or a local Ollama) and surfaces the zero-cost Ollama path with its must-be-running note. Choosing an Analyze action with no provider now shows a calm no-AI **interstitial** that pre-empts the doomed run (teach, never wall) — the row stays enabled.
 
 ### Approach
 
@@ -106,7 +106,7 @@ The launchpad's `status` row is now the live, read-only Status/doctor view: lice
 
 ### Gates
 
-`npm run typecheck` ✓ · `npm run lint` ✓ · `npm test` ✓ **761 passed** (+19: env +7, interactive +12 incl. the patch lock-in, cli +2) · `npm run build` ✓ (164.90 KB). The Status/doctor + interstitial are interactive (need a PTY), so they are covered by the injected-seam unit tests (probe + diagnostics + select), not a live smoke run; reachability itself reuses the already-tested `preflightProvider`.
+`npm run typecheck` ✓ · `npm run lint` ✓ · `npm test` ✓ **761 passed** (+19: env +7, interactive +12 incl. the patch lock-in, cli +2) · `npm run build` ✓ (164.90 KB). The Doctor + interstitial are interactive (need a PTY), so they are covered by the injected-seam unit tests (probe + diagnostics + select), not a live smoke run; reachability itself reuses the already-tested `preflightProvider`.
 
 ### File List
 

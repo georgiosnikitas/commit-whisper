@@ -39,7 +39,7 @@ The Header Spine (readiness line)
 
 Every interactive screen opens with the same two-line header: the product line, then a
 dim **readiness line** that mirrors the user's state so they always know *who they are,
-whether they can run, and what "this repo" means* — without opening Status/doctor.
+whether they can run, and what "this repo" means* — without opening Doctor.
 
 ```
   commit-whisper · I know what you did last commit
@@ -78,8 +78,8 @@ predict the outcome before pressing Enter.
   │   ○  Analyze a remote repository…
   │
   │   ○  Settings                       provider, model, default format
-  │   ○  Status / doctor
-  │   ○  Help / show all flags
+  │   ○  Doctor
+  │   ○  Help
   │
   │   ○  Activate license               enter your license key
   │   ○  Buy a license                  opens the store in your browser
@@ -103,8 +103,8 @@ Identical layout; the header carries the `⚠ AI not configured` flag. The Analy
   │   ○  Analyze a remote repository…
   │
   │   ○  Settings                       set up your AI provider →
-  │   ○  Status / doctor                check setup & fix what's missing
-  │   ○  Help / show all flags
+  │   ○  Doctor                         check setup & fix what's missing
+  │   ○  Help
   │
   │   ○  Activate license               enter your license key
   │   ○  Buy a license                  opens the store in your browser
@@ -128,8 +128,8 @@ the user gets more committed.
   │   ○  Analyze a remote repository…
   │
   │   ○  Settings                       provider, model, default format
-  │   ○  Status / doctor
-  │   ○  Help / show all flags
+  │   ○  Doctor
+  │   ○  Help
   │
   │   ○  Deactivate license             free this device to move machines
   │
@@ -149,8 +149,8 @@ Menu item reference
 | Analyze this repository | ACT | always | Guided run against cwd (default target) |
 | Analyze a remote repository… | ACT | always | Prompt for URL, then guided run (`…` = more input coming) |
 | Settings | ORIENT | always | Configure non-secret AI + defaults; writes `~/.commit-whisper` |
-| Status / doctor | ORIENT | always | Read-only readiness diagnostic |
-| Help / show all flags | ORIENT | always | Full flag reference (same content as `--help`) |
+| Doctor | ORIENT | always | Read-only readiness diagnostic |
+| Help | ORIENT | always | Full flag reference (same content as `--help`) |
 | Activate license | LICENSE | unlicensed | Enter a license key to bind this device |
 | Buy a license | LICENSE | unlicensed | Open the store in the browser (checkout) |
 | Restore a purchase | LICENSE | unlicensed | Open the customer's Lemon Squeezy orders to recover a key |
@@ -294,7 +294,7 @@ degraded exit code (see architecture exit-code enum) so a script can tell this f
 ```
   ◆  ⚠ Narrative unavailable — showing raw analysis
   │     The provider failed during narration; your metrics are intact.
-  │     → retry · check the provider (Status / doctor) · switch it in Settings
+  │     → retry · check the provider (Doctor) · switch it in Settings
   │
   │   Report ready (raw analysis only):
   │     ./commit-whisper-report.html      (opening in browser…)
@@ -309,15 +309,15 @@ This degraded summary is the **interactive** face of fail-open. The intentional 
 metrics-only substrate is a non-interactive (CI/headless) path — a clean success with no banner —
 so it has no menu screen of its own; don't conflate the two.
 
-Status / doctor
----------------
+Doctor
+------
 
 The read-only mirror — the header line expanded into a full checklist. Diagnoses with a
 next action; never a dead-end. Environment variables show **`✓ set` / `✗ missing` by name
 only — never their values**.
 
 ```
-  ◆  Status / doctor
+  ◆  Doctor
   │
   ◇  License     Free            100-commit cap · Buy a license to unlock
   ◇  AI          ⚠ not configured
@@ -434,5 +434,5 @@ flagged to John (PRD) and Winston (architecture):
    "restore consumes the license key" and FR-14's "Buy/Restore = buy or restore from key."
    → John (FR-14, FR-16).
 4. **Persistent header readiness line** on every interactive screen — an addition beyond the
-   standalone Status/doctor view. → now also authored in EXPERIENCE.md (Component Patterns),
+   standalone Doctor view. → now also authored in EXPERIENCE.md (Component Patterns),
    so the experience spine and this composition agree.

@@ -107,14 +107,14 @@ export interface GuidedPrompts {
   selectOne(opts: GuidedSelectOneOptions): Promise<string | null>;
 }
 
-/** Provider reachability for the Status/doctor view (Story 6.3). */
+/** Provider reachability for the Doctor view (Story 6.3). */
 export type Reachability =
   | { kind: "not-configured" }
   | { kind: "reachable" }
   | { kind: "unreachable"; reason: string };
 
 /**
- * The effective NON-SECRET config knobs surfaced in the Status/doctor "Config"
+ * The effective NON-SECRET config knobs surfaced in the Doctor "Config"
  * and "Operational" blocks — the everyday options not already on the
  * AI/License/Repository lines. Each scope/AI knob is the resolver-precedence
  * value (config < env) or `undefined` when unset, so the view can show the
@@ -142,7 +142,7 @@ export type ProbeReachability = () => Promise<Reachability>;
 
 export interface LaunchpadDeps {
   state: LaunchpadState;
-  /** The full flag reference (commander's help text), shown by "Help / show all flags". */
+  /** The full flag reference (commander's help text), shown by "Help". */
   helpText: string;
   /** Where all chrome is written. Default `process.stderr`. */
   output?: Writable;
@@ -154,11 +154,11 @@ export interface LaunchpadDeps {
   runAnalysis?: (flags: PartialRunConfig) => Promise<number>;
   /** Whether a git token is set in the environment (for the AC3 private-remote hint). */
   gitTokenConfigured?: boolean;
-  /** Env-var presence diagnostics for Status/doctor (names + booleans only); injected by `cli/`. */
+  /** Env-var presence diagnostics for Doctor (names + booleans only); injected by `cli/`. */
   envDiagnostics?: EnvVarStatus[];
-  /** The effective non-secret config knobs for the Status/doctor "Config" block; injected by `cli/`. */
+  /** The effective non-secret config knobs for the Doctor "Config" block; injected by `cli/`. */
   doctorConfig?: DoctorConfig;
-  /** The async provider reachability probe for Status/doctor; injected by `cli/`. */
+  /** The async provider reachability probe for Doctor; injected by `cli/`. */
   probeReachability?: ProbeReachability;
   /** Load the persisted Settings (Story 6.5); injected by `cli/`. Absent ⇒ Settings starts blank. */
   loadSettings?: () => Promise<SettingsData>;
@@ -310,8 +310,8 @@ export function buildLaunchpadOptions(state: LaunchpadState): LaunchpadOption[] 
     { value: "analyze-cwd", label: "Analyze this repository", hint: "the current directory" },
     { value: "analyze-remote", label: "Analyze a remote repository", hint: "clone a URL" },
     { value: "settings", label: "Settings", hint: "provider, model, default format" },
-    { value: "status", label: "Status / doctor" },
-    { value: "help", label: "Help / show all flags" },
+    { value: "status", label: "Doctor" },
+    { value: "help", label: "Help" },
   ];
   if (state.licensed) {
     options.push({ value: "deactivate", label: "Deactivate license", hint: "free this device" });
@@ -327,16 +327,16 @@ export function buildLaunchpadOptions(state: LaunchpadState): LaunchpadOption[] 
   return options;
 }
 
-// ── Status / doctor (Story 6.3) ─────────────────────────────────────────────
+// ── Doctor (Story 6.3) ─────────────────────────────────────────────────────────────
 
 /**
- * Column where the primary Status/doctor values begin — the longest label
+ * Column where the primary Doctor values begin — the longest label
  * ("Repository", 10) plus a 2-space gutter — so the License / AI / Repository
  * values line up in one straight vertical column.
  */
 const STATUS_LABEL_WIDTH = 12;
 
-/** Left-justify a Status/doctor label to the shared value column. */
+/** Left-justify a Doctor label to the shared value column. */
 function statusLabel(text: string): string {
   return text.padEnd(STATUS_LABEL_WIDTH);
 }
@@ -488,7 +488,7 @@ function operationalBlock(config: DoctorConfig | undefined): string[] {
 }
 
 /**
- * The read-only Status/doctor report (Story 6.3, AC1/AC2). Line-oriented (the
+ * The read-only Doctor report (Story 6.3, AC1/AC2). Line-oriented (the
  * calm 6.1/6.2 posture). Distinguishes *configured* from *reachable* (the probe
  * result), reports env vars by NAME + set/missing only, and — when no provider
  * is configured — names the concrete fix (AC2: `OPENAI_API_KEY` / Ollama).
@@ -509,12 +509,12 @@ export function formatStatusReport(
     state.tier === "free" ? `${licenseHead.padEnd(annotationColumn)}100-commit cap` : licenseHead;
   const aiLine = `${aiHead.padEnd(annotationColumn)}${reachabilityAnnotation(reachability)}`;
   const lines = [
-    "Status / doctor",
+    "Doctor",
     "",
     licenseLine,
     aiLine,
-    ...environmentBlock(envVars),
     repositoryLine(state),
+    ...environmentBlock(envVars),
     ...settingsBlock(config),
     ...runScopeBlock(config),
     ...operationalBlock(config),
@@ -850,7 +850,7 @@ async function runGuidedAnalyze(deps: LaunchpadDeps, mode: "cwd" | "remote", out
 }
 
 /**
- * Render the read-only Status/doctor view (Story 6.3, AC1). Probes reachability
+ * Render the read-only Doctor view (Story 6.3, AC1). Probes reachability
  * only when a provider is configured (selection alone is not reachability);
  * otherwise reports `not-configured` and the formatter appends the fix (AC2).
  */

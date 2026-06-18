@@ -221,7 +221,7 @@ function isActiveKeyRow(rowProvider: Provider, active: Provider | undefined): bo
 }
 
 /**
- * Diagnostics for the Status/doctor view (Story 6.3): EVERY provider's key env
+ * Diagnostics for the Doctor view (Story 6.3): EVERY provider's key env
  * var, the git token, and the license key — reported by NAME + set/missing only,
  * never the value. Listing all providers lets a user see at a glance which
  * providers they could switch to; the currently-configured provider's row is

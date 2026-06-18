@@ -74,7 +74,7 @@ Source: [prd.md](prds/prd-commit-whisper-2026-06-06/prd.md), read in full (incl.
 - **FR-11 — BYOK providers; AI-first with fail-open:** narrated *report* requires a reachable LLM (showpiece bound to `narrative` by construction); on failure **fails open** to the analysis substrate (degraded, exit 9); explicit `--no-ai` metrics-only is the CI/headless default, never interactive/Free identity; `aiMode: required|auto|off`; closed provider enum; native key env vars (`GOOGLE_GENERATIVE_AI_API_KEY` + `GEMINI_API_KEY` alias); base URL for ollama/openai-compatible; reachability preflight (aiMode-gated); only metrics/summaries to the LLM.
 - **FR-12 — Compute the canonical Report JSON:** always assembled in memory (`schemaVersion 1.0.0`, pre-impl); two subtrees `analysis` (deterministic) + `narrative` (AI, optional); emitted only when `json` selected.
 - **FR-13 — Emit and render the selected output formats:** multi-select JSON/HTML/Markdown/Terminal; default filenames + `-`=stdout; HTML auto-open + `--no-open`; showpiece vs substrate render.
-- **FR-14 — Interactive execution:** bare zero-arg TTY = the only interactive entry (launchpad menu + guided prompts, escapable, self-teaching); full menu action set incl. Settings, Status/doctor, Activate, Buy/Restore (browser), Deactivate; secrets named never collected; self-contained executable.
+- **FR-14 — Interactive execution:** bare zero-arg TTY = the only interactive entry (launchpad menu + guided prompts, escapable, self-teaching); full menu action set incl. Settings, Doctor, Activate, Buy/Restore (browser), Deactivate; secrets named never collected; self-contained executable.
 - **FR-15 — Headless / CI execution:** any ≥1-arg = strict single-shot, never prompts; missing input hard-fails (typed error + exit code); headless defaults to metrics-only (`aiMode: off`); ops flags (`--ai`/`--no-ai`, `--show-config`, `--non-interactive`, `--config`, `--no-open`, `--verbose`/`--quiet`, `--version`, `NO_COLOR`/`FORCE_COLOR`); config home `~/.commit-whisper`.
 - **FR-16 — Enforce license tiers:** online Lemon Squeezy validation at startup; Free (100-commit cap, no call, keeps the narrative) / Single-device $10 (activation-instance device binding; deactivate-to-move) / Unlimited $100 (many activations incl. CI validate-not-activate); interactive degrades to Free cap on validation failure, headless fails closed (exit 8); never transmits repo data.
 
@@ -158,7 +158,7 @@ Source: [epics.md](epics.md) — 7 epics, 38 stories, with an explicit FR Covera
 ### UX ↔ PRD Alignment
 
 Strong. Verified against the FRs:
-- Interactive launchpad menu, guided prompts, Status/doctor, Settings, licensing screens — EXPERIENCE/MENUS match **FR-14** action set exactly (incl. Activate = only key entry, Buy/Restore = browser, Deactivate).
+- Interactive launchpad menu, guided prompts, Doctor, Settings, licensing screens — EXPERIENCE/MENUS match **FR-14** action set exactly (incl. Activate = only key entry, Buy/Restore = browser, Deactivate).
 - Strict single-shot + env-only secrets (never prompted) — EXPERIENCE Interaction Primitives match **FR-2/FR-11/FR-15**.
 - Report templates (group + per-metric visuals, health bands from §4.2 thresholds, four-facet cards, Coaching) match **FR-6/FR-8/FR-13**; Markdown text-only + Mermaid matches **FR-7**.
 - Fail-open degraded state + metrics-only CI state + showpiece-vs-substrate — EXPERIENCE/MENUS/both templates match **FR-11/FR-13** and the locked exit-9 semantics.
@@ -169,7 +169,7 @@ Strong. Verified against the FRs:
 
 Strong. The architecture explicitly supports every UX need:
 - Stream discipline (stdout=data / stderr=chrome), capability gate, and the `ui` module back the calm terminal experience.
-- `config-store.ts` write path backs the Settings screen; the reachability preflight backs Status/doctor's configured-vs-reachable; `aiMode` + exit 9 back the degraded/metrics-only states.
+- `config-store.ts` write path backs the Settings screen; the reachability preflight backs Doctor's configured-vs-reachable; `aiMode` + exit 9 back the degraded/metrics-only states.
 - Chart.js + inline-SVG sparklines + the accessible data-table fallback + the ≤1 MB self-contained budget back TEMPLATE-HTML; picocolors + Mermaid back Terminal/Markdown.
 - `render/health-band.ts` (derived from §4.2 thresholds) backs the status bands; the analysis/narrative subtree split backs the showpiece-vs-substrate render.
 - DESIGN tokens (palette, IBM Plex type, spacing, components) are presentational and impose no architectural constraint the architecture doesn't already accommodate.
