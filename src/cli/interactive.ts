@@ -869,7 +869,11 @@ async function runActivate(deps: LaunchpadDeps, output: Writable): Promise<void>
   try {
     const outcome = await deps.activateLicense(key);
     if (outcome.ok) {
-      writeLine(output, `✓ License activated — ${TIER_LABEL[outcome.tier]} tier. It applies on your next run.`);
+      // Reflect the new entitlement in the live state so the menu re-pins the
+      // deactivation row (and the header tier) on the next loop — no restart.
+      deps.state.licensed = true;
+      deps.state.tier = outcome.tier;
+      writeLine(output, `✓ License activated — ${TIER_LABEL[outcome.tier]} tier.`);
     } else {
       writeLine(output, `⚠ ${outcome.reason}`);
     }
@@ -901,6 +905,10 @@ async function runDeactivate(deps: LaunchpadDeps, output: Writable): Promise<voi
   try {
     const outcome = await deps.deactivateLicense();
     if (outcome.ok) {
+      // Drop back to the free tier in the live state so the menu re-pins the
+      // activation rows (and the header tier) on the next loop — no restart.
+      deps.state.licensed = false;
+      deps.state.tier = "free";
       writeLine(output, "✓ License deactivated — freed on this device. Re-activate anytime with your key.");
     } else {
       writeLine(output, `⚠ ${outcome.reason}`);
@@ -1000,7 +1008,6 @@ function assertNeverAction(action: never): never {
 export async function runLaunchpad(deps: LaunchpadDeps): Promise<number> {
   const output = deps.output ?? process.stderr;
   const select = deps.select ?? clackLaunchpadSelect(output);
-  const options = buildLaunchpadOptions(deps.state);
   const repaint = deps.repaint ?? isInteractive(output);
   const pause = deps.waitForKey ?? waitForKey;
 
@@ -1018,6 +1025,9 @@ export async function runLaunchpad(deps: LaunchpadDeps): Promise<number> {
       clearScreen(output);
       writeHeader();
     }
+    // Rebuild every loop: a license activate/deactivate mutates `deps.state`, so
+    // the menu rows (and header tier) must re-derive from the current state.
+    const options = buildLaunchpadOptions(deps.state);
     const action = (await select({ message: "What would you like to do?", options })) ?? "quit";
     if ((await dispatchAction(deps, action, output)) === "quit") {
       return ExitCode.Success;

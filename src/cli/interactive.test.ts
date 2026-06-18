@@ -991,7 +991,7 @@ describe("runActivate via runLaunchpad (AC2)", () => {
     const sel = scriptedSelect(["activate", "quit"]);
     const calls: string[] = [];
     await runLaunchpad({
-      state: FREE_CONFIGURED,
+      state: { ...FREE_CONFIGURED },
       helpText: "HELP",
       output: out.stream,
       select: sel.select,
@@ -1018,6 +1018,31 @@ describe("runActivate via runLaunchpad (AC2)", () => {
       activateLicense: async () => ({ ok: false, reason: "activation limit reached" }),
     });
     expect(out.text()).toContain("⚠ activation limit reached");
+  });
+
+  it("refreshes the menu to show Deactivate after a successful activation (no restart)", async () => {
+    const out = captureStream();
+    const script: (LaunchpadAction | null)[] = ["activate", "quit"];
+    let i = 0;
+    const seen: LaunchpadAction[][] = [];
+    const select: LaunchpadSelect = async ({ options }) => {
+      seen.push(options.map((o) => o.value));
+      return i < script.length ? script[i++] : null;
+    };
+    await runLaunchpad({
+      state: { ...FREE_CONFIGURED },
+      helpText: "HELP",
+      output: out.stream,
+      select,
+      prompts: scriptedPrompts({ texts: ["LIC-123"] }).prompts,
+      activateLicense: async () => ({ ok: true, tier: "unlimited" }),
+    });
+    // First menu (unlicensed) offers Activate, not Deactivate; after activating,
+    // the re-pinned menu offers Deactivate and retires Activate.
+    expect(seen[0]).toContain("activate");
+    expect(seen[0]).not.toContain("deactivate");
+    expect(seen[1]).toContain("deactivate");
+    expect(seen[1]).not.toContain("activate");
   });
 
   it("a cancelled key prompt does not call activate", async () => {
@@ -1062,7 +1087,7 @@ describe("runDeactivate via runLaunchpad (AC3)", () => {
     const sel = scriptedSelect(["deactivate", "quit"]);
     let called = false;
     await runLaunchpad({
-      state: LICENSED,
+      state: { ...LICENSED },
       helpText: "HELP",
       output: out.stream,
       select: sel.select,
@@ -1074,6 +1099,29 @@ describe("runDeactivate via runLaunchpad (AC3)", () => {
     });
     expect(called).toBe(true);
     expect(out.text()).toContain("✓ License deactivated");
+  });
+
+  it("refreshes the menu to show Activate after a successful deactivation (no restart)", async () => {
+    const out = captureStream();
+    const script: (LaunchpadAction | null)[] = ["deactivate", "quit"];
+    let i = 0;
+    const seen: LaunchpadAction[][] = [];
+    const select: LaunchpadSelect = async ({ options }) => {
+      seen.push(options.map((o) => o.value));
+      return i < script.length ? script[i++] : null;
+    };
+    await runLaunchpad({
+      state: { ...LICENSED },
+      helpText: "HELP",
+      output: out.stream,
+      select,
+      prompts: scriptedPrompts({ selects: ["deactivate"] }).prompts,
+      deactivateLicense: async () => ({ ok: true }),
+    });
+    expect(seen[0]).toContain("deactivate");
+    expect(seen[0]).not.toContain("activate");
+    expect(seen[1]).toContain("activate");
+    expect(seen[1]).not.toContain("deactivate");
   });
 
   it("cancelling the confirm does not call the action", async () => {
