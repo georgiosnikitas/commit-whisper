@@ -484,34 +484,72 @@ async function runZeroArg(ctx: ZeroArgContext): Promise<number> {
 
   // Doctor diagnostics (Story 6.3): the env-var presence list (names only)
   // and an async reachability probe wrapping `preflightProvider`. `aiMode: "auto"`
-  // forces a real probe regardless of the user's resolved mode.
-  const envDiagnostics = readEnvDiagnostics(ctx.env, aiLayer.provider);
+  // forces a real probe regardless of the user's resolved mode. All Doctor inputs
+  // are re-resolved LIVE on each open (see `refreshDoctor`/`probeReachability`) so
+  // a mid-session Settings change shows without restarting the app.
+  const resolveLiveAi = async (): Promise<{
+    configFile: SettingsData;
+    envLayer: PartialRunConfig;
+    provider?: Provider;
+    llmModel?: string;
+    llmBaseUrl?: string;
+  }> => {
+    const liveConfigFile = ctx.deps.configFile ?? (await readSettings(ctx.env));
+    const liveEnv = readEnvLayer(ctx.env);
+    return {
+      configFile: liveConfigFile,
+      envLayer: liveEnv,
+      provider: liveEnv.provider ?? liveConfigFile.provider,
+      llmModel: liveEnv.llmModel ?? liveConfigFile.llmModel,
+      llmBaseUrl: liveEnv.llmBaseUrl ?? liveConfigFile.llmBaseUrl,
+    };
+  };
   // The effective non-secret config knobs for the doctor "Config"/"Operational"
   // blocks, with the resolver's config < env precedence (an env var still wins
   // over a saved value). Scope knobs (branch/author/dates/no-merges/output
   // path/AI mode) are env-only — the Settings file never persists them.
-  const doctorConfig: DoctorConfig = {
-    branch: envLayer.branch,
-    authorFilter: envLayer.authorFilter,
-    startDate: envLayer.startDate,
-    endDate: envLayer.endDate,
-    timezone: envLayer.timezone ?? configFile.timezone,
-    noMerges: envLayer.noMerges,
-    outputFormats: envLayer.outputFormats ?? configFile.outputFormats,
-    outputPath: envLayer.outputPath,
-    maxCommits: envLayer.maxCommits ?? configFile.maxCommits,
-    aiMode: envLayer.aiMode,
-    llmBaseUrl: aiLayer.llmBaseUrl,
+  const buildDoctorConfig = (envLayerNow: PartialRunConfig, configFileNow: SettingsData): DoctorConfig => ({
+    branch: envLayerNow.branch,
+    authorFilter: envLayerNow.authorFilter,
+    startDate: envLayerNow.startDate,
+    endDate: envLayerNow.endDate,
+    timezone: envLayerNow.timezone ?? configFileNow.timezone,
+    noMerges: envLayerNow.noMerges,
+    outputFormats: envLayerNow.outputFormats ?? configFileNow.outputFormats,
+    outputPath: envLayerNow.outputPath,
+    maxCommits: envLayerNow.maxCommits ?? configFileNow.maxCommits,
+    aiMode: envLayerNow.aiMode,
+    llmBaseUrl: envLayerNow.llmBaseUrl ?? configFileNow.llmBaseUrl,
     logLevel: resolveLogLevel({ env: ctx.env }),
     color: resolveColor({ env: ctx.env, isTTY: ctx.stdoutIsTTY }),
+  });
+  const envDiagnostics = readEnvDiagnostics(ctx.env, aiLayer.provider);
+  const doctorConfig = buildDoctorConfig(envLayer, configFile);
+  // Re-resolve every Doctor input from the live persisted Settings + env on each
+  // open — so a provider/model/base-URL change in this session's Settings screen
+  // is reflected immediately (the bug was the startup snapshot going stale).
+  const refreshDoctor = async (): Promise<{
+    provider?: Provider;
+    llmModel?: string;
+    envDiagnostics: EnvVarStatus[];
+    doctorConfig: DoctorConfig;
+  }> => {
+    const live = await resolveLiveAi();
+    return {
+      provider: live.provider,
+      llmModel: live.llmModel,
+      envDiagnostics: readEnvDiagnostics(ctx.env, live.provider),
+      doctorConfig: buildDoctorConfig(live.envLayer, live.configFile),
+    };
   };
   const probeReachability = async (): Promise<Reachability> => {
+    const live = await resolveLiveAi();
     const narrateConfig: NarrateConfig = {
       aiMode: "auto",
-      provider: aiLayer.provider,
-      llmModel: aiLayer.llmModel,
-      llmBaseUrl: aiLayer.llmBaseUrl,
-      aiKey: readAiKey(ctx.env, aiLayer.provider),
+      provider: live.provider,
+      llmModel: live.llmModel,
+      llmBaseUrl: live.llmBaseUrl,
+      aiKey: readAiKey(ctx.env, live.provider),
     };
     const result = await (ctx.deps.preflight ?? preflightProvider)(narrateConfig, {});
     return result.reachable ? { kind: "reachable" } : { kind: "unreachable", reason: result.reason };
@@ -526,6 +564,7 @@ async function runZeroArg(ctx: ZeroArgContext): Promise<number> {
     envDiagnostics,
     probeReachability,
     doctorConfig,
+    refreshDoctor,
     loadSettings: () => readSettings(ctx.env),
     saveSettings: (data) => writeSettings(ctx.env, data),
     // Re-resolve the live AI provider/model after a Settings save (config < env,

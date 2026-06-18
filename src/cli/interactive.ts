@@ -158,6 +158,19 @@ export interface LaunchpadDeps {
   envDiagnostics?: EnvVarStatus[];
   /** The effective non-secret config knobs for the Doctor "Config" block; injected by `cli/`. */
   doctorConfig?: DoctorConfig;
+  /**
+   * Re-resolve the LIVE Doctor inputs (provider/model + env diagnostics + config)
+   * from the persisted Settings overlaid by env, each time Doctor opens; injected
+   * by `cli/`. Lets a mid-session Settings change (provider/model/base URL) show
+   * in Doctor WITHOUT restarting the app. Absent ⇒ Doctor uses the startup
+   * snapshot (`envDiagnostics`/`doctorConfig`/`state`).
+   */
+  refreshDoctor?: () => Promise<{
+    provider?: Provider;
+    llmModel?: string;
+    envDiagnostics: EnvVarStatus[];
+    doctorConfig: DoctorConfig;
+  }>;
   /** The async provider reachability probe for Doctor; injected by `cli/`. */
   probeReachability?: ProbeReachability;
   /** Load the persisted Settings (Story 6.5); injected by `cli/`. Absent ⇒ Settings starts blank. */
@@ -855,8 +868,23 @@ async function runGuidedAnalyze(deps: LaunchpadDeps, mode: "cwd" | "remote", out
  * otherwise reports `not-configured` and the formatter appends the fix (AC2).
  */
 async function runStatusDoctor(deps: LaunchpadDeps, output: Writable): Promise<void> {
+  // Re-read the LIVE provider/model + diagnostics + config each open, so a
+  // mid-session Settings change (provider/model/base URL) is reflected here
+  // WITHOUT restarting the app (the startup snapshot would otherwise be stale).
+  let envDiagnostics = deps.envDiagnostics ?? [];
+  let doctorConfig = deps.doctorConfig;
+  if (deps.refreshDoctor !== undefined) {
+    const fresh = await deps.refreshDoctor();
+    deps.state.provider = fresh.provider;
+    deps.state.llmModel = fresh.llmModel;
+    envDiagnostics = fresh.envDiagnostics;
+    doctorConfig = fresh.doctorConfig;
+  }
   let reachability: Reachability = { kind: "not-configured" };
   if (deps.state.provider !== undefined && deps.probeReachability !== undefined) {
+    // Show progress: the probe is a live network round-trip (up to ~5s on a
+    // timeout), so announce it — otherwise the screen looks frozen while it runs.
+    writeLine(output, `Testing connection to ${deps.state.provider}…`);
     try {
       reachability = await deps.probeReachability();
     } catch (err) {
@@ -865,7 +893,7 @@ async function runStatusDoctor(deps: LaunchpadDeps, output: Writable): Promise<v
       reachability = { kind: "unreachable", reason: err instanceof Error ? err.message : "probe failed" };
     }
   }
-  writeLine(output, formatStatusReport(deps.state, deps.envDiagnostics ?? [], reachability, deps.doctorConfig));
+  writeLine(output, formatStatusReport(deps.state, envDiagnostics, reachability, doctorConfig));
 }
 
 /**

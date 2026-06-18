@@ -749,6 +749,52 @@ describe("runStatusDoctor via runLaunchpad (AC1)", () => {
     expect(sel.calls()).toBe(2); // looped back to the menu
   });
 
+  it("announces the live connection test before probing a configured provider", async () => {
+    const out = captureStream();
+    const sel = scriptedSelect(["status", "quit"]);
+    const p = probe({ kind: "reachable" });
+    await runLaunchpad({
+      state: FREE_CONFIGURED,
+      helpText: "HELP",
+      output: out.stream,
+      select: sel.select,
+      envDiagnostics: ENV_OK,
+      probeReachability: p.probeReachability,
+    });
+    expect(out.text()).toContain(`Testing connection to ${FREE_CONFIGURED.provider}…`);
+  });
+
+  it("re-resolves live diagnostics/provider via refreshDoctor on each open (no restart needed)", async () => {
+    const out = captureStream();
+    const sel = scriptedSelect(["status", "quit"]);
+    const p = probe({ kind: "reachable" });
+    // Start with NO provider configured; refreshDoctor returns a freshly-configured one.
+    const noProvider: LaunchpadState = { ...FREE_CONFIGURED, provider: undefined, llmModel: undefined };
+    let refreshCalls = 0;
+    await runLaunchpad({
+      state: noProvider,
+      helpText: "HELP",
+      output: out.stream,
+      select: sel.select,
+      envDiagnostics: [],
+      probeReachability: p.probeReachability,
+      refreshDoctor: async () => {
+        refreshCalls++;
+        return {
+          provider: "openai",
+          llmModel: "gpt-4o",
+          envDiagnostics: [{ name: "OPENAI_API_KEY", set: true, note: "active provider" }],
+          doctorConfig: {},
+        };
+      },
+    });
+    expect(refreshCalls).toBe(1);
+    expect(p.calls()).toBe(1); // a provider is now configured ⇒ the probe runs
+    expect(out.text()).toContain("Testing connection to openai…");
+    expect(out.text()).toContain("✓ reachable");
+    expect(out.text()).toContain("OPENAI_API_KEY");
+  });
+
   it("does NOT probe when no provider is configured — shows not-configured + the fix", async () => {
     const out = captureStream();
     const sel = scriptedSelect(["status", "quit"]);
