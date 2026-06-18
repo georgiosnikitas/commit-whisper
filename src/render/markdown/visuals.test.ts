@@ -3,8 +3,6 @@ import { describe, it, expect } from "vitest";
 import {
   sparkline,
   textBars,
-  mermaidLabel,
-  mermaidXychart,
   groupOverview,
   metricVisualMarkdown,
   GROUP_OVERVIEW_NONE,
@@ -76,37 +74,21 @@ describe("textBars", () => {
   });
 });
 
-describe("mermaidLabel + mermaidXychart", () => {
-  it("mermaidLabel strips the xychart array delimiters and collapses whitespace", () => {
-    expect(mermaidLabel('a"b[c],d\ne')).toBe("a b c d e");
-    expect(mermaidLabel("   ")).toBe("-");
-  });
-
-  it("mermaidXychart emits a fenced xychart-beta with sanitized labels + rounded values", () => {
-    const out = mermaidXychart([{ label: "2024-01", value: 18.4 }, { label: "2024-02", value: 24 }], "Commits");
-    expect(out.startsWith("```mermaid")).toBe(true);
-    expect(out).toContain("xychart-beta");
-    expect(out).toContain('title "Commits"');
-    expect(out).toContain('x-axis ["2024-01", "2024-02"]');
-    expect(out).toContain("bar [18.4, 24]");
-  });
-
-  it("an empty series is the empty string", () => {
-    expect(mermaidXychart([], "x")).toBe("");
-  });
-});
-
 describe("groupOverview", () => {
-  it("a timeseries group → a Mermaid xychart", () => {
+  it("a timeseries group → a fenced text-bar (no vertical bar chart)", () => {
     const metrics: Metric[] = [{ id: "a-commit-volume", group: "A", title: "Volume", status: "computed", value: { perMonth: { "2024-01": 3, "2024-02": 7 } } }];
-    expect(groupOverview("A", metrics)).toContain("```mermaid");
+    const out = groupOverview("A", metrics);
+    expect(out).toContain("```");
+    expect(out).not.toContain("mermaid");
+    expect(out).toContain("█");
   });
 
-  it("a distribution group → a Mermaid xychart (same type as every group overview)", () => {
+  it("a distribution group → a fenced text-bar (same type as every group overview)", () => {
     const metrics: Metric[] = [{ id: "e-most-changed", group: "E", title: "Hotspots", status: "computed", value: [{ path: "x.ts", changes: 9 }, { path: "y.ts", changes: 4 }] }];
     const out = groupOverview("E", metrics);
-    expect(out).toContain("```mermaid");
-    expect(out).toContain("xychart-beta");
+    expect(out).toContain("```");
+    expect(out).not.toContain("mermaid");
+    expect(out).toContain("█");
   });
 
   it("an all-scalar group → the no-chart note (never a degenerate chart)", () => {

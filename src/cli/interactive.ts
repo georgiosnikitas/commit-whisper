@@ -25,6 +25,8 @@
 
 import { Writable } from "node:stream";
 
+import pc from "picocolors";
+
 import { isCancel, multiselect as clackMultiselect, select as clackSelect, text as clackText } from "@clack/prompts";
 
 import type { EnvVarStatus } from "../config/env.js";
@@ -535,7 +537,17 @@ export function formatStatusReport(
   if (reachability.kind === "not-configured") {
     lines.push("", NO_AI_FIX);
   }
-  return lines.join("\n");
+  return paintStatusMarks(lines.join("\n"));
+}
+
+/**
+ * Colorize the doctor status glyphs as a final pass — `✓` green, `✗` red —
+ * AFTER all column alignment is computed on the plain text, so the ANSI bytes
+ * never skew the `padEnd` math. Via `picocolors`, so `NO_COLOR` / a non-TTY
+ * yields plain glyphs unchanged (keeping the headless output identical).
+ */
+function paintStatusMarks(text: string): string {
+  return text.replaceAll("✓", pc.green("✓")).replaceAll("✗", pc.red("✗"));
 }
 
 // ── Guided run: pure command echo + input interpreters (Story 6.2) ──────────

@@ -120,16 +120,23 @@ function renderSubChart(group: MetricGroup, spec: SubSpec, metrics: readonly Met
     return subFigure(metric.title, svgRadialGauge(range.value, range.max, label), table);
   }
   const series = extractSeries(metric.value);
-  const svg =
-    spec.kind === "line"
-      ? svgLine(series, label)
-      : spec.kind === "bars"
-        ? svgBars(series, label)
-        : spec.kind === "hbars"
-          ? svgHBars(series, label)
-          : spec.kind === "radar"
-            ? svgRadar(series, 100, label)
-            : svgDonut(series, label);
+  let svg: string;
+  switch (spec.kind) {
+    case "line":
+      svg = svgLine(series, label);
+      break;
+    case "bars":
+      svg = svgBars(series, label);
+      break;
+    case "hbars":
+      svg = svgHBars(series, label);
+      break;
+    case "radar":
+      svg = svgRadar(series, 100, label);
+      break;
+    default:
+      svg = svgDonut(series, label);
+  }
   return subFigure(metric.title, svg, dataTable(series, "Value", metric.title));
 }
 

@@ -47,7 +47,7 @@ function esc(text: string): string {
 function hashId(text: string): string {
   let h = 0x811c9dc5;
   for (let i = 0; i < text.length; i++) {
-    h ^= text.charCodeAt(i);
+    h ^= text.codePointAt(i) ?? 0;
     h = Math.imul(h, 0x01000193);
   }
   return (h >>> 0).toString(36);
@@ -91,7 +91,11 @@ function niceStep(range: number, n: number): number {
   const raw = range / n;
   const exp = Math.floor(Math.log10(raw));
   const f = raw / 10 ** exp;
-  const nf = f < 1.5 ? 1 : f < 3 ? 2 : f < 7 ? 5 : 10;
+  let nf: number;
+  if (f < 1.5) nf = 1;
+  else if (f < 3) nf = 2;
+  else if (f < 7) nf = 5;
+  else nf = 10;
   return nf * 10 ** exp;
 }
 
@@ -196,13 +200,15 @@ export function svgLine(series: readonly Point[], label: string): string {
   const yAt = (v: number): number => y1 - (Math.max(0, safe(v)) / top) * (y1 - y0);
   const coords = series.map((p, i) => [r(xAt(i)), r(yAt(p.value))] as [number, number]);
   const line = smoothPath(coords);
-  const area = `${line} L ${r(coords[coords.length - 1][0])} ${y1} L ${r(coords[0][0])} ${y1} Z`;
+  const last = coords.at(-1)!;
+  const area = `${line} L ${r(last[0])} ${y1} L ${r(coords[0][0])} ${y1} Z`;
   const every = series.length > 12 ? Math.ceil(series.length / 12) : 1;
   const xLabels = series
     .map((p, i) => (i % every === 0 ? `<text class="chart-label" x="${r(xAt(i))}" y="${H - 10}" text-anchor="middle">${esc(tickLabel(p.label))}</text>` : ""))
     .join("");
   const dot = coords.length === 1 ? `<circle class="chart-dot" cx="${r(coords[0][0])}" cy="${r(coords[0][1])}" r="4"/>` : "";
-  return `${open(label, "chart-line", `0 0 ${W} ${H}`)}${areaGradient(areaId)}${fillGradient(strokeId, false)}${valueGrid(ticks, top, x0, x1, y0, y1)}<line class="chart-axis" x1="${x0}" y1="${y1}" x2="${x1}" y2="${y1}"/><path class="chart-area" d="${area}" fill="url(#${areaId})"/><path class="chart-stroke" d="${line}" fill="none" stroke="url(#${strokeId})" stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round"/>${dot}${xLabels}</svg>`;
+  const viewBox = `0 0 ${W} ${H}`;
+  return `${open(label, "chart-line", viewBox)}${areaGradient(areaId)}${fillGradient(strokeId, false)}${valueGrid(ticks, top, x0, x1, y0, y1)}<line class="chart-axis" x1="${x0}" y1="${y1}" x2="${x1}" y2="${y1}"/><path class="chart-area" d="${area}" fill="url(#${areaId})"/><path class="chart-stroke" d="${line}" fill="none" stroke="url(#${strokeId})" stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round"/>${dot}${xLabels}</svg>`;
 }
 
 /** A tiny axis-free sparkline (scalar-in-range trends) — stretches to its small inline box. */
@@ -218,8 +224,10 @@ export function svgSparkline(series: readonly Point[], label: string): string {
   const step = series.length === 1 ? 0 : W / (series.length - 1);
   const coords = series.map((p, i) => [r(i * step), r(H - pad - (Math.max(0, safe(p.value)) / top) * (H - 2 * pad))] as [number, number]);
   const line = smoothPath(coords);
-  const area = `${line} L ${r(coords[coords.length - 1][0])} ${H} L ${r(coords[0][0])} ${H} Z`;
-  return `${open(label, "chart-sparkline", `0 0 ${W} ${H}`, "none")}${areaGradient(areaId)}${fillGradient(strokeId, false)}<path class="chart-area" d="${area}" fill="url(#${areaId})"/><path class="chart-stroke" d="${line}" fill="none" stroke="url(#${strokeId})" stroke-width="2" stroke-linejoin="round" stroke-linecap="round" vector-effect="non-scaling-stroke"/></svg>`;
+  const last = coords.at(-1)!;
+  const area = `${line} L ${r(last[0])} ${H} L ${r(coords[0][0])} ${H} Z`;
+  const viewBox = `0 0 ${W} ${H}`;
+  return `${open(label, "chart-sparkline", viewBox, "none")}${areaGradient(areaId)}${fillGradient(strokeId, false)}<path class="chart-area" d="${area}" fill="url(#${areaId})"/><path class="chart-stroke" d="${line}" fill="none" stroke="url(#${strokeId})" stroke-width="2" stroke-linejoin="round" stroke-linecap="round" vector-effect="non-scaling-stroke"/></svg>`;
 }
 
 /** Vertical rounded gradient bars + value gridlines + category x-axis labels. */
@@ -250,7 +258,8 @@ export function svgBars(series: readonly Point[], label: string): string {
   const xLabels = series
     .map((p, i) => `<text class="chart-label" x="${r(x0 + i * slot + slot / 2)}" y="${H - 10}" text-anchor="middle">${esc(tickLabel(p.label))}</text>`)
     .join("");
-  return `${open(label, "chart-bars", `0 0 ${W} ${H}`)}${fillGradient(id, true)}${valueGrid(ticks, top, x0, x1, y0, y1)}<line class="chart-axis" x1="${x0}" y1="${y1}" x2="${x1}" y2="${y1}"/>${bars}${xLabels}</svg>`;
+  const viewBox = `0 0 ${W} ${H}`;
+  return `${open(label, "chart-bars", viewBox)}${fillGradient(id, true)}${valueGrid(ticks, top, x0, x1, y0, y1)}<line class="chart-axis" x1="${x0}" y1="${y1}" x2="${x1}" y2="${y1}"/>${bars}${xLabels}</svg>`;
 }
 
 /** Horizontal rounded gradient bars (hotspots / Pareto) + value x-axis + category y-axis labels. */
@@ -287,7 +296,8 @@ export function svgHBars(series: readonly Point[], label: string): string {
   const yLabels = series
     .map((p, i) => `<text class="chart-label" x="${x0 - 8}" y="${r(y0 + i * rowH + rowH / 2 + 3.5)}" text-anchor="end">${esc(tickLabel(p.label))}</text>`)
     .join("");
-  return `${open(label, "chart-hbars", `0 0 ${W} ${H}`)}${fillGradient(id, false)}${grid}<line class="chart-axis" x1="${x0}" y1="${y0}" x2="${x0}" y2="${y1}"/>${bars}${yLabels}</svg>`;
+  const viewBox = `0 0 ${W} ${H}`;
+  return `${open(label, "chart-hbars", viewBox)}${fillGradient(id, false)}${grid}<line class="chart-axis" x1="${x0}" y1="${y0}" x2="${x0}" y2="${y1}"/>${bars}${yLabels}</svg>`;
 }
 
 /**
@@ -299,7 +309,8 @@ export function svgGauge(value: number, max: number, label: string): string {
   const denom = max <= 0 ? 1 : max;
   const t = Math.min(1, Math.max(0, safe(value) / denom));
   const y = r(GAUGE_H / 2 - 4);
-  return `${open(label, "chart-gauge", `0 0 ${GAUGE_W} ${GAUGE_H}`, "none")}${fillGradient(id, false)}<rect class="gauge-track" x="0" y="${y}" width="${GAUGE_W}" height="8" rx="4"/><rect class="gauge-fill" x="0" y="${y}" width="${r(t * GAUGE_W)}" height="8" rx="4" fill="url(#${id})"/></svg>`;
+  const viewBox = `0 0 ${GAUGE_W} ${GAUGE_H}`;
+  return `${open(label, "chart-gauge", viewBox, "none")}${fillGradient(id, false)}<rect class="gauge-track" x="0" y="${y}" width="${GAUGE_W}" height="8" rx="4"/><rect class="gauge-fill" x="0" y="${y}" width="${r(t * GAUGE_W)}" height="8" rx="4" fill="url(#${id})"/></svg>`;
 }
 
 /**
@@ -339,12 +350,16 @@ export function svgRadar(points: readonly Point[], max: number, label: string): 
     .map((p, i) => {
       const lx = cx + Math.cos(angle(i)) * (radius + 16);
       const ly = cy + Math.sin(angle(i)) * (radius + 16);
-      const anchor = lx > cx + 1 ? "start" : lx < cx - 1 ? "end" : "middle";
+      let anchor: string;
+      if (lx > cx + 1) anchor = "start";
+      else if (lx < cx - 1) anchor = "end";
+      else anchor = "middle";
       const name = p.label.length > 12 ? `${p.label.slice(0, 11)}…` : p.label;
       return `<text class="radar-label" x="${r(lx)}" y="${r(ly + 3)}" text-anchor="${anchor}">${esc(name)}</text>`;
     })
     .join("");
-  return `${open(label, "chart-radar", `0 0 ${W} ${H}`)}${fillGradient(id, true)}${rings}${axes}<polygon class="radar-area" points="${dataPts}" fill="url(#${id})"/>${dots}${labels}</svg>`;
+  const viewBox = `0 0 ${W} ${H}`;
+  return `${open(label, "chart-radar", viewBox)}${fillGradient(id, true)}${rings}${axes}<polygon class="radar-area" points="${dataPts}" fill="url(#${id})"/>${dots}${labels}</svg>`;
 }
 
 /**

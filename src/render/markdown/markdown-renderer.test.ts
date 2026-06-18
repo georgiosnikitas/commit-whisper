@@ -72,9 +72,10 @@ describe("renderMarkdown — narrative-first showpiece (AC3)", () => {
 describe("renderMarkdown — text-only visuals (AC1)", () => {
   const out = showpiece();
 
-  it("includes a Mermaid group-overview diagram", () => {
-    expect(out).toContain("```mermaid");
-    expect(out).toContain("xychart-beta");
+  it("includes a fenced text-bar group-overview block (no vertical bar chart)", () => {
+    expect(out).toContain("```");
+    expect(out).not.toContain("mermaid");
+    expect(out).not.toContain("xychart-beta");
   });
 
   it("includes an ASCII sparkline beside a time-series metric heading", () => {

@@ -349,18 +349,21 @@ function metricStat(metric: Metric): string {
     return `${fmtStat(range.value)}${range.max === 100 ? "%" : ""}`;
   }
   if (value !== null && typeof value === "object" && !Array.isArray(value)) {
-    const nums = Object.entries(value).filter((e): e is [string, number] => typeof e[1] === "number" && Number.isFinite(e[1]));
-    for (const key of ["total", "count", "score", "busFactor", "value"]) {
-      const hit = nums.find(([k]) => k === key);
-      if (hit !== undefined) {
-        return fmtStat(hit[1]);
-      }
-    }
-    if (nums.length === 1) {
-      return fmtStat(nums[0][1]);
-    }
+    return objectStat(value as Record<string, unknown>);
   }
   return "";
+}
+
+/** Pick a headline scalar from an object metric value (a known key, else a lone number). */
+function objectStat(value: Record<string, unknown>): string {
+  const nums = Object.entries(value).filter((e): e is [string, number] => typeof e[1] === "number" && Number.isFinite(e[1]));
+  for (const key of ["total", "count", "score", "busFactor", "value"]) {
+    const hit = nums.find(([k]) => k === key);
+    if (hit !== undefined) {
+      return fmtStat(hit[1]);
+    }
+  }
+  return nums.length === 1 ? fmtStat(nums[0][1]) : "";
 }
 
 /** Compact integer/2-dp number text for the card stat. */
@@ -420,7 +423,7 @@ function isoDate(iso: string): string {
  * link), `:focus-visible` outlines + a skip link for keyboard nav, `:target`
  * emphasis for anchor landing, and a `prefers-reduced-motion` block. No JS.
  */
-const STYLE = `
+const STYLE = String.raw`
 :root {
   color-scheme: dark light;
   --bg: #0a0e14; --surface: #11161f; --surface-2: #161c28;
@@ -479,7 +482,7 @@ a:focus-visible, :focus-visible { outline: 2px solid var(--accent); outline-offs
 }
 .masthead h1 { margin: 0; font-size: 1.95rem; position: relative; display: flex; align-items: center; gap: 0.75rem; }
 .masthead h1::before {
-  content: "\\25D1"; display: inline-grid; place-items: center;
+  content: "\25D1"; display: inline-grid; place-items: center;
   width: 2.7rem; height: 2.7rem; font-size: 1.45rem; color: #fff;
   background: linear-gradient(135deg, var(--accent), var(--accent-2));
   border-radius: 0.72rem; box-shadow: 0 10px 26px -8px rgba(124,92,255,0.75);
@@ -523,7 +526,7 @@ a:focus-visible, :focus-visible { outline: 2px solid var(--accent); outline-offs
 .lead, .explanation p, .coaching-intro, .coaching-closing { color: var(--fg-soft); }
 .key-findings { list-style: none; padding: 0; margin: 1.2rem 0 0; display: grid; gap: 0.6rem; }
 .key-findings li { position: relative; padding: 0.8rem 1rem 0.8rem 2.5rem; background: var(--surface); border: 1px solid var(--border); border-radius: 12px; }
-.key-findings li::before { content: "\\203A"; position: absolute; left: 1rem; top: 0.7rem; color: var(--accent); font-weight: 800; font-size: 1.1rem; }
+.key-findings li::before { content: "\203A"; position: absolute; left: 1rem; top: 0.7rem; color: var(--accent); font-weight: 800; font-size: 1.1rem; }
 .chapter { background: var(--surface); border: 1px solid var(--border); border-left: 4px solid var(--accent-2); border-radius: 14px; padding: 1.1rem 1.35rem; margin: 1rem 0; }
 .chapter h3 { margin: 0 0 0.6rem; }
 .chapter ol { margin: 0; padding-left: 1.2rem; display: grid; gap: 0.5rem; color: var(--fg-soft); }

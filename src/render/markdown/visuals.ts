@@ -1,9 +1,9 @@
 /**
  * Text-only visual primitives for the Markdown report (Story 4.3 — FR-7, AC1).
  *
- * The text degradation of the HTML visual-by-shape model: ASCII sparklines, fenced
- * monospace text-bars, and Mermaid `xychart-beta` group overviews. Each is a pure,
- * deterministic `data → string` transform (rounded values, no clock/random), so the
+ * The text degradation of the HTML visual-by-shape model: ASCII sparklines and fenced
+ * monospace text-bars (used for both per-metric distributions and group overviews). Each
+ * is a pure, deterministic `data → string` transform (rounded values, no clock/random), so the
  * report is byte-stable and diff-able. The numeric value is ALWAYS also present in
  * prose (never glyph-only meaning — UX-DR14). Reuses the render-shared value-shape
  * detection (`../html/shape.ts`) so Markdown never disagrees with HTML.
@@ -99,37 +99,8 @@ export function textBars(series: readonly SeriesPoint[]): string {
   return ["```", ...rows, "```"].join("\n");
 }
 
-/** Sanitize a Mermaid token (strip the chars that delimit `xychart` arrays / titles). */
-export function mermaidLabel(text: string): string {
-  const cleaned = text
-    .replaceAll(/["[\],\r\n\t]+/g, " ")
-    .replaceAll(/\s+/g, " ")
-    .trim()
-    .replaceAll("&", "&amp;")
-    .replaceAll("<", "&lt;")
-    .replaceAll(">", "&gt;");
-  return cleaned === "" ? "-" : cleaned;
-}
-
-/** A fenced Mermaid `xychart-beta` bar chart over a timeseries. Empty series ⇒ `""`. */
-export function mermaidXychart(series: readonly SeriesPoint[], title: string): string {
-  if (series.length === 0) {
-    return "";
-  }
-  const axis = series.map((p) => `"${mermaidLabel(p.label)}"`).join(", ");
-  const values = series.map((p) => round(p.value)).join(", ");
-  return [
-    "```mermaid",
-    "xychart-beta",
-    `  title "${mermaidLabel(title)}"`,
-    `  x-axis [${axis}]`,
-    `  bar [${values}]`,
-    "```",
-  ].join("\n");
-}
-
 /** The first genuinely chartable (timeseries/distribution) series among a group's metrics. */
-function representativeSeries(metrics: readonly Metric[]): { series: SeriesPoint[]; shape: "timeseries" | "distribution" } | undefined {
+function representativeSeries(metrics: readonly Metric[]): SeriesPoint[] | undefined {
   for (const metric of metrics) {
     if (metric.status !== "computed") {
       continue;
@@ -140,23 +111,23 @@ function representativeSeries(metrics: readonly Metric[]): { series: SeriesPoint
     }
     const series = extractSeries(metric.value);
     if (series.length > 0) {
-      return { series, shape };
+      return series;
     }
   }
   return undefined;
 }
 
 /**
- * The group-overview visual: a Mermaid `xychart-beta` for every chartable group
- * (timeseries or distribution) so all group overviews are the same chart type, or a
- * note when no series is chartable.
+ * The group-overview visual: a fenced monospace text-bar for every chartable group
+ * (timeseries or distribution) so all group overviews are the same shape — horizontal
+ * text-bars that render everywhere and diff cleanly — or a note when no series is chartable.
  */
-export function groupOverview(group: MetricGroup, metrics: readonly Metric[]): string {
-  const rep = representativeSeries(metrics);
-  if (rep === undefined) {
+export function groupOverview(_group: MetricGroup, metrics: readonly Metric[]): string {
+  const series = representativeSeries(metrics);
+  if (series === undefined) {
     return GROUP_OVERVIEW_NONE;
   }
-  return mermaidXychart(rep.series, `Group ${group} overview`);
+  return textBars(series);
 }
 
 /** The bold-stat number for a `scalar`-shaped value (a bare number or a single numeric field). */
