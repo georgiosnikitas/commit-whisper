@@ -102,12 +102,11 @@ describe("groupOverview", () => {
     expect(groupOverview("A", metrics)).toContain("```mermaid");
   });
 
-  it("a distribution group → a fenced text-bar (not Mermaid)", () => {
+  it("a distribution group → a Mermaid xychart (same type as every group overview)", () => {
     const metrics: Metric[] = [{ id: "e-most-changed", group: "E", title: "Hotspots", status: "computed", value: [{ path: "x.ts", changes: 9 }, { path: "y.ts", changes: 4 }] }];
     const out = groupOverview("E", metrics);
-    expect(out).toContain("```");
-    expect(out).not.toContain("mermaid");
-    expect(out).toContain("█");
+    expect(out).toContain("```mermaid");
+    expect(out).toContain("xychart-beta");
   });
 
   it("an all-scalar group → the no-chart note (never a degenerate chart)", () => {

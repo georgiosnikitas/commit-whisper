@@ -101,7 +101,13 @@ export function textBars(series: readonly SeriesPoint[]): string {
 
 /** Sanitize a Mermaid token (strip the chars that delimit `xychart` arrays / titles). */
 export function mermaidLabel(text: string): string {
-  const cleaned = text.replaceAll(/["[\],\r\n\t]+/g, " ").replaceAll(/\s+/g, " ").trim();
+  const cleaned = text
+    .replaceAll(/["[\],\r\n\t]+/g, " ")
+    .replaceAll(/\s+/g, " ")
+    .trim()
+    .replaceAll("&", "&amp;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;");
   return cleaned === "" ? "-" : cleaned;
 }
 
@@ -141,19 +147,16 @@ function representativeSeries(metrics: readonly Metric[]): { series: SeriesPoint
 }
 
 /**
- * The group-overview visual: a Mermaid `xychart-beta` for a timeseries group (Mermaid
- * where it genuinely reads better — trends), a fenced text-bar for a distribution group
- * (renders everywhere, diff-able), or a note when no series is chartable.
+ * The group-overview visual: a Mermaid `xychart-beta` for every chartable group
+ * (timeseries or distribution) so all group overviews are the same chart type, or a
+ * note when no series is chartable.
  */
 export function groupOverview(group: MetricGroup, metrics: readonly Metric[]): string {
   const rep = representativeSeries(metrics);
   if (rep === undefined) {
     return GROUP_OVERVIEW_NONE;
   }
-  if (rep.shape === "timeseries") {
-    return mermaidXychart(rep.series, `Group ${group} overview`);
-  }
-  return textBars(rep.series);
+  return mermaidXychart(rep.series, `Group ${group} overview`);
 }
 
 /** The bold-stat number for a `scalar`-shaped value (a bare number or a single numeric field). */
