@@ -376,8 +376,24 @@ function repositoryLine(state: LaunchpadState): string {
 
 /** Indent + pad a Config row's label so the values line up under one column. */
 const CONFIG_LABEL_WIDTH = 14;
-function configRow(label: string, value: string): string {
-  return `  ${label.padEnd(CONFIG_LABEL_WIDTH)}${value}`;
+
+/** A single doctor key/value row, optionally annotated with the env var that sets it. */
+interface DoctorRow {
+  label: string;
+  value: string;
+  envVar?: string;
+}
+
+/**
+ * Render doctor rows with two aligned columns: `label → value`, then (when
+ * present) the env var NAME that controls it, aligned into one trailing column
+ * (longest `label+value` prefix + a 3-space gutter) so the var names form a
+ * straight vertical column the user can copy.
+ */
+function renderRows(rows: DoctorRow[]): string[] {
+  const prefixes = rows.map((r) => `  ${r.label.padEnd(CONFIG_LABEL_WIDTH)}${r.value}`);
+  const envColumn = Math.max(0, ...prefixes.map((p) => p.length)) + 3;
+  return rows.map((r, i) => (r.envVar === undefined ? prefixes[i] : `${prefixes[i].padEnd(envColumn)}${r.envVar}`));
 }
 
 /** The configured branch scope (all / a named branch / the checked-out HEAD), or the default. */
@@ -404,44 +420,51 @@ function formatValue(formats: OutputFormat[] | undefined): string {
  * The Settings block: the NON-SECRET knobs that the interactive Settings screen
  * actually persists to `~/.commit-whisper` (timezone, default format, max
  * commits, base URL) — distinct from the env/flag-only run scope below. Each row
- * shows the configured value or the documented default. The base-URL row appears
- * only when set (meaningful only for local/custom endpoints). `[]` when no config
- * is supplied.
+ * is annotated with the env var that also sets it. The base-URL row appears only
+ * when set (meaningful only for local/custom endpoints). `[]` when no config is
+ * supplied.
  */
 function settingsBlock(config: DoctorConfig | undefined): string[] {
   if (config === undefined) {
     return [];
   }
-  const baseUrlRow = config.llmBaseUrl === undefined ? [] : [configRow("Base URL", config.llmBaseUrl)];
-  const rows = [
-    configRow("Timezone", config.timezone ?? "UTC (default)"),
-    configRow("Format", formatValue(config.outputFormats)),
-    configRow("Max commits", config.maxCommits === undefined ? "unbounded" : String(config.maxCommits)),
+  const baseUrlRow: DoctorRow[] =
+    config.llmBaseUrl === undefined
+      ? []
+      : [{ label: "Base URL", value: config.llmBaseUrl, envVar: "COMMIT_WHISPER_LLM_BASE_URL" }];
+  const rows: DoctorRow[] = [
+    { label: "Timezone", value: config.timezone ?? "UTC (default)", envVar: "COMMIT_WHISPER_TZ" },
+    { label: "Format", value: formatValue(config.outputFormats), envVar: "COMMIT_WHISPER_FORMAT" },
+    {
+      label: "Max commits",
+      value: config.maxCommits === undefined ? "unbounded" : String(config.maxCommits),
+      envVar: "COMMIT_WHISPER_MAX_COMMITS",
+    },
     ...baseUrlRow,
   ];
-  return ["", "Settings (saved in ~/.commit-whisper)", ...rows];
+  return ["", "Settings (saved in ~/.commit-whisper)", ...renderRows(rows)];
 }
 
 /**
  * The Run scope block: the per-run scope inputs that are NOT persisted — they
- * come only from `COMMIT_WHISPER_*` env vars (or CLI flags on a non-interactive
- * run), never the Settings file. Each row shows the configured value or the
- * documented default. `[]` when no config is supplied.
+ * come only from the `COMMIT_WHISPER_*` env vars (or CLI flags on a
+ * non-interactive run), never the Settings file. Each row is annotated with the
+ * env var that sets it. `[]` when no config is supplied.
  */
 function runScopeBlock(config: DoctorConfig | undefined): string[] {
   if (config === undefined) {
     return [];
   }
-  const rows = [
-    configRow("Branch", branchValue(config.branch)),
-    configRow("Author", config.authorFilter ?? "any (default)"),
-    configRow("Since", config.startDate ?? "— (unbounded)"),
-    configRow("Until", config.endDate ?? "— (unbounded)"),
-    configRow("No-merges", config.noMerges === true ? "on" : "off (default)"),
-    configRow("Output path", config.outputPath ?? "— (auto)"),
-    configRow("AI mode", config.aiMode ?? "auto (default)"),
+  const rows: DoctorRow[] = [
+    { label: "Branch", value: branchValue(config.branch), envVar: "COMMIT_WHISPER_BRANCH" },
+    { label: "Author", value: config.authorFilter ?? "any (default)", envVar: "COMMIT_WHISPER_AUTHOR" },
+    { label: "Since", value: config.startDate ?? "— (unbounded)", envVar: "COMMIT_WHISPER_START_DATE" },
+    { label: "Until", value: config.endDate ?? "— (unbounded)", envVar: "COMMIT_WHISPER_END_DATE" },
+    { label: "No-merges", value: config.noMerges === true ? "on" : "off (default)", envVar: "COMMIT_WHISPER_NO_MERGES" },
+    { label: "Output path", value: config.outputPath ?? "— (auto)", envVar: "COMMIT_WHISPER_OUT" },
+    { label: "AI mode", value: config.aiMode ?? "auto (default)", envVar: "COMMIT_WHISPER_AI_MODE" },
   ];
-  return ["", "Run scope (env vars / flags only — not saved)", ...rows];
+  return ["", "Run scope (env vars / flags only — not saved)", ...renderRows(rows)];
 }
 
 /** Render the resolved color state as a word (never color alone): on / off / auto when unresolved. */
@@ -452,17 +475,16 @@ function colorState(color: boolean | undefined): string {
   return color ? "on" : "off";
 }
 
-/** The Operational block: the resolved color + log-level state (env + TTY). Omitted when neither is supplied. */
+/** The Operational block: the resolved color + log-level state (env + TTY), each annotated with its env var. Omitted when neither is supplied. */
 function operationalBlock(config: DoctorConfig | undefined): string[] {
   if (config === undefined || (config.logLevel === undefined && config.color === undefined)) {
     return [];
   }
-  const colorValue = colorState(config.color);
-  const rows = [
-    configRow("Log level", config.logLevel ?? "normal (default)"),
-    configRow("Color", colorValue),
+  const rows: DoctorRow[] = [
+    { label: "Log level", value: config.logLevel ?? "normal (default)", envVar: "COMMIT_WHISPER_LOG_LEVEL" },
+    { label: "Color", value: colorState(config.color), envVar: "NO_COLOR / FORCE_COLOR" },
   ];
-  return ["", "Operational", ...rows];
+  return ["", "Operational", ...renderRows(rows)];
 }
 
 /**
