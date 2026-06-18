@@ -74,4 +74,13 @@ describe("svg primitives", () => {
     expect(svgDonut([], "d")).toContain("</svg>"); // empty → minimal valid svg
     expect(svgDonut([{ label: "a", value: 0 }], "d")).not.toContain("NaN"); // zero total → no divide-by-zero
   });
+
+  it("svgDonut draws a full ring for a single 100% slice (a degenerate arc would be invisible)", () => {
+    const donut = svgDonut([{ label: "active", value: 2 }, { label: "inactive", value: 0 }], "d");
+    expect((donut.match(/class="donut-seg/g) ?? [])).toHaveLength(1); // only the non-zero slice is drawn
+    expect(donut).toContain("A 82 82 0 1 1"); // full outer ring arc (not a zero-length wedge)
+    expect(donut).toContain("· 100%"); // legend still shows both slices
+    expect(donut).toContain("· 0%");
+    expect(donut).not.toContain("NaN");
+  });
 });

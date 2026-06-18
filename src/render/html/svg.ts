@@ -400,6 +400,14 @@ export function svgDonut(series: readonly Point[], label: string): string {
       const a0 = ((-90 + cum * 360) * Math.PI) / 180;
       const a1 = ((-90 + (cum + frac) * 360) * Math.PI) / 180;
       cum += frac;
+      if (frac <= 0) {
+        return ""; // an empty slice draws nothing (kept in the legend only)
+      }
+      // A 100% slice is a degenerate arc (start === end) — draw a full annulus instead.
+      if (frac >= 0.999) {
+        const ring = `M ${cx} ${cy - rOuter} A ${rOuter} ${rOuter} 0 1 1 ${cx} ${cy + rOuter} A ${rOuter} ${rOuter} 0 1 1 ${cx} ${cy - rOuter} Z M ${cx} ${cy - rInner} A ${rInner} ${rInner} 0 1 0 ${cx} ${cy + rInner} A ${rInner} ${rInner} 0 1 0 ${cx} ${cy - rInner} Z`;
+        return `<path class="donut-seg slice-${i % 6}" d="${ring}"/>`;
+      }
       const large = frac > 0.5 ? 1 : 0;
       const x0o = r(cx + rOuter * Math.cos(a0));
       const y0o = r(cy + rOuter * Math.sin(a0));
