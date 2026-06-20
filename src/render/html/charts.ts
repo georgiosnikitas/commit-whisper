@@ -21,7 +21,7 @@ import type { MetricGroup } from "../../analyze/metric.js";
 import type { ReportAnalysis } from "../../assemble/report-schema.js";
 import { escapeHtml } from "./escape.js";
 import { chartSeries, detectShape, rangeField, type SeriesPoint } from "./shape.js";
-import { svgBars, svgDonut, svgGauge, svgHBars, svgLine, svgRadar, svgRadialGauge, svgSparkline } from "./svg.js";
+import { svgBars, svgDonut, svgGauge, svgHBars, svgLine, svgRadar, svgRadialGauge } from "./svg.js";
 
 type Metric = ReportAnalysis["metrics"][number];
 
@@ -328,10 +328,12 @@ export function metricVisual(metric: Metric): string {
     case "scalar-range": {
       const range = rangeField(metric.value);
       const series = chartSeries(metric.value);
-      const gauge = range === undefined ? "" : svgGauge(range.value, range.max, label);
-      const spark = series.length > 1 ? svgSparkline(series, label) : "";
       const number = range === undefined ? "" : `<span class="metric-number">${escapeHtml(formatNumber(range.value))}</span>`;
-      return `<div class="metric-visual metric-visual-range">${gauge}${spark}${number}\n${dataTable(series, "Value", metric.title)}</div>`;
+      const bars = series.length > 1 ? svgBars(series, label) : "";
+      // Bars already carry the range field (and the headline number is shown), so the
+      // gauge is redundant whenever there are bars — keep it only for a lone value.
+      const gauge = bars === "" && range !== undefined ? svgGauge(range.value, range.max, label) : "";
+      return `<div class="metric-visual metric-visual-range">${gauge}${number}${bars}\n${dataTable(series, "Value", metric.title)}</div>`;
     }
     case "scalar":
     case "none":

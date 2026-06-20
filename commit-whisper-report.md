@@ -1,53 +1,51 @@
 # commit-whisper — commit-whisper
 
-_commit-whisper · 134 commits · 2 contributors · analyzed 2026-06-20_
+_commit-whisper · 135 commits · 2 contributors · analyzed 2026-06-20_
 
 **Confidence:** high — Grounding 100%, explanation coverage 100%, 3% of metrics not available.
 
 ## Summary
 
-> The repository shows high activity but faces significant risks due to knowledge concentration and weak collaboration.
+> The repository shows high activity but faces significant risks due to knowledge concentration and limited collaboration.
 
-This repository has experienced a burst of activity over a short period, with a high volume of commits and a strong adherence to commit message quality. However, it faces challenges with a high bus-factor risk due to knowledge concentration in one contributor, and limited collaboration as indicated by low co-authorship and branching discipline scores. Addressing these issues is crucial for sustainable development and reducing risk.
+The repository has experienced a burst of activity over a short period, with a high volume of commits and adherence to conventional commit standards. However, the project is heavily reliant on a single contributor, posing a high bus-factor risk. Additionally, the lack of collaboration and branching discipline are areas of concern that need addressing to ensure long-term sustainability and team resilience.
 
-- Commit volume is high with 134 commits in June, indicating active development.
-- Bus-factor risk is high with 94.78% of contributions from one author, posing a knowledge concentration risk.
-- Collaboration is limited with no co-authored commits and a low collaboration breadth score of 5.22.
-- Branching discipline is weak with 89.55% of commits going directly to the default branch.
-- Commit message quality is strong with 82.09% adherence to conventional commits.
+- High commit volume with 135 commits in 14 days.
+- 82.22% adherence to conventional commit standards.
+- High bus-factor risk with 94.81% of contributions from one author.
+- Low collaboration with 0% co-authored commits.
+- Branching discipline is weak with 89.63% direct-to-default commits.
 
 ## Explanation
 
-The repository has seen a significant amount of activity in a short span, with 134 commits in June alone. This indicates a highly active development phase. The commit frequency shows a median interval of 723 seconds between commits, suggesting rapid iterations.
+The repository has seen a significant amount of activity in a short span, with 135 commits over 14 days, indicating a highly active development phase. The commit cadence shows frequent updates, with an average interval of approximately 2.6 hours between commits, suggesting rapid development cycles.
 
-Despite the high activity, the repository is at risk due to a high bus-factor. With 94.78% of contributions coming from a single contributor, there is a significant concentration of knowledge, which could be problematic if this contributor becomes unavailable.
+Commit messages are generally well-structured, with 82.22% adhering to conventional commit standards, and 97.78% using the imperative mood. This indicates a strong focus on message quality, which is crucial for maintaining clarity in project history.
 
-Collaboration appears limited, as evidenced by the absence of co-authored commits and a low collaboration breadth score of 5.22. This suggests that development is not being shared effectively among team members.
+However, the project faces a high bus-factor risk, as 94.81% of the contributions come from a single author. This concentration of knowledge poses a significant risk to project continuity if the primary contributor becomes unavailable.
 
-Branching discipline is another area of concern. With 89.55% of commits going directly to the default branch, there is a lack of structured branching strategy, which can lead to integration issues and complicate code management.
-
-On a positive note, the repository excels in commit message quality, with 82.09% adherence to conventional commit standards, indicating clear and informative commit messages.
+Collaboration is notably low, with no co-authored commits, indicating a lack of teamwork and shared knowledge. This is compounded by weak branching discipline, as 89.63% of commits are made directly to the default branch, which can lead to integration challenges and reduced code review opportunities.
 
 ## Coaching
 
-The repository is currently in a phase of intense development activity, but it faces significant risks due to knowledge concentration and limited collaboration. This improvement plan focuses on addressing these risks to ensure sustainable development and reduce potential disruptions.
+The repository is in a critical phase of development with high activity but faces risks due to knowledge concentration and limited collaboration. This improvement plan addresses these issues to enhance sustainability and team resilience.
 
 ### 1. Knowledge Distribution
 
-- Encourage knowledge sharing by involving more contributors in key areas, especially where one contributor holds 100% ownership.
-- Implement pair programming or code reviews to distribute knowledge and reduce the bus-factor risk.
+- Encourage knowledge sharing by involving more contributors in key areas, reducing the bus-factor risk from 1.
+- Implement pair programming or code review practices to distribute knowledge and reduce reliance on a single contributor.
 
 ### 2. Collaboration Enhancement
 
-- Promote co-authorship by encouraging team members to work together on commits, which can be facilitated through pair programming or collaborative tools.
-- Increase the use of pull requests to foster discussion and review, enhancing team collaboration and code quality.
+- Promote co-authorship by encouraging team members to work together on commits, aiming to increase the current 0% co-authored commits.
+- Facilitate regular team meetings to discuss ongoing work and share insights, fostering a collaborative environment.
 
-### 3. Branching Strategy
+### 3. Branching Discipline
 
-- Adopt a branching strategy such as Git Flow or GitHub Flow to improve branching discipline and reduce direct commits to the default branch.
-- Train the team on effective branching practices to ensure better code integration and management.
+- Adopt a branching strategy that reduces the 89.63% direct-to-default commit rate, such as feature branches or pull requests.
+- Implement a code review process for all merges to ensure quality and consistency, leveraging the existing 5.19% merge-based workflow.
 
-_The top priorities are to reduce the bus-factor risk by distributing knowledge and to enhance collaboration through co-authorship and improved branching strategies. Implementing these changes will mitigate risks and support sustainable development._
+_The top priorities are to reduce the bus-factor risk by distributing knowledge and to enhance collaboration through co-authorship and improved branching discipline. Addressing these areas will mitigate risks and improve the project's long-term health._
 
 ## Metrics
 
@@ -66,7 +64,7 @@ How the project moves over time.
 2026-06-16  █░░░░░░░░░░░  2
 2026-06-17  █████████░░░  24
 2026-06-18  ████████████  32
-2026-06-20  █░░░░░░░░░░░  2
+2026-06-20  █░░░░░░░░░░░  3
 ```
 
 #### Commit volume over time  ● ok  `▁▁▁▁▅▅█▁▆█▁`
@@ -85,41 +83,37 @@ How the project moves over time.
 | 2026-06-16 | 2 |
 | 2026-06-17 | 24 |
 | 2026-06-18 | 32 |
-| 2026-06-20 | 2 |
+| 2026-06-20 | 3 |
 
-- **What it means** — The commit volume shows a significant increase in activity over the analyzed period, with a peak in the third week of June. This suggests a period of intense development or a push to meet a deadline.
+- **What it means** — The commit volume shows a significant increase in activity over the analyzed period, with a peak in the third week of June. This suggests a concentrated effort or a deadline-driven push during this time.
 - **Strengths**
-  - High activity in the third week indicates strong team engagement.
-- **Needs improvement**
-  - The uneven distribution of commits suggests potential bottlenecks or rushed work.
+  - High commit volume indicates active development.
+- **Needs improvement** — —
 - **Suggestions**
-  - Encourage more consistent commit activity to avoid last-minute rushes.
-  - Investigate the reasons for low activity on certain days to ensure balanced workload.
+  - Maintain consistent commit activity to avoid burnout and ensure steady progress.
 
 #### Commit frequency / cadence  ● ok
 
 ```
-averageIntervalSeconds  ████████████  9407.89
-medianIntervalSeconds   █░░░░░░░░░░░  723
-intervalCount           ░░░░░░░░░░░░  133
+averageIntervalSeconds  ████████████  9340.31
+medianIntervalSeconds   █░░░░░░░░░░░  720.5
+intervalCount           ░░░░░░░░░░░░  134
 ```
 
 - **Value**
 
 | Item | Value |
 | --- | --- |
-| averageIntervalSeconds | 9407.89 |
-| medianIntervalSeconds | 723 |
-| intervalCount | 133 |
+| averageIntervalSeconds | 9340.31 |
+| medianIntervalSeconds | 720.5 |
+| intervalCount | 134 |
 
-- **What it means** — The commit cadence indicates a high frequency of commits, with a median interval of 723 seconds, suggesting rapid iterations and possibly small, incremental changes.
+- **What it means** — The average commit interval is approximately 2.6 hours, with a median of 12 minutes, indicating frequent commits. This suggests a healthy, iterative development process.
 - **Strengths**
-  - Frequent commits suggest active development and quick iterations.
-- **Needs improvement**
-  - The large difference between average and median intervals suggests some periods of inactivity or large gaps between commits.
+  - Frequent commits suggest active and ongoing development.
+- **Needs improvement** — —
 - **Suggestions**
-  - Aim for more consistent commit intervals to maintain steady progress.
-  - Review workflow to identify and address causes of longer commit intervals.
+  - Continue maintaining frequent commits to ensure regular progress and quick feedback loops.
 
 #### Active vs. dormant periods  ● ok
 
@@ -129,16 +123,17 @@ dormantPeriods  ░░░░░░░░░░░░  0
 ```
 
 - **Value** — 14
-- **What it means** — There are no dormant periods within the analyzed timeframe, indicating continuous activity and engagement from the team.
+- **What it means** — There are no dormant periods within the analyzed timeframe, indicating continuous activity. This is a positive sign of sustained engagement with the project.
 - **Strengths**
-  - Continuous activity with no dormant periods shows strong team engagement.
+  - Continuous activity with no dormant periods.
 - **Needs improvement** — —
-- **Suggestions** — —
+- **Suggestions**
+  - Ensure team members are not overworking by monitoring workload and encouraging breaks.
 
 #### Project age & lifespan  ● ok
 
 ```
-lifespanDays  ████████████  14.48
+lifespanDays  ████████████  14.49
 ageDays       ████████████  14.49
 ```
 
@@ -146,25 +141,25 @@ ageDays       ████████████  14.49
 
 | Item | Value |
 | --- | --- |
-| lifespanDays | 14.48 |
+| lifespanDays | 14.49 |
 | ageDays | 14.49 |
 
-- **What it means** — The project is very young, with a lifespan of just over 14 days, indicating it is in its initial development phase.
+- **What it means** — The project is 14 days old, indicating it is in its early stages. This is a critical time for setting up foundational structures and processes.
 - **Strengths**
-  - Rapid development in the early stages of the project.
+  - Active development from the start.
 - **Needs improvement** — —
 - **Suggestions**
-  - Continue to monitor development pace as the project matures to ensure sustainability.
+  - Focus on establishing strong development practices and documentation early on.
 
 #### Commit size distribution  ● ok
 
 ```
 min          ░░░░░░░░░░░░  0
-median       ░░░░░░░░░░░░  128
-p90          ███░░░░░░░░░  1233.7
+median       ░░░░░░░░░░░░  132
+p90          ███░░░░░░░░░  1225.6
 max          ████████████  4428
-mean         █░░░░░░░░░░░  483.69
-commitCount  ░░░░░░░░░░░░  134
+mean         █░░░░░░░░░░░  487.91
+commitCount  ░░░░░░░░░░░░  135
 ```
 
 - **Value**
@@ -172,20 +167,18 @@ commitCount  ░░░░░░░░░░░░  134
 | Item | Value |
 | --- | --- |
 | min | 0 |
-| median | 128 |
-| p90 | 1233.7 |
+| median | 132 |
+| p90 | 1225.6 |
 | max | 4428 |
-| mean | 483.69 |
-| commitCount | 134 |
+| mean | 487.91 |
+| commitCount | 135 |
 
-- **What it means** — The commit size distribution shows a wide range, with a median size of 128 and a maximum of 4428, indicating variability in the scope of changes per commit.
-- **Strengths**
-  - The median commit size suggests manageable, incremental changes.
+- **What it means** — The commit size distribution shows a wide range, with a median of 132 lines and a maximum of 4428 lines. This suggests variability in commit sizes, which can be typical in early project stages.
+- **Strengths** — —
 - **Needs improvement**
-  - The large maximum commit size could indicate occasional large, potentially risky changes.
+  - Large commits can be difficult to review and integrate.
 - **Suggestions**
-  - Encourage breaking down large changes into smaller, more manageable commits to reduce risk.
-  - Review larger commits to ensure they are necessary and well-documented.
+  - Encourage smaller, more frequent commits to improve code review and integration processes.
 
 #### Time-of-day / day-of-week pattern  ● ok
 
@@ -213,7 +206,7 @@ commitCount  ░░░░░░░░░░░░  134
 21  ██████████░░  28
 22  █░░░░░░░░░░░  2
 23  ░░░░░░░░░░░░  0
-24  █░░░░░░░░░░░  4
+24  ██░░░░░░░░░░  5
 ```
 
 - **Value**
@@ -242,7 +235,7 @@ commitCount  ░░░░░░░░░░░░  134
     - 21: 28
     - 22: 2
     - 23: 0
-    - 24: 4
+    - 24: 5
   - byWeekday
     - 1: 18
     - 2: 32
@@ -250,16 +243,14 @@ commitCount  ░░░░░░░░░░░░  134
     - 4: 24
     - 5: 34
     - 6: 2
-    - 7: 22
+    - 7: 23
 
-- **What it means** — Most commits occur during typical working hours, with a peak in the late afternoon, suggesting a standard work schedule. However, there is some activity outside these hours, indicating flexibility or overtime work.
-- **Strengths**
-  - Commit activity aligns with standard working hours, suggesting good work-life balance.
+- **What it means** — Most commits occur between 19:00 and 21:00 UTC, with a peak on Thursdays. This pattern may reflect team preferences or deadlines.
+- **Strengths** — —
 - **Needs improvement**
-  - Some activity outside regular hours could indicate overtime or work pressure.
+  - Evening work may indicate potential work-life balance issues.
 - **Suggestions**
-  - Ensure team members are not overworking by monitoring off-hours activity.
-  - Encourage a balanced workload to prevent burnout.
+  - Encourage flexible working hours to accommodate different time zones and personal schedules.
 
 ### B · Contribution & Ownership
 
@@ -287,15 +278,15 @@ activeWindowDays  ████████████  90
 | active | 2 |
 | activeWindowDays | 90 |
 
-- **What it means** — The repository has a total of 2 contributors, both of whom are active within the last 90 days. This indicates a small, but currently engaged team.
+- **What it means** — The repository has a total of 2 contributors, both of whom are active within the last 90 days. This indicates a small team size, which can be manageable but may also suggest limited diversity in ideas and skills.
 - **Strengths**
-  - Both contributors are active, indicating consistent engagement.
+  - Both contributors are active, indicating engagement.
 - **Needs improvement**
-  - The contributor count is low, which may pose risks for knowledge sharing and workload distribution.
+  - The team size is small, which could lead to bottlenecks or over-reliance on individuals.
 - **Suggestions**
-  - Consider recruiting additional contributors to diversify skills and reduce dependency on a small team.
+  - Consider recruiting additional contributors to diversify skills and reduce risk of over-reliance.
 
-#### Contribution distribution  ▲ risk  **94.78/100**
+#### Contribution distribution  ▲ risk  **94.81/100**
 
 - **Value**
 
@@ -304,15 +295,15 @@ activeWindowDays  ████████████  90
 | authorCount | 2 |
 | giniCommits | 0.45 |
 | giniLines | 0.49 |
-| topCommitSharePct | 94.78 |
+| topCommitSharePct | 94.81 |
 | top3CommitSharePct | 100 |
 
-- **What it means** — The contribution distribution shows a high concentration of work by one contributor, with 94.78% of commits and 99.34% of lines of code. This suggests a potential imbalance in workload and knowledge concentration.
+- **What it means** — The contribution distribution shows a high concentration of work by one contributor, with 94.81% of commits and 99.35% of lines of code. This indicates a significant imbalance in contributions.
 - **Strengths** — —
 - **Needs improvement**
-  - High concentration of contributions by one individual can lead to bottlenecks and risks if that person becomes unavailable.
+  - High concentration of contributions by one individual, which can lead to knowledge silos.
 - **Suggestions**
-  - Encourage more balanced contributions by distributing tasks more evenly among team members.
+  - Encourage more balanced contributions by involving the second contributor in more tasks or onboarding new contributors.
 
 #### Bus-factor / knowledge concentration  ▲ risk  **50/100**
 
@@ -322,15 +313,15 @@ activeWindowDays  ████████████  90
 | --- | --- |
 | busFactor | 1 |
 | thresholdPct | 50 |
-| topAuthorSharePct | 94.78 |
+| topAuthorSharePct | 94.81 |
 | totalAuthors | 2 |
 
-- **What it means** — The bus factor is 1, meaning the project heavily relies on a single contributor. This is a risk for project continuity if that contributor leaves or is unavailable.
+- **What it means** — The bus factor is 1, meaning the project heavily relies on a single contributor. If this person were unavailable, it could significantly impact the project.
 - **Strengths** — —
 - **Needs improvement**
-  - The low bus factor indicates a critical dependency on one contributor.
+  - The bus factor is low, indicating a high risk if the main contributor becomes unavailable.
 - **Suggestions**
-  - Increase the bus factor by involving more contributors in key areas of the project.
+  - Increase the bus factor by distributing knowledge and responsibilities among more contributors.
 
 #### New vs. departed contributors  ● ok
 
@@ -352,23 +343,24 @@ departWindowDays      ████████████  180
 | onboardWindowDays | 90 |
 | departWindowDays | 180 |
 
-- **What it means** — All contributors are new within the last 90 days, with no departures in the last 180 days. This suggests recent growth in the team without losing members.
+- **What it means** — Both contributors are new within the last 90 days, with no departures in the last 180 days. This suggests recent growth but also a lack of long-term contributors.
 - **Strengths**
-  - No contributors have departed, indicating stability.
-- **Needs improvement** — —
+  - No contributors have departed recently, indicating stability.
+- **Needs improvement**
+  - All contributors are new, which might mean a lack of historical knowledge.
 - **Suggestions**
-  - Maintain engagement strategies to ensure new contributors remain active.
+  - Focus on retaining current contributors to build long-term project knowledge.
 
 #### Ownership by area  ● ok
 
 ```
 src/cli                        ████████████  150
 docs/implementation-artifacts  ███████████░  137
-.                              ████████░░░░  104
+.                              ████████░░░░  106
 src/narrate                    █████░░░░░░░  61
 src/config                     ████░░░░░░░░  53
 src/retrieve                   ████░░░░░░░░  45
-src/render/html                ███░░░░░░░░░  38
+src/render/html                ███░░░░░░░░░  40
 src/analyze                    ███░░░░░░░░░  37
 src/license                    ███░░░░░░░░░  35
 src/assemble                   ██░░░░░░░░░░  23
@@ -385,9 +377,9 @@ src/assemble                   ██░░░░░░░░░░  23
       - authorCount: 1
       - topAuthorSharePct: 100
     - .
-      - touchCount: 104
+      - touchCount: 106
       - authorCount: 2
-      - topAuthorSharePct: 88.46
+      - topAuthorSharePct: 88.68
     - src/narrate
       - touchCount: 61
       - authorCount: 1
@@ -401,7 +393,7 @@ src/assemble                   ██░░░░░░░░░░  23
       - authorCount: 1
       - topAuthorSharePct: 100
     - src/render/html
-      - touchCount: 38
+      - touchCount: 40
       - authorCount: 1
       - topAuthorSharePct: 100
     - src/analyze
@@ -473,12 +465,12 @@ src/assemble                   ██░░░░░░░░░░  23
       - touchCount: 11
       - authorCount: 1
       - topAuthorSharePct: 100
-    - src/config/env.test.ts
+    - commit-whisper-report.html
       - touchCount: 8
       - authorCount: 1
       - topAuthorSharePct: 100
-    - commit-whisper-report.html
-      - touchCount: 7
+    - src/config/env.test.ts
+      - touchCount: 8
       - authorCount: 1
       - topAuthorSharePct: 100
     - sonar-project.properties
@@ -498,12 +490,12 @@ src/assemble                   ██░░░░░░░░░░  23
       - authorCount: 1
       - topAuthorSharePct: 100
 
-- **What it means** — Ownership by area shows that most directories and files are dominated by a single author, indicating a lack of shared ownership.
+- **What it means** — Ownership by area shows that most directories and files are dominated by a single author, indicating potential knowledge silos.
 - **Strengths** — —
 - **Needs improvement**
-  - Single-author dominance in many areas can lead to knowledge silos.
+  - High ownership concentration in specific areas, which can lead to bottlenecks.
 - **Suggestions**
-  - Promote code reviews and pair programming to increase shared ownership and knowledge transfer.
+  - Encourage cross-training and code reviews to spread knowledge across the team.
 
 #### Co-authorship / collaboration signal  ● ok  **0/100**
 
@@ -516,12 +508,12 @@ src/assemble                   ██░░░░░░░░░░  23
 | totalCoAuthorTrailers | 0 |
 | distinctCoAuthors | 0 |
 
-- **What it means** — There are no commits with co-authors, indicating a lack of collaborative coding practices.
+- **What it means** — There are no commits with co-authors, indicating a lack of collaboration in commit activities. This might suggest isolated work practices.
 - **Strengths** — —
 - **Needs improvement**
-  - The absence of co-authored commits suggests limited collaboration.
+  - Lack of co-authorship suggests limited collaboration.
 - **Suggestions**
-  - Encourage practices like pair programming or code reviews to foster collaboration.
+  - Promote pair programming or collaborative code reviews to enhance teamwork.
 
 ### C · Commit Message Quality
 
@@ -529,60 +521,60 @@ How clearly the history communicates intent.
 
 _No group-overview chart — see the metrics below._
 
-#### Message length distribution  ● ok  **50/100**
+#### Message length distribution  ● ok  **50.37/100**
 
 - **Value**
 
 | Field | Value |
 | --- | --- |
 | emptyMessageCount | 0 |
-| withBodySharePct | 50 |
-| commitCount | 134 |
+| withBodySharePct | 50.37 |
+| commitCount | 135 |
 
-- **What it means** — The message length distribution indicates that commit messages are generally well-structured, with a median length of 63.5 characters and no empty messages. Half of the commits include a body, suggesting detailed documentation for significant changes.
+- **What it means** — The message length distribution indicates that commit messages are generally well-structured, with a median length of 64 characters and no empty messages. Half of the commits include a body, suggesting detailed documentation for significant changes.
 - **Strengths**
   - Commit messages are consistently informative with no empty messages.
 - **Needs improvement**
-  - Increase the percentage of commits with a body to provide more context.
+  - Increase the percentage of commits with detailed bodies.
 - **Suggestions**
-  - Encourage developers to add more detailed bodies to commit messages, especially for complex changes.
+  - Encourage developers to include more detailed bodies in commit messages, especially for complex changes.
 
-#### Conventional Commits adherence  ● ok  **82.09/100**
+#### Conventional Commits adherence  ● ok  **82.22/100**
 
 - **Value**
 
 | Field | Value |
 | --- | --- |
-| adherentCount | 110 |
-| adherenceSharePct | 82.09 |
-| subjectsConsidered | 134 |
+| adherentCount | 111 |
+| adherenceSharePct | 82.22 |
+| subjectsConsidered | 135 |
 
-- **What it means** — The repository shows strong adherence to the Conventional Commits standard, with 82.09% of commits following the convention. This helps maintain clarity and consistency in commit messages.
+- **What it means** — The repository shows strong adherence to the Conventional Commits standard, with 82.22% of commits following the convention. This helps maintain clarity and consistency in commit messages.
 - **Strengths**
   - High adherence to Conventional Commits, enhancing clarity.
 - **Needs improvement**
   - Increase adherence to reach closer to 100%.
 - **Suggestions**
-  - Conduct a team review of the Conventional Commits guidelines to ensure full understanding and compliance.
+  - Conduct a review session on Conventional Commits to ensure all team members are familiar with the guidelines.
 
-#### Imperative-mood / style signal  ● ok  **97.76/100**
+#### Imperative-mood / style signal  ● ok  **97.78/100**
 
 - **Value**
 
 | Field | Value |
 | --- | --- |
-| subjectsConsidered | 134 |
-| imperativeMoodSharePct | 97.76 |
-| capitalizedSubjectSharePct | 23.88 |
-| noTrailingPeriodSharePct | 99.25 |
+| subjectsConsidered | 135 |
+| imperativeMoodSharePct | 97.78 |
+| capitalizedSubjectSharePct | 23.7 |
+| noTrailingPeriodSharePct | 99.26 |
 
-- **What it means** — The use of imperative mood in commit messages is very high at 97.76%, which is a best practice for clarity and consistency. However, only 23.88% of subjects are capitalized, which could be improved for uniformity.
+- **What it means** — The use of imperative mood in commit messages is very high at 97.78%, which is a best practice for clarity and consistency. However, only 23.7% of subjects are capitalized, which could be improved for uniformity.
 - **Strengths**
   - High use of imperative mood, which is a best practice.
 - **Needs improvement**
-  - Increase the percentage of capitalized subjects for consistency.
+  - Increase the capitalization of commit message subjects.
 - **Suggestions**
-  - Encourage the team to capitalize the first word of commit messages to align with best practices.
+  - Encourage capitalization of the first word in commit messages to improve consistency.
 
 #### Low-information message rate  ● ok  **0/100**
 
@@ -595,32 +587,32 @@ _No group-overview chart — see the metrics below._
 | emptyCount | 0 |
 | singleWordCount | 0 |
 | boilerplateCount | 0 |
-| commitCount | 134 |
+| commitCount | 135 |
 
 - **What it means** — There are no low-information messages, indicating that all commit messages provide meaningful information. This is a strong indicator of good communication practices within the team.
 - **Strengths**
-  - All commit messages are informative, with no low-information messages.
+  - All commit messages are informative with no low-information entries.
 - **Needs improvement** — —
 - **Suggestions** — —
 
-#### Issue/ticket reference rate  ● ok  **5.22/100**
+#### Issue/ticket reference rate  ● ok  **5.19/100**
 
 - **Value**
 
 | Field | Value |
 | --- | --- |
 | withReferenceCount | 7 |
-| referenceSharePct | 5.22 |
-| commitCount | 134 |
+| referenceSharePct | 5.19 |
+| commitCount | 135 |
 
-- **What it means** — Only 5.22% of commits reference an issue or ticket, which suggests that many changes may not be linked to tracked issues. This can make it harder to trace changes back to specific tasks or bugs.
+- **What it means** — Only 5.19% of commits reference an issue or ticket, which suggests that the linkage between commits and issue tracking could be improved for better traceability.
 - **Strengths** — —
 - **Needs improvement**
   - Increase the rate of issue or ticket references in commit messages.
 - **Suggestions**
-  - Implement a policy to include issue or ticket references in commit messages where applicable.
+  - Encourage developers to reference relevant issues or tickets in commit messages to improve traceability.
 
-#### Revert / fixup / amend signal  ● ok  **0.75/100**
+#### Revert / fixup / amend signal  ● ok  **0.74/100**
 
 - **Value**
 
@@ -630,10 +622,10 @@ _No group-overview chart — see the metrics below._
 | fixupCount | 0 |
 | squashCount | 0 |
 | churnOfIntentCount | 1 |
-| churnOfIntentSharePct | 0.75 |
-| commitCount | 134 |
+| churnOfIntentSharePct | 0.74 |
+| commitCount | 135 |
 
-- **What it means** — The low number of reverts and no fixups or squashes indicate minimal churn, suggesting that commits are generally well-considered and stable.
+- **What it means** — The low churn of intent (0.74%) indicates minimal need for reverts or fixups, suggesting that commits are generally well-considered and stable.
 - **Strengths**
   - Low churn of intent, indicating stable and well-considered commits.
 - **Needs improvement** — —
@@ -651,63 +643,62 @@ branchesWithUniqueCommits  ███░░░░░░░░░  7
 longestBranchDays          ░░░░░░░░░░░░  0.01
 ```
 
-#### Branch/merge topology summary  ● ok  **5.22/100**
+#### Branch/merge topology summary  ● ok  **5.19/100**
 
 - **Value**
 
 | Field | Value |
 | --- | --- |
-| totalCommits | 134 |
+| totalCommits | 135 |
 | mergeCommitCount | 7 |
-| mergeSharePct | 5.22 |
-| regularCommitCount | 126 |
+| mergeSharePct | 5.19 |
+| regularCommitCount | 127 |
 | rootCommitCount | 1 |
 | octopusMergeCount | 0 |
 
-- **What it means** — The repository has a total of 134 commits, with 7 being merge commits, indicating a merge-based workflow. The low percentage of merge commits (5.22%) suggests that most changes are committed directly rather than through feature branches.
+- **What it means** — This metric shows the repository's commit structure, indicating a merge-based workflow with 135 total commits, of which 7 are merge commits. The low merge share percentage (5.19%) suggests infrequent merging, with most commits being regular ones.
 - **Strengths**
-  - The workflow is clear and consistent, with a low number of merge commits indicating streamlined integration.
+  - The presence of a structured merge-based workflow.
 - **Needs improvement**
-  - Consider increasing the use of feature branches to enhance code review and testing processes.
+  - Increase the frequency of merges to better integrate changes.
 - **Suggestions**
-  - Encourage the team to use feature branches more frequently to facilitate better code reviews and testing before merging.
+  - Encourage more frequent merging to ensure changes are integrated regularly, which can help in maintaining code quality and reducing integration issues.
 
-#### Merge vs. rebase tendency  ● ok  **5.22/100**
+#### Merge vs. rebase tendency  ● ok  **5.19/100**
 
 - **Value**
 
 | Field | Value |
 | --- | --- |
-| mergeSharePct | 5.22 |
-| firstParentLinearityPct | 94.78 |
+| mergeSharePct | 5.19 |
+| firstParentLinearityPct | 94.81 |
 
-- **What it means** — The repository shows a mixed tendency between merging and rebasing, with a high first-parent linearity percentage (94.78%). This suggests that while merges are used, the history is kept relatively linear, possibly through rebasing or squashing before merging.
+- **What it means** — The repository exhibits a mixed tendency between merging and rebasing, with a high first parent linearity percentage (94.81%). This suggests a preference for maintaining a linear history, though some merges are still present.
 - **Strengths**
-  - Maintaining a linear history helps in understanding the project history and simplifies debugging.
+  - High first parent linearity indicates a clean and understandable commit history.
 - **Needs improvement**
-  - The mixed tendency might indicate inconsistency in workflow practices.
+  - Clarify the team's strategy on when to use merge vs. rebase to ensure consistency.
 - **Suggestions**
-  - Standardize the workflow by deciding on a preferred method (merge or rebase) and ensure the team follows it consistently.
+  - Define clear guidelines on when to use merging versus rebasing to maintain a consistent workflow and avoid confusion.
 
-#### Direct-to-default-branch rate  ▲ risk  **89.55/100**
+#### Direct-to-default-branch rate  ▲ risk  **89.63/100**
 
 - **Value**
 
 | Field | Value |
 | --- | --- |
-| directToDefaultCount | 120 |
-| directToDefaultSharePct | 89.55 |
+| directToDefaultCount | 121 |
+| directToDefaultSharePct | 89.63 |
 | viaMergeCount | 14 |
-| mainlineCommitCount | 127 |
-| totalCommits | 134 |
+| mainlineCommitCount | 128 |
+| totalCommits | 135 |
 
-- **What it means** — A high percentage (89.55%) of commits are made directly to the default branch, indicating a preference for direct commits over feature branches.
-- **Strengths**
-  - Direct commits can speed up the development process when changes are small and low-risk.
+- **What it means** — A high percentage (89.63%) of commits are made directly to the default branch, indicating a tendency to bypass feature branches.
+- **Strengths** — —
 - **Needs improvement**
-  - High direct-to-default rate can lead to less thorough code reviews and testing.
+  - Reduce direct commits to the default branch to encourage feature branch usage.
 - **Suggestions**
-  - Encourage the use of pull requests and feature branches to improve code quality and collaboration.
+  - Implement a policy to encourage the use of feature branches for new work, which can improve code review processes and reduce the risk of introducing errors directly into the mainline.
 
 #### Long-lived branch signal  ● ok
 
@@ -729,13 +720,11 @@ longestBranchDays          ░░░░░░░░░░░░  0.01
 | branchesWithUniqueCommits | 7 |
 | longestBranchDays | 0.01 |
 
-- **What it means** — There are no long-lived branches, with the longest branch lasting only 0.01 days. This indicates that branches are either merged quickly or not used extensively.
+- **What it means** — No long-lived branches were detected, with the longest branch lasting only 0.01 days. This suggests efficient branch management and quick integration of changes.
 - **Strengths**
-  - Quick merging of branches can lead to faster integration and deployment.
-- **Needs improvement**
-  - Lack of long-lived branches might suggest insufficient use of feature branches for larger tasks.
-- **Suggestions**
-  - For larger features, consider using branches that last longer to allow for more comprehensive development and testing.
+  - Efficient branch management with no long-lived branches.
+- **Needs improvement** — —
+- **Suggestions** — —
 
 #### Average changes per merge  ● ok
 
@@ -757,13 +746,13 @@ mergesWithNoUniqueCommits  ░░░░░░░░░░░░  0
 | maxIntegratedChanges | 234 |
 | mergesWithNoUniqueCommits | 0 |
 
-- **What it means** — The average number of changes per merge is 60.71, with a maximum of 234 changes in a single merge. This suggests that some merges integrate a significant amount of work, which could complicate reviews and increase the risk of integration issues.
+- **What it means** — The average number of changes per merge is 60.71, with a median of 29 and a maximum of 234. This indicates variability in the size of changes being merged.
 - **Strengths**
-  - Merges are being used effectively to integrate changes.
+  - No merges with no unique commits, indicating meaningful integration.
 - **Needs improvement**
-  - Large merges can be difficult to review and may introduce bugs.
+  - Reduce the variability in the size of changes being merged to ensure more consistent integration.
 - **Suggestions**
-  - Encourage more frequent, smaller merges to make code reviews easier and reduce the risk of integration issues.
+  - Encourage smaller, more frequent merges to maintain a steady flow of changes and reduce the risk of large, disruptive integrations.
 
 ### E · Churn & Hotspots
 
@@ -788,55 +777,55 @@ totalDirectoriesTouched  █░░░░░░░░░░░  29
 | totalFilesTouched | 262 |
 | totalDirectoriesTouched | 29 |
 
-- **What it means** — The 'Most-changed files / directories' metric shows which files and directories have been modified most frequently. High touch counts and churn in files like `package-lock.json` and `src/cli/interactive.ts` suggest these areas are under active development or may have stability issues.
+- **What it means** — This metric identifies the files and directories that have been changed most frequently. High touch counts and churn in files like `package-lock.json` and `src/cli/interactive.ts` suggest these areas are under active development or may be unstable.
 - **Strengths**
-  - Active development in key areas like `src/cli` indicates ongoing improvements.
+  - Active development in `src/cli` indicates ongoing feature enhancements.
 - **Needs improvement**
-  - High churn in `package-lock.json` suggests potential dependency management issues.
+  - High churn in `package-lock.json` suggests potential dependency instability.
 - **Suggestions**
-  - Review dependency management practices to reduce churn in `package-lock.json`.
-  - Investigate stability or design issues in `src/cli/interactive.ts` due to high churn.
+  - Review dependency management practices to stabilize `package-lock.json`.
+  - Consider refactoring `src/cli/interactive.ts` to reduce churn.
 
 #### Churn rate over time  ● ok  `▅`
 
 - **Value**
   - perMonth
-    - 2026-06: 64815
-  - totalChurn: 64815
+    - 2026-06: 65868
+  - totalChurn: 65868
 
-- **What it means** — The 'Churn rate over time' metric indicates the amount of code added and removed, with a total churn of 64,815 lines in June 2026. This high churn suggests significant development activity or refactoring.
+- **What it means** — The churn rate over time shows a high level of activity with 65,868 lines changed in June 2026. This indicates significant development or refactoring efforts.
 - **Strengths**
-  - High development activity indicates progress and adaptation.
+  - High commit count (135) suggests active development and collaboration.
 - **Needs improvement**
-  - Sustained high churn could indicate instability or frequent changes in requirements.
+  - High churn may indicate instability or frequent changes in requirements.
 - **Suggestions**
   - Ensure changes are well-documented to maintain codebase stability.
-  - Consider code reviews to manage and understand the impact of high churn.
+  - Conduct regular code reviews to manage and understand churn.
 
 #### Add/delete ratio  ● ok
 
 ```
-totalAdditions  ████████████  55682
-totalDeletions  ██░░░░░░░░░░  9133
-addDeleteRatio  ░░░░░░░░░░░░  6.1
-netLines        ██████████░░  46549
+totalAdditions  ████████████  56252
+totalDeletions  ██░░░░░░░░░░  9616
+addDeleteRatio  ░░░░░░░░░░░░  5.85
+netLines        ██████████░░  46636
 ```
 
 - **Value**
 
 | Item | Value |
 | --- | --- |
-| totalAdditions | 55682 |
-| totalDeletions | 9133 |
-| addDeleteRatio | 6.1 |
-| netLines | 46549 |
+| totalAdditions | 56252 |
+| totalDeletions | 9616 |
+| addDeleteRatio | 5.85 |
+| netLines | 46636 |
 
-- **What it means** — The 'Add/delete ratio' of 6.1 indicates that for every line deleted, about six lines are added. This suggests a growing codebase, which is typical in active development phases.
+- **What it means** — The add/delete ratio of 5.85 indicates that for every line deleted, nearly six lines were added. This suggests expansion of the codebase, possibly due to new features or enhancements.
 - **Strengths**
-  - A positive add/delete ratio indicates expansion and feature development.
+  - Positive net lines (46,636) indicate growth and feature development.
 - **Needs improvement** — —
 - **Suggestions**
-  - Monitor the growth to ensure maintainability and avoid unnecessary complexity.
+  - Monitor for potential code bloat and ensure new code is necessary and efficient.
 
 #### File survival / age  ● ok
 
@@ -856,78 +845,79 @@ singleTouchFileCount  ███░░░░░░░░░  63
 | filesConsidered | 262 |
 | singleTouchFileCount | 63 |
 
-- **What it means** — The 'File survival / age' metric shows a median file age of 1.2 days, indicating frequent updates. This suggests active development but may also point to instability if files are frequently rewritten.
+- **What it means** — The median file age of 1.2 days suggests frequent updates, which may indicate active development or instability. A max age of 9.23 days shows some files remain stable longer.
 - **Strengths**
-  - Frequent updates can indicate responsiveness to change.
+  - Frequent updates can reflect active maintenance and responsiveness to issues.
 - **Needs improvement**
-  - Short file lifespan may suggest instability or frequent requirement changes.
+  - Short file age may indicate instability or frequent requirement changes.
 - **Suggestions**
-  - Stabilize frequently changing files by reviewing their design and requirements.
+  - Identify files with frequent changes and assess if they can be stabilized.
+  - Ensure documentation is updated to reflect frequent changes.
 
-#### Large-change events  ● ok  **12.69/100**
+#### Large-change events  ● ok  **13.33/100**
 
 - **Value**
 
 | Field | Value |
 | --- | --- |
 | thresholdLines | 1000 |
-| largeChangeCount | 17 |
-| largeChangeSharePct | 12.69 |
+| largeChangeCount | 18 |
+| largeChangeSharePct | 13.33 |
 
-- **What it means** — The 'Large-change events' metric identifies 17 events with significant churn, comprising 12.69% of all changes. This indicates periods of intense development or refactoring.
+- **What it means** — There were 18 large-change events, accounting for 13.33% of changes. This indicates significant updates or refactoring efforts, which can be disruptive if not managed well.
 - **Strengths**
-  - Large changes can be part of planned refactoring or feature rollouts.
+  - Large changes can indicate major improvements or feature additions.
 - **Needs improvement**
-  - Frequent large changes can disrupt stability and increase risk.
+  - Frequent large changes can disrupt team workflow and introduce bugs.
 - **Suggestions**
-  - Plan large changes carefully and ensure thorough testing to mitigate risks.
-  - Communicate large changes clearly to the team to align efforts.
+  - Plan large changes carefully and communicate them clearly to the team.
+  - Break down large changes into smaller, manageable parts where possible.
 
 ### F · Repository Health Signals
 
 Overall repository health signals.
 
 ```
-Message Quality         ████████████  91.05
-Commit Size Discipline  ███████████░  82.67
+Message Quality         ████████████  91.11
+Commit Size Discipline  ███████████░  81.78
 ```
 
-#### Overall hygiene score  ◐ watch  **56.97/100**
+#### Overall hygiene score  ◐ watch  **56.77/100**
 
 - **Value**
 
 | Field | Value |
 | --- | --- |
-| score | 56.97 |
+| score | 56.77 |
 | componentsContributing | 4 |
 
-- **What it means** — The overall hygiene score of 56.97 indicates a moderate level of codebase health. The score is a weighted average of several components, with strong performance in Message Quality (91.05) and Commit Size Discipline (82.67). However, low scores in Branching Discipline (10.45) and Collaboration Breadth (5.22) significantly reduce the overall score.
+- **What it means** — The overall hygiene score of 56.77 indicates a moderate level of codebase health. The score is a weighted average of several components, with Message Quality and Commit Size Discipline contributing positively. However, low scores in Branching Discipline and Collaboration Breadth significantly lower the overall score.
 - **Strengths**
-  - High Message Quality indicates clear and informative commit messages.
-  - Commit Size Discipline suggests well-managed and appropriately sized commits.
+  - High Message Quality
+  - Good Commit Size Discipline
 - **Needs improvement**
-  - Branching Discipline is very low, indicating potential issues with how branches are managed.
-  - Collaboration Breadth is also low, suggesting limited participation across the team.
+  - Branching Discipline
+  - Collaboration Breadth
 - **Suggestions**
-  - Improve Branching Discipline by adopting a more structured branching strategy, such as Git Flow or feature branching.
-  - Enhance Collaboration Breadth by encouraging more team members to contribute to the codebase.
+  - Improve branching strategies to increase the Branching Discipline score.
+  - Encourage broader collaboration to enhance Collaboration Breadth.
 
-#### Bus-factor risk flag  ▲ risk  **94.78/100**
+#### Bus-factor risk flag  ▲ risk  **94.81/100**
 
 - **Value**
 
 | Field | Value |
 | --- | --- |
 | busFactor | 1 |
-| topAuthorSharePct | 94.78 |
+| topAuthorSharePct | 94.81 |
 
-- **What it means** — The bus-factor risk is high, with a bus factor of 1, meaning that a single person holds most of the knowledge about the codebase. This is risky as it creates a dependency on one individual, with 94.78% of contributions coming from the top author.
+- **What it means** — The bus-factor risk is high, with a bus factor of 1, meaning that a single person holds most of the knowledge (94.81% contribution). This poses a significant risk if that person becomes unavailable.
 - **Strengths** — —
 - **Needs improvement**
-  - The high concentration of knowledge in one individual poses a significant risk to project continuity.
+  - Reduce knowledge concentration by distributing responsibilities more evenly across the team.
 - **Suggestions**
-  - Distribute knowledge more evenly by encouraging code reviews and pair programming.
-  - Document key processes and code areas to reduce dependency on a single contributor.
+  - Implement pair programming or code reviews to share knowledge.
+  - Encourage documentation and knowledge sharing sessions.
 
 #### Trend deltas  ○ n/a
 
@@ -940,26 +930,28 @@ Commit Size Discipline  ███████████░  82.67
 #### Hygiene strengths & weaknesses  ● ok
 
 ```
-Message Quality         ████████████  91.05
-Commit Size Discipline  ███████████░  82.67
+Message Quality         ████████████  91.11
+Commit Size Discipline  ███████████░  81.78
 ```
 
 - **Value**
   - strengths
-    - Message Quality: 91.05
-    - Commit Size Discipline: 82.67
+    - Message Quality: 91.11
+    - Commit Size Discipline: 81.78
   - weaknesses
-    - Collaboration Breadth: 5.22
-    - Branching Discipline: 10.45
+    - Collaboration Breadth: 5.19
+    - Branching Discipline: 10.37
 
-- **What it means** — The strengths and weaknesses highlight areas of high and low performance. Message Quality and Commit Size Discipline are strengths, while Collaboration Breadth and Branching Discipline are weaknesses.
+- **What it means** — The strengths and weaknesses highlight areas of high performance and areas needing improvement. Message Quality and Commit Size Discipline are strengths, while Collaboration Breadth and Branching Discipline are weaknesses.
 - **Strengths**
-  - Strong Message Quality and Commit Size Discipline indicate good practices in these areas.
+  - High Message Quality
+  - Good Commit Size Discipline
 - **Needs improvement**
-  - Collaboration Breadth and Branching Discipline need significant improvement.
+  - Collaboration Breadth
+  - Branching Discipline
 - **Suggestions**
-  - Focus on improving Collaboration Breadth by involving more team members in the development process.
-  - Enhance Branching Discipline by implementing a more consistent branching strategy.
+  - Foster a more collaborative environment to improve Collaboration Breadth.
+  - Develop better branching practices to enhance Branching Discipline.
 
 ---
-Generated by commit-whisper v1.1.2 · schemaVersion 1.0.0 · openai/gpt-4o · 2026-06-20T23:34:40.307Z
+Generated by commit-whisper v1.1.2 · schemaVersion 1.0.0 · openai/gpt-4o · 2026-06-20T23:42:56.059Z

@@ -87,6 +87,15 @@ describe("metricVisual — by shape", () => {
     expect(out).toContain("81");
   });
 
+  it("a scalar-in-range metric with several fields → bars of all the values (no gauge, no fake trend line)", () => {
+    const multi: Metric = { id: "b-contribution-distribution", group: "B", title: "Contribution distribution", status: "computed", value: { authorCount: 2, giniCommits: 0.45, topCommitSharePct: 94.7, top3CommitSharePct: 100 } };
+    const out = metricVisual(multi);
+    expect(out).toContain("chart-bars");
+    expect(out).toContain("metric-number");
+    expect(out).not.toContain("chart-gauge");
+    expect(out).not.toContain("chart-sparkline");
+  });
+
   it("a pure scalar metric → no SVG (the card shows the bold stat)", () => {
     expect(metricVisual(SCALAR)).toBe("");
   });
