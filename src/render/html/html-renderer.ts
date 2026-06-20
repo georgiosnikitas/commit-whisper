@@ -535,7 +535,8 @@ a:focus-visible, :focus-visible { outline: 2px solid var(--accent); outline-offs
 .chapter ol { margin: 0; padding-left: 1.2rem; display: grid; gap: 0.5rem; color: var(--fg-soft); }
 .coaching-closing { margin-top: 1rem; padding: 1rem 1.2rem; border: 1px solid rgba(124,92,255,0.35); border-radius: 12px; background: linear-gradient(90deg, rgba(124,92,255,0.10), transparent); }
 .metric-group .chart-panel + .metric-card { margin-top: 1.2rem; }
-.cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 1rem; margin-top: 1.2rem; align-items: stretch; }
+.cards { display: grid; grid-template-columns: 1fr; gap: 1rem; margin-top: 1.2rem; align-items: stretch; }
+@media (min-width: 720px) { .cards { grid-template-columns: repeat(2, 1fr); } }
 .cards > .metric-card { margin: 0; }
 .metric-card { background: var(--surface); border: 1px solid var(--border); border-radius: 14px; padding: 0.7rem 1.1rem; margin: 0.85rem 0; transition: transform 0.15s ease, border-color 0.15s ease, box-shadow 0.15s ease; }
 .metric-card:hover { transform: translateY(-2px); border-color: #2f3a4d; box-shadow: var(--shadow); }
