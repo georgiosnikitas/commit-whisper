@@ -1,6 +1,6 @@
 import { describe, it, expect } from "vitest";
 
-import { detectShape, extractSeries, rangeField } from "./shape.js";
+import { chartSeries, detectShape, extractSeries, rangeField } from "./shape.js";
 
 describe("detectShape", () => {
   it("classifies a perMonth time-bucket object as timeseries", () => {
@@ -70,16 +70,27 @@ describe("extractSeries", () => {
   });
 
   it("pulls a series from a nested numeric map when there are no direct numeric fields", () => {
-    expect(extractSeries({ timezone: "UTC", byHour: { "20": 34, "21": 28 } })).toEqual([
+    expect(chartSeries({ timezone: "UTC", byHour: { "20": 34, "21": 28 } })).toEqual([
       { label: "20", value: 34 },
       { label: "21", value: 28 },
     ]);
   });
 
   it("pulls a series from a nested array of rows, labelled then first numeric field", () => {
-    expect(extractSeries({ topDirectories: [{ path: "src", touchCount: 9 }, { path: "docs", touchCount: 4 }] })).toEqual([
+    expect(chartSeries({ topDirectories: [{ path: "src", touchCount: 9 }, { path: "docs", touchCount: 4 }] })).toEqual([
       { label: "src", value: 9 },
       { label: "docs", value: 4 },
+    ]);
+  });
+
+  it("stays strict for the value display: a time-bucket of objects yields [] (renders as a tree)", () => {
+    expect(extractSeries({ perMonth: { "2026-06": { additions: 5, deletions: 2, churn: 7 } } })).toEqual([]);
+  });
+
+  it("charts a time-bucket of objects by a representative field (prefers churn)", () => {
+    expect(chartSeries({ perMonth: { "2026-05": { additions: 3, churn: 5 }, "2026-06": { additions: 9, churn: 11 } } })).toEqual([
+      { label: "2026-05", value: 5 },
+      { label: "2026-06", value: 11 },
     ]);
   });
 

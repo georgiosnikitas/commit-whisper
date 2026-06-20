@@ -20,7 +20,7 @@
 import type { MetricGroup } from "../../analyze/metric.js";
 import type { ReportAnalysis } from "../../assemble/report-schema.js";
 import { escapeHtml } from "./escape.js";
-import { detectShape, extractSeries, rangeField, type SeriesPoint } from "./shape.js";
+import { chartSeries, detectShape, rangeField, type SeriesPoint } from "./shape.js";
 import { svgBars, svgDonut, svgGauge, svgHBars, svgLine, svgRadar, svgRadialGauge, svgSparkline } from "./svg.js";
 
 type Metric = ReportAnalysis["metrics"][number];
@@ -318,16 +318,16 @@ export function metricVisual(metric: Metric): string {
   const shape = detectShape(metric.value);
   switch (shape) {
     case "timeseries": {
-      const series = extractSeries(metric.value);
+      const series = chartSeries(metric.value);
       return `<div class="metric-visual">${svgLine(series, label)}\n${dataTable(series, "Value", metric.title)}</div>`;
     }
     case "distribution": {
-      const series = extractSeries(metric.value);
+      const series = chartSeries(metric.value);
       return `<div class="metric-visual">${svgBars(series, label)}\n${dataTable(series, "Value", metric.title)}</div>`;
     }
     case "scalar-range": {
       const range = rangeField(metric.value);
-      const series = extractSeries(metric.value);
+      const series = chartSeries(metric.value);
       const gauge = range === undefined ? "" : svgGauge(range.value, range.max, label);
       const spark = series.length > 1 ? svgSparkline(series, label) : "";
       const number = range === undefined ? "" : `<span class="metric-number">${escapeHtml(formatNumber(range.value))}</span>`;

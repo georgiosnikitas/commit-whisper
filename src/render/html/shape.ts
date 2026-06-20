@@ -57,6 +57,43 @@ function numericEntries(value: Record<string, unknown>): SeriesPoint[] {
     .map(([label, v]) => ({ label, value: v as number }));
 }
 
+/** Preferred numeric field names when a series bucket is an object (first match wins). */
+const BUCKET_FIELDS = ["churn", "value", "count", "total", "score"] as const;
+
+/**
+ * A single representative number for a series bucket: the number itself, or — when
+ * the bucket is an object (e.g. a month → `{ additions, deletions, churn, … }`) — a
+ * preferred numeric field (`BUCKET_FIELDS`), falling back to its first numeric field.
+ */
+function bucketNumber(value: unknown): number | undefined {
+  if (typeof value === "number") {
+    return Number.isFinite(value) ? value : undefined;
+  }
+  if (!isObject(value)) {
+    return undefined;
+  }
+  const nums = numericEntries(value);
+  for (const field of BUCKET_FIELDS) {
+    const hit = nums.find((p) => p.label === field);
+    if (hit !== undefined) {
+      return hit.value;
+    }
+  }
+  return nums[0]?.value;
+}
+
+/** A labelled series from an object's entries via `bucketNumber` (object-valued buckets included). */
+function bucketEntries(value: Record<string, unknown>): SeriesPoint[] {
+  const out: SeriesPoint[] = [];
+  for (const [label, v] of Object.entries(value)) {
+    const num = bucketNumber(v);
+    if (num !== undefined) {
+      out.push({ label, value: num });
+    }
+  }
+  return out;
+}
+
 /**
  * The first nested object/array on `value` that yields a chartable series — for
  * metrics whose data sits one level down under a key (e.g. `byHour`/`byWeekday`,
@@ -152,7 +189,13 @@ function pointFromElement(element: unknown, index: number): SeriesPoint | undefi
   return { label, value: first.value };
 }
 
-/** Pull a labelled numeric series from a metric value (deterministic; `[]` if none). */
+/**
+ * Pull a labelled numeric series from a metric value for the VALUE display
+ * (data tables / value-tree decision) — strict: only direct numeric fields of the
+ * value (or a time bucket of numbers). Object-valued buckets / nested maps yield
+ * `[]` here so the value renders as its full labelled tree, not a lossy one-number
+ * series. The richer chart-oriented extraction lives in `chartSeries`.
+ */
 export function extractSeries(value: unknown): SeriesPoint[] {
   if (Array.isArray(value)) {
     return value.map((el, i) => pointFromElement(el, i)).filter((p): p is SeriesPoint => p !== undefined);
@@ -163,6 +206,31 @@ export function extractSeries(value: unknown): SeriesPoint[] {
   const bucket = timeBucket(value);
   if (bucket !== undefined) {
     return numericEntries(bucket);
+  }
+  if (isDateKeyedNumbers(value)) {
+    return numericEntries(value);
+  }
+  return numericEntries(value);
+}
+
+/**
+ * Pull a labelled numeric series for a CHART/sparkline — the same as
+ * `extractSeries` but reaching one level deeper so single-shape-but-nested values
+ * still chart: a time bucket of objects collapses to a representative field per
+ * bucket (`bucketEntries`, e.g. month → `churn`), and a value whose only series
+ * sits under a key (`byHour`, `topDirectories`) is found via `nestedChartable`.
+ * Deterministic; `[]` when nothing is chartable.
+ */
+export function chartSeries(value: unknown): SeriesPoint[] {
+  if (Array.isArray(value)) {
+    return extractSeries(value);
+  }
+  if (!isObject(value)) {
+    return [];
+  }
+  const bucket = timeBucket(value);
+  if (bucket !== undefined) {
+    return bucketEntries(bucket);
   }
   if (isDateKeyedNumbers(value)) {
     return numericEntries(value);

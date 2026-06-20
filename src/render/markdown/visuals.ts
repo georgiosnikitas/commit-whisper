@@ -11,7 +11,7 @@
 
 import type { MetricGroup } from "../../analyze/metric.js";
 import type { ReportAnalysis } from "../../assemble/report-schema.js";
-import { detectShape, extractSeries, rangeField, type SeriesPoint } from "../html/shape.js";
+import { chartSeries, detectShape, extractSeries, rangeField, type SeriesPoint } from "../html/shape.js";
 import { escapeCell } from "./escape.js";
 
 type Metric = ReportAnalysis["metrics"][number];
@@ -109,7 +109,7 @@ function representativeSeries(metrics: readonly Metric[]): SeriesPoint[] | undef
     if (shape !== "timeseries" && shape !== "distribution") {
       continue; // a lone scalar / range field is shown on its card, not as a degenerate overview
     }
-    const series = extractSeries(metric.value);
+    const series = chartSeries(metric.value);
     if (series.length > 0) {
       return series;
     }
@@ -152,11 +152,11 @@ export function metricVisualMarkdown(metric: Metric): MetricVisual {
   const shape = detectShape(metric.value);
   switch (shape) {
     case "timeseries": {
-      const spark = sparkline(extractSeries(metric.value));
+      const spark = sparkline(chartSeries(metric.value));
       return spark === "" ? none : { headingSuffix: `\`${spark}\``, body: "" };
     }
     case "distribution":
-      return { headingSuffix: "", body: textBars(extractSeries(metric.value)) };
+      return { headingSuffix: "", body: textBars(chartSeries(metric.value)) };
     case "scalar-range": {
       const range = rangeField(metric.value);
       return range === undefined ? none : { headingSuffix: `**${round(range.value)}/${round(range.max)}**`, body: "" };
