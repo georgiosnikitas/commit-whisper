@@ -47,6 +47,10 @@ describe("detectShape", () => {
   it("classifies a value whose series sits in a nested array of rows as distribution", () => {
     expect(detectShape({ topDirectories: [{ path: "src", touchCount: 9 }, { path: "docs", touchCount: 4 }] })).toBe("distribution");
   });
+
+  it("classifies a value that only compares collections as a distribution (collection counts)", () => {
+    expect(detectShape({ dormantGapThresholdDays: 14, activePeriods: [{ start: "a", end: "b" }], dormantPeriods: [] })).toBe("distribution");
+  });
 });
 
 describe("extractSeries", () => {
@@ -91,6 +95,13 @@ describe("extractSeries", () => {
     expect(chartSeries({ perMonth: { "2026-05": { additions: 3, churn: 5 }, "2026-06": { additions: 9, churn: 11 } } })).toEqual([
       { label: "2026-05", value: 5 },
       { label: "2026-06", value: 11 },
+    ]);
+  });
+
+  it("charts collection sizes when a value only compares collections", () => {
+    expect(chartSeries({ dormantGapThresholdDays: 14, activePeriods: [{ start: "a", end: "b" }], dormantPeriods: [] })).toEqual([
+      { label: "activePeriods", value: 1 },
+      { label: "dormantPeriods", value: 0 },
     ]);
   });
 

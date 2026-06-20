@@ -121,6 +121,22 @@ function nestedChartable(value: Record<string, unknown>): { series: SeriesPoint[
   return undefined;
 }
 
+/**
+ * Array-valued own fields → a labelled series of their LENGTHS — the chartable
+ * read of values that compare collections rather than carry numbers (e.g. Active
+ * vs. dormant periods → `activePeriods`/`dormantPeriods`). A pure-count fallback,
+ * tried only after numeric extraction (so row/series data always wins).
+ */
+function collectionCounts(value: Record<string, unknown>): SeriesPoint[] {
+  const out: SeriesPoint[] = [];
+  for (const [label, v] of Object.entries(value)) {
+    if (Array.isArray(v)) {
+      out.push({ label, value: v.length });
+    }
+  }
+  return out;
+}
+
 /** A 0–100 share/score field on `value` → `{ value, max: 100 }` for a gauge. */
 export function rangeField(value: unknown): { value: number; max: number } | undefined {
   if (!isObject(value)) {
@@ -155,12 +171,15 @@ export function detectShape(value: unknown): ValueShape {
   if (nums.length >= 2) {
     return "distribution";
   }
-  if (nums.length === 1) {
-    return "scalar";
-  }
   const nested = nestedChartable(value);
   if (nested !== undefined) {
     return nested.timeseries ? "timeseries" : "distribution";
+  }
+  if (collectionCounts(value).length >= 2) {
+    return "distribution";
+  }
+  if (nums.length === 1) {
+    return "scalar";
   }
   return "none";
 }
@@ -236,8 +255,16 @@ export function chartSeries(value: unknown): SeriesPoint[] {
     return numericEntries(value);
   }
   const direct = numericEntries(value);
-  if (direct.length > 0) {
+  if (direct.length >= 2) {
     return direct;
   }
-  return nestedChartable(value)?.series ?? [];
+  const nested = nestedChartable(value);
+  if (nested !== undefined) {
+    return nested.series;
+  }
+  const collections = collectionCounts(value);
+  if (collections.length >= 2) {
+    return collections;
+  }
+  return direct;
 }
