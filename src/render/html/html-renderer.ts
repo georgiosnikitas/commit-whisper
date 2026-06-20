@@ -32,7 +32,7 @@ import type { Report, ReportAnalysis, ReportNarrative, ReportProvenance } from "
 import type { MetricGroup } from "../../analyze/metric.js";
 import { classifyReport, type ShowpieceReport, type SubstrateFraming } from "../render.port.js";
 import { escapeHtml } from "./escape.js";
-import { groupOverviewPanel } from "./charts.js";
+import { groupOverviewPanel, metricVisual } from "./charts.js";
 import { classifyHealth, HEALTH_GLYPH, HEALTH_LABEL } from "./health.js";
 import { rangeField } from "./shape.js";
 import { INTER_FONT_CSS } from "./inter-font.js";
@@ -54,7 +54,7 @@ const GROUPS: ReadonlyArray<{ id: MetricGroup; title: string }> = [
 ];
 
 /** Loud banner for a fail-open degraded substrate render (narrative attempted, lost). */
-export const HTML_DEGRADED_BANNER = "⚠ Narrative unavailable — showing raw analysis";
+export const HTML_DEGRADED_BANNER = "⚠ AI Narrative unavailable — showing raw analysis";
 /** Neutral note for an intentional metrics-only (`--no-ai`) substrate render. */
 export const HTML_METRICS_ONLY_NOTE = "Metrics-only run — no AI narrative requested";
 
@@ -289,11 +289,12 @@ ${sections.join("\n")}
 }
 
 /**
- * One metric card (ADR H4). A `<details>` so the reader can collapse it; the
- * `<summary>` carries title · health band · headline stat, the body carries the
- * four-facet explanation (no embedded chart — charts live in the group overview).
- * Rendered `open` by default and STAYS open — all cards are expanded by default;
- * the disclosure script only tucks the chart data-table fallbacks, never the cards.
+ * One metric card. A `<details>` so the reader can collapse it; the `<summary>`
+ * carries title · health band · headline stat, the body carries the per-metric
+ * visual (sparkline / bars / gauge, by value shape) plus the four-facet
+ * explanation. Rendered `open` by default and STAYS open — all cards are expanded
+ * by default; the disclosure script only tucks the chart data-table fallbacks,
+ * never the cards.
  */
 function metricCard(metric: Metric, explanations: MetricExplanations | undefined): string {
   const band = classifyHealth(metric);
@@ -303,10 +304,12 @@ function metricCard(metric: Metric, explanations: MetricExplanations | undefined
   const explanation = explanations?.[metric.id];
   const facets = explanation === undefined ? "" : fourFacets(explanation);
   const reason = metric.status === "computed" ? "" : `<p class="why">${escapeHtml(metric.reason ?? "Not available.")}</p>`;
+  const visual = metricVisual(metric);
   return `<details class="metric-card" data-status="${escapeHtml(metric.status)}" data-health="${band}" open>
 <summary><h3 class="metric-title">${escapeHtml(metric.title)}</h3> ${bandHtml}${statHtml}</summary>
 <div class="metric-body">
 ${reason}
+${visual}
 ${facets}
 </div>
 </details>`;
@@ -506,7 +509,7 @@ a:focus-visible, :focus-visible { outline: 2px solid var(--accent); outline-offs
 .confidence-medium .confidence-label, .confidence-medium strong { color: var(--watch); }
 .confidence-low .confidence-label, .confidence-low strong { color: var(--risk); }
 .confidence-escalation { color: var(--risk); font-weight: 600; }
-.banner { border-radius: 12px; padding: 0.85rem 1.1rem; margin: 1.25rem 0; }
+.banner { max-width: 66rem; margin: 1.25rem auto; border-radius: 12px; padding: 0.85rem 1.1rem; }
 .banner-degraded { border: 1px solid rgba(255,107,107,0.4); color: var(--risk); font-weight: 600; background: linear-gradient(90deg, rgba(255,107,107,0.12), transparent); }
 .banner-metrics-only { border: 1px solid var(--border); color: var(--muted); background: var(--surface); }
 .toc {

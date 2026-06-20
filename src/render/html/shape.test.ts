@@ -35,6 +35,18 @@ describe("detectShape", () => {
     expect(detectShape([1, 2, 3])).toBe("distribution");
     expect(detectShape([{ path: "a.ts", changes: 9 }, { path: "b.ts", changes: 4 }])).toBe("distribution");
   });
+
+  it("classifies a value whose numeric series sits in a nested map as distribution", () => {
+    expect(detectShape({ timezone: "UTC", byHour: { "20": 34, "21": 28, "22": 2 } })).toBe("distribution");
+  });
+
+  it("classifies a value whose date-keyed series sits in a nested map as timeseries", () => {
+    expect(detectShape({ note: "x", buckets: { "2024-01": 3, "2024-02": 7 } })).toBe("timeseries");
+  });
+
+  it("classifies a value whose series sits in a nested array of rows as distribution", () => {
+    expect(detectShape({ topDirectories: [{ path: "src", touchCount: 9 }, { path: "docs", touchCount: 4 }] })).toBe("distribution");
+  });
 });
 
 describe("extractSeries", () => {
@@ -55,6 +67,20 @@ describe("extractSeries", () => {
   it("returns [] for an unextractable value", () => {
     expect(extractSeries("nope")).toEqual([]);
     expect(extractSeries(null)).toEqual([]);
+  });
+
+  it("pulls a series from a nested numeric map when there are no direct numeric fields", () => {
+    expect(extractSeries({ timezone: "UTC", byHour: { "20": 34, "21": 28 } })).toEqual([
+      { label: "20", value: 34 },
+      { label: "21", value: 28 },
+    ]);
+  });
+
+  it("pulls a series from a nested array of rows, labelled then first numeric field", () => {
+    expect(extractSeries({ topDirectories: [{ path: "src", touchCount: 9 }, { path: "docs", touchCount: 4 }] })).toEqual([
+      { label: "src", value: 9 },
+      { label: "docs", value: 4 },
+    ]);
   });
 
   it("is deterministic (key order preserved)", () => {

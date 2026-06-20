@@ -57,6 +57,33 @@ function numericEntries(value: Record<string, unknown>): SeriesPoint[] {
     .map(([label, v]) => ({ label, value: v as number }));
 }
 
+/**
+ * The first nested object/array on `value` that yields a chartable series — for
+ * metrics whose data sits one level down under a key (e.g. `byHour`/`byWeekday`,
+ * `topDirectories`) rather than as direct numeric fields. Key order is the value's
+ * own, so the result is byte-stable. Returns the series + whether it is date-keyed
+ * (so the caller can pick timeseries vs. distribution).
+ */
+function nestedChartable(value: Record<string, unknown>): { series: SeriesPoint[]; timeseries: boolean } | undefined {
+  for (const sub of Object.values(value)) {
+    if (isObject(sub)) {
+      if (isDateKeyedNumbers(sub)) {
+        return { series: numericEntries(sub), timeseries: true };
+      }
+      const nums = numericEntries(sub);
+      if (nums.length >= 2) {
+        return { series: nums, timeseries: false };
+      }
+    } else if (Array.isArray(sub)) {
+      const series = extractSeries(sub);
+      if (series.length >= 2) {
+        return { series, timeseries: false };
+      }
+    }
+  }
+  return undefined;
+}
+
 /** A 0–100 share/score field on `value` → `{ value, max: 100 }` for a gauge. */
 export function rangeField(value: unknown): { value: number; max: number } | undefined {
   if (!isObject(value)) {
@@ -93,6 +120,10 @@ export function detectShape(value: unknown): ValueShape {
   }
   if (nums.length === 1) {
     return "scalar";
+  }
+  const nested = nestedChartable(value);
+  if (nested !== undefined) {
+    return nested.timeseries ? "timeseries" : "distribution";
   }
   return "none";
 }
@@ -136,5 +167,9 @@ export function extractSeries(value: unknown): SeriesPoint[] {
   if (isDateKeyedNumbers(value)) {
     return numericEntries(value);
   }
-  return numericEntries(value);
+  const direct = numericEntries(value);
+  if (direct.length > 0) {
+    return direct;
+  }
+  return nestedChartable(value)?.series ?? [];
 }

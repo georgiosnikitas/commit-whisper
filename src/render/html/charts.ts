@@ -307,8 +307,8 @@ ${subs.join("\n")}
  * The per-metric visual, chosen by the value's shape: timeseries → line;
  * distribution → bars; scalar-in-range → sparkline + gauge + number; pure scalar →
  * bold stat (no chart); none / not_available → no visual. Every non-scalar visual
- * carries a data-table fallback. Retained for tests — per ADR H4 the renderer no
- * longer embeds per-card visuals (charts live only in the group-overview panel).
+ * carries a data-table fallback. Embedded in each metric card body so the HTML
+ * report shows the same little per-metric graphs as the Markdown report.
  */
 export function metricVisual(metric: Metric): string {
   if (metric.status === "not_available") {
