@@ -91,7 +91,7 @@ describe("metricVisual — by shape", () => {
     const multi: Metric = { id: "b-contribution-distribution", group: "B", title: "Contribution distribution", status: "computed", value: { authorCount: 2, giniCommits: 0.45, topCommitSharePct: 94.7, top3CommitSharePct: 100 } };
     const out = metricVisual(multi);
     expect(out).toContain("chart-bars");
-    expect(out).toContain("metric-number");
+    expect(out).not.toContain("metric-number");
     expect(out).not.toContain("chart-gauge");
     expect(out).not.toContain("chart-sparkline");
   });

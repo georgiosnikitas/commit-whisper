@@ -328,11 +328,11 @@ export function metricVisual(metric: Metric): string {
     case "scalar-range": {
       const range = rangeField(metric.value);
       const series = chartSeries(metric.value);
-      const number = range === undefined ? "" : `<span class="metric-number">${escapeHtml(formatNumber(range.value))}</span>`;
       const bars = series.length > 1 ? svgBars(series, label) : "";
-      // Bars already carry the range field (and the headline number is shown), so the
-      // gauge is redundant whenever there are bars — keep it only for a lone value.
+      // Bars already carry the range field (and the card stat shows the headline), so the
+      // gauge + number are redundant whenever there are bars — keep them only for a lone value.
       const gauge = bars === "" && range !== undefined ? svgGauge(range.value, range.max, label) : "";
+      const number = bars === "" && range !== undefined ? `<span class="metric-number">${escapeHtml(formatNumber(range.value))}</span>` : "";
       return `<div class="metric-visual metric-visual-range">${gauge}${number}${bars}\n${dataTable(series, "Value", metric.title)}</div>`;
     }
     case "scalar":
