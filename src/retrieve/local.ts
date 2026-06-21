@@ -18,5 +18,5 @@ import { execFileGitRunner } from "./git.js";
 import { readGitHistory } from "./read-history.js";
 
 export function createLocalRetrieve(runner: GitRunner = execFileGitRunner): RetrievePort {
-  return async (config) => readGitHistory(runner, config.repoTarget, config.repoTarget);
+  return async (config, onProgress) => readGitHistory(runner, config.repoTarget, config.repoTarget, onProgress);
 }

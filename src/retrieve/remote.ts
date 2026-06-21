@@ -67,7 +67,7 @@ export function createRemoteRetrieve(
   workspaceDeps: TempWorkspaceDeps = {},
   gitToken?: Secret<string>,
 ): RetrievePort {
-  return async (config) => {
+  return async (config, onProgress) => {
     const url = config.repoTarget;
     return withTempWorkspace(async (dir) => {
       const dest = join(dir, "repo");
@@ -77,7 +77,7 @@ export function createRemoteRetrieve(
       } catch (cause) {
         throw cloneFailureError(url, gitToken !== undefined, cause); // classified, token-redacted (Story 5.3)
       }
-      return readGitHistory(runner, dest, url); // read the local clone (no auth/env needed)
+      return readGitHistory(runner, dest, url, onProgress); // read the local clone (no auth/env needed)
     }, workspaceDeps);
   };
 }

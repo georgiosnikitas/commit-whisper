@@ -1,4 +1,5 @@
 import { describe, it, expect, vi } from "vitest";
+import { EventEmitter } from "node:events";
 
 const execFileMock = vi.fn(
   (
@@ -9,7 +10,21 @@ const execFileMock = vi.fn(
   ) => cb(null, { stdout: "MOCK_OUT", stderr: "" }),
 );
 
-vi.mock("node:child_process", () => ({ execFile: execFileMock }));
+/** A fake child process that streams one stdout chunk then closes 0 (a successful streamed read). */
+const spawnCalls: Array<{ cmd: string; args: readonly string[] }> = [];
+const spawnMock = vi.fn((cmd: string, args: readonly string[]) => {
+  spawnCalls.push({ cmd, args });
+  const child = new EventEmitter() as EventEmitter & { stdout: EventEmitter & { setEncoding: () => void }; stderr: EventEmitter & { setEncoding: () => void } };
+  child.stdout = Object.assign(new EventEmitter(), { setEncoding: (): void => {} });
+  child.stderr = Object.assign(new EventEmitter(), { setEncoding: (): void => {} });
+  queueMicrotask(() => {
+    child.stdout.emit("data", "STREAM_OUT");
+    child.emit("close", 0);
+  });
+  return child;
+});
+
+vi.mock("node:child_process", () => ({ execFile: execFileMock, spawn: spawnMock }));
 
 const { execFileGitRunner } = await import("./git.js");
 
@@ -38,5 +53,17 @@ describe("execFileGitRunner", () => {
     expect(opts.env).toMatchObject({ GIT_TERMINAL_PROMPT: "0", COMMIT_WHISPER_GIT_PAT: "tok" });
     // The inherited base env is merged in too (more than just the two extras present).
     expect(Object.keys(opts.env ?? {}).length).toBeGreaterThan(2);
+  });
+
+  it("streams via spawn (not execFile) when onChunk is given, returning the full stdout and reporting each chunk", async () => {
+    execFileMock.mockClear();
+    spawnMock.mockClear();
+    const chunks: string[] = [];
+    const out = await execFileGitRunner(["log", "--numstat"], { cwd: "/repo", onChunk: (c) => chunks.push(c) });
+    expect(out).toBe("STREAM_OUT");
+    expect(chunks).toEqual(["STREAM_OUT"]);
+    expect(spawnMock).toHaveBeenCalledTimes(1);
+    expect(execFileMock).not.toHaveBeenCalled(); // the streamed path does NOT use execFile
+    expect(spawnCalls[0]).toEqual({ cmd: "git", args: ["log", "--numstat"] });
   });
 });

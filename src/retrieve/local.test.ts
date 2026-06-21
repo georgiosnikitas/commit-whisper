@@ -70,6 +70,42 @@ describe("createLocalRetrieve — AC1 happy path", () => {
   });
 });
 
+describe("createLocalRetrieve — streamed progress (live commit count)", () => {
+  it("reports the running commit count to onProgress as the log streams in", async () => {
+    const counts: number[] = [];
+    const runner: GitRunner = async (args, options) => {
+      const key = args.join(" ");
+      if (key === "rev-parse --is-inside-work-tree") return "true\n";
+      if (key === "rev-parse --verify --quiet HEAD") return "";
+      if (gitSubcommand(args) === "log") {
+        // Simulate two streamed chunks, each carrying one commit record (RS-prefixed).
+        options.onChunk?.(`${RS}rec-a`);
+        options.onChunk?.(`${RS}rec-b`);
+        return CANNED_LOG;
+      }
+      throw new Error(`unexpected git args: ${key}`);
+    };
+    await createLocalRetrieve(runner)(cfg("/repo"), (count) => counts.push(count));
+    expect(counts).toEqual([1, 2]); // cumulative across chunks
+  });
+
+  it("stays on the buffered path (no onChunk) when no progress sink is given", async () => {
+    let sawOnChunk = false;
+    const runner: GitRunner = async (args, options) => {
+      const key = args.join(" ");
+      if (key === "rev-parse --is-inside-work-tree") return "true\n";
+      if (key === "rev-parse --verify --quiet HEAD") return "";
+      if (gitSubcommand(args) === "log") {
+        sawOnChunk = options.onChunk !== undefined;
+        return CANNED_LOG;
+      }
+      throw new Error(`unexpected git args: ${key}`);
+    };
+    await createLocalRetrieve(runner)(cfg("/repo")); // no onProgress
+    expect(sawOnChunk).toBe(false);
+  });
+});
+
 describe("createLocalRetrieve — AC2 not a git repo", () => {
   it("throws RetrieveError (exit 4) when rev-parse fails", async () => {
     const { runner } = fakeRunner({

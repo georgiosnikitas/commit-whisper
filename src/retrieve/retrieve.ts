@@ -31,5 +31,5 @@ export function createRetrieve(deps: RetrieveDeps = {}): RetrievePort {
   const runner = deps.runner ?? execFileGitRunner;
   const local = createLocalRetrieve(runner);
   const remote = createRemoteRetrieve(runner, deps.workspace, deps.gitToken);
-  return async (config) => (isRemoteTarget(config.repoTarget) ? remote : local)(config);
+  return async (config, onProgress) => (isRemoteTarget(config.repoTarget) ? remote : local)(config, onProgress);
 }

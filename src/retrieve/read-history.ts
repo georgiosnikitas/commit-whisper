@@ -13,9 +13,9 @@
  * so a local and a remote analysis of the same history are byte-identical.
  */
 
-import type { RepoHistory } from "./retrieve.port.js";
+import type { RepoHistory, RetrieveProgressFn } from "./retrieve.port.js";
 import type { GitRunner } from "./git.js";
-import { gitLogArgs, parseGitLog } from "./git-log.js";
+import { gitLogArgs, parseGitLog, RECORD_SEPARATOR } from "./git-log.js";
 import { RetrieveError } from "../shared/errors.js";
 
 /** Read HEAD history from `workdir`, labelling the result with `repoTargetLabel`. */
@@ -23,6 +23,7 @@ export async function readGitHistory(
   runner: GitRunner,
   workdir: string,
   repoTargetLabel: string,
+  onProgress?: RetrieveProgressFn,
 ): Promise<RepoHistory> {
   await assertGitRepo(runner, workdir, repoTargetLabel);
 
@@ -32,11 +33,32 @@ export async function readGitHistory(
 
   let stdout: string;
   try {
-    stdout = await runner(gitLogArgs(), { cwd: workdir });
+    stdout = await runner(gitLogArgs(), { cwd: workdir, onChunk: countingChunkHandler(onProgress) });
   } catch (cause) {
     throw new RetrieveError(`Failed to read git history from "${repoTargetLabel}".`, { cause });
   }
   return { repoTarget: repoTargetLabel, commits: parseGitLog(stdout) };
+}
+
+/**
+ * A streaming chunk handler that tallies commit records (one `RECORD_SEPARATOR`
+ * per commit) and reports the running total ONCE per chunk — efficient even on a
+ * huge history. Returns `undefined` when no sink is given, so the read stays on
+ * the buffered `execFile` path (no behaviour change for callers without progress).
+ */
+function countingChunkHandler(onProgress: RetrieveProgressFn | undefined): ((chunk: string) => void) | undefined {
+  if (onProgress === undefined) {
+    return undefined;
+  }
+  let count = 0;
+  return (chunk: string): void => {
+    let index = chunk.indexOf(RECORD_SEPARATOR);
+    while (index !== -1) {
+      count += 1;
+      index = chunk.indexOf(RECORD_SEPARATOR, index + 1);
+    }
+    onProgress(count);
+  };
 }
 
 /**

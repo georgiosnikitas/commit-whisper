@@ -100,7 +100,12 @@ export async function runPipeline(config: RunConfig, deps: RunDeps = {}): Promis
   }
 
   // — Pipeline —
-  const history = await stage(progress, "Retrieving commit history…", () => retrieve(config)); // RetrieveError → exit 4
+  // The retrieve stage streams the history; the live count rewrites the spinner
+  // label as commits arrive (a useful indicator on big repos). Off a TTY the
+  // injected progress is a no-op, so this never spams CI logs.
+  const history = await stage(progress, "Retrieving commit history…", () =>
+    retrieve(config, (count) => progress.update(`Retrieving commit history… ${count} commit(s)`)),
+  ); // RetrieveError → exit 4
   progress.done(`Retrieved ${history.commits.length} commit(s) from ${history.repoTarget}`);
   ui.debug?.(`Retrieved ${history.commits.length} commit(s) from ${history.repoTarget}.`);
   // Narrow the analyzed commit set per the selection inputs BEFORE analyze, so all

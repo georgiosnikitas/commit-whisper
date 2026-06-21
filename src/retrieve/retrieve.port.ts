@@ -48,5 +48,8 @@ export interface RepoHistory {
   commits: RawCommit[];
 }
 
+/** A live progress sink the retriever calls with the running commit count as the history streams in (advisory only). */
+export type RetrieveProgressFn = (commitCount: number) => void;
+
 /** The contract the pipeline depends on. */
-export type RetrievePort = (config: RunConfig) => Promise<RepoHistory>;
+export type RetrievePort = (config: RunConfig, onProgress?: RetrieveProgressFn) => Promise<RepoHistory>;

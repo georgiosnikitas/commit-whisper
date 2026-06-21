@@ -13,6 +13,9 @@ import type { ChangedFile, RawCommit } from "./retrieve.port.js";
 const RS = "\x1e"; // record separator (between commits)
 const US = "\x1f"; // unit separator (between fields)
 
+/** The record separator that prefixes every commit in the `git log` stream (one per commit) — for streamed counting. */
+export const RECORD_SEPARATOR = RS;
+
 /** Strict ISO-8601 timestamps (%aI/%cI); body (%B) bracketed by US on both sides. */
 export const GIT_LOG_FORMAT = `${RS}%H${US}%an${US}%ae${US}%aI${US}%cn${US}%ce${US}%cI${US}%P${US}%B${US}`;
 
