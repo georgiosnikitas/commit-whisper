@@ -297,7 +297,8 @@ function formatNumber(n: number): string {
 /** The structured value as a 2-column Markdown table; the label column header follows the value shape. */
 function valueTable(value: object): string {
   const shape = detectShape(value);
-  const labelHeader = shape === "timeseries" ? "Period" : shape === "distribution" ? "Item" : "Field";
+  const labelHeaderByShape: Record<string, string> = { timeseries: "Period", distribution: "Item" };
+  const labelHeader = labelHeaderByShape[shape] ?? "Field";
   const rows = extractSeries(value).map((point) => `| ${escapeCell(point.label)} | ${escapeCell(formatNumber(point.value))} |`);
   return [`- **Value**`, "", `| ${labelHeader} | Value |`, "| --- | --- |", ...rows].join("\n");
 }
