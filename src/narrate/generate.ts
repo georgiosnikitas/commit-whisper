@@ -38,6 +38,12 @@ export interface GenerateNarrativeDeps {
   generateObject?: typeof sdkGenerateObject;
 }
 
+/** `generateExplanations` deps: the SDK hook plus an optional per-Group completion callback (for a live progress bar). */
+export interface GenerateExplanationsDeps extends GenerateNarrativeDeps {
+  /** Called once per Group batch as it settles (succeeded OR failed), in completion order — drives the narrate progress bar. */
+  onGroup?: (group: MetricGroup) => void;
+}
+
 export async function generateNarrative(
   model: LanguageModel,
   analysis: Analysis,
@@ -74,7 +80,7 @@ export async function generateNarrative(
 export async function generateExplanations(
   model: LanguageModel,
   analysis: Analysis,
-  deps: GenerateNarrativeDeps = {},
+  deps: GenerateExplanationsDeps = {},
 ): Promise<MetricExplanations> {
   const batches = METRIC_GROUPS.map((group) => ({
     group,
@@ -82,7 +88,12 @@ export async function generateExplanations(
   })).filter((batch) => batch.metrics.length > 0);
 
   const settled = await Promise.allSettled(
-    batches.map((batch) => generateGroupExplanations(model, { metrics: batch.metrics }, deps)),
+    batches.map((batch) =>
+      generateGroupExplanations(model, { metrics: batch.metrics }, deps)
+        // Advance the progress bar as each Group settles — whether it produced
+        // explanations or degraded (a failed group still completes a phase).
+        .finally(() => deps.onGroup?.(batch.group)),
+    ),
   );
 
   // Merge in batch (Group) order — independent of which settled first — so the

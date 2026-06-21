@@ -49,4 +49,21 @@ export type NarrateOutcome =
   | { kind: "skipped" }
   | { kind: "degraded"; reason: string };
 
-export type NarratePort = (analysis: Analysis, config: NarrateConfig) => Promise<NarrateOutcome>;
+/** A single step of the multi-phase narration, for a live progress bar (stderr chrome only). */
+export interface NarrateProgress {
+  /** Completed phases so far (0..total). */
+  completed: number;
+  /** Total phases in this narration (model connect → narrative → per-group explanations → grounding). */
+  total: number;
+  /** A human label for the phase just reached (e.g. "Explained Group C metrics"). */
+  label: string;
+}
+
+/** A sink the narrate stage calls as each phase completes; purely advisory (never affects the outcome). */
+export type NarrateProgressFn = (progress: NarrateProgress) => void;
+
+export type NarratePort = (
+  analysis: Analysis,
+  config: NarrateConfig,
+  onProgress?: NarrateProgressFn,
+) => Promise<NarrateOutcome>;

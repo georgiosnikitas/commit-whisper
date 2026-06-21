@@ -58,6 +58,36 @@ describe("createNarrate", () => {
     expect(narrative.confidence?.escalation).toBeUndefined();
   });
 
+  it("emits monotonic progress events ending at completed === total (live narrative progress bar)", async () => {
+    const events: Array<{ completed: number; total: number; label: string }> = [];
+    const explWithProgress = async (
+      _model: LanguageModel,
+      _analysis: Analysis,
+      deps?: { onGroup?: (group: "A" | "B" | "C" | "D" | "E" | "F") => void },
+    ): Promise<typeof EXPLANATIONS> => {
+      deps?.onGroup?.("A");
+      return EXPLANATIONS;
+    };
+    await createNarrate({
+      resolveModel: () => fakeModel,
+      generate: async () => NARRATIVE,
+      generateExplanations: explWithProgress,
+    })(ANALYSIS, cfg(), (progress) => events.push(progress));
+
+    // ANALYSIS has one Group (A): phases = narrative + 1 group + finalize = 3.
+    expect(events.length).toBeGreaterThanOrEqual(3);
+    expect(events[0]).toMatchObject({ completed: 0, total: 3 });
+    expect(events[0].label).toContain("gemini"); // "Connecting to gemini…"
+    expect(events.some((e) => e.label.includes("Group A"))).toBe(true);
+    // Monotonic non-decreasing completed, ending exactly at total.
+    for (let i = 1; i < events.length; i++) {
+      expect(events[i].completed).toBeGreaterThanOrEqual(events[i - 1].completed);
+    }
+    const last = events.at(-1)!;
+    expect(last.completed).toBe(last.total);
+    expect(last.total).toBe(3);
+  });
+
   it("computes a LOW confidence with an escalation when generation fabricates claims (Story 3.5)", async () => {
     // ANALYSIS's only number is 3; the overview is all-fabricated → grounding empties it
     // (passRate 0) → low confidence with an escalation naming the config to change.

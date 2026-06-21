@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, afterEach } from "vitest";
 
-import { createProgress, createUi, noopProgress, resolveColor, resolveLogLevel } from "./ui.js";
+import { createProgress, createUi, noopProgress, progressBar, resolveColor, resolveLogLevel } from "./ui.js";
 
 function fakeStream(): { stream: NodeJS.WritableStream; chunks: string[] } {
   const chunks: string[] = [];
@@ -181,6 +181,21 @@ describe("createProgress — non-TTY (plain status lines)", () => {
     expect(chunks.join("")).not.toContain("\r");
     expect(chunks).toEqual(["Working…\n", "Still working…\n", "✗ Boom\n"]);
     expect(stdoutSpy).not.toHaveBeenCalled();
+  });
+});
+
+describe("progressBar", () => {
+  it("fills proportionally to completed/total and keeps a fixed width", () => {
+    expect(progressBar(0, 4, 8)).toBe("▱▱▱▱▱▱▱▱");
+    expect(progressBar(2, 4, 8)).toBe("▰▰▰▰▱▱▱▱");
+    expect(progressBar(4, 4, 8)).toBe("▰▰▰▰▰▰▰▰");
+  });
+
+  it("clamps out-of-range input and degrades to empty for a non-positive total/width", () => {
+    expect(progressBar(9, 4, 6)).toBe("▰▰▰▰▰▰"); // over 100% clamps to full
+    expect(progressBar(-1, 4, 6)).toBe("▱▱▱▱▱▱"); // negative clamps to empty
+    expect(progressBar(1, 0)).toBe(""); // no total → no bar
+    expect(progressBar(1, 4, 0)).toBe(""); // no width → no bar
   });
 });
 

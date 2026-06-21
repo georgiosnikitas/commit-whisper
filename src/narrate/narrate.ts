@@ -16,11 +16,12 @@
  */
 
 import type { Analysis } from "../analyze/engine.js";
+import type { MetricGroup } from "../analyze/metric.js";
 import { NarrationError } from "../shared/errors.js";
 import { assessConfidence } from "./confidence.js";
-import { generateNarrative, generateExplanations } from "./generate.js";
+import { generateNarrative, generateExplanations, METRIC_GROUPS } from "./generate.js";
 import { groundNarrative } from "./grounding.js";
-import type { NarrateConfig, NarrateOutcome, NarratePort } from "./narrate.port.js";
+import type { NarrateConfig, NarrateOutcome, NarratePort, NarrateProgressFn } from "./narrate.port.js";
 import { resolveModel } from "./provider.js";
 import type { NarrativeParts, MetricExplanations } from "./schema.js";
 
@@ -30,6 +31,7 @@ export interface NarrateDeps {
   generateExplanations?: (
     model: ReturnType<typeof resolveModel>,
     analysis: Analysis,
+    deps?: { onGroup?: (group: MetricGroup) => void },
   ) => Promise<MetricExplanations>;
 }
 
@@ -38,11 +40,20 @@ export function createNarrate(deps: NarrateDeps = {}): NarratePort {
   const generate = deps.generate ?? generateNarrative;
   const generateExpl = deps.generateExplanations ?? generateExplanations;
 
-  return async (analysis: Analysis, config: NarrateConfig): Promise<NarrateOutcome> => {
+  return async (analysis: Analysis, config: NarrateConfig, onProgress?: NarrateProgressFn): Promise<NarrateOutcome> => {
     if (config.aiMode === "off") {
       return { kind: "skipped" };
     }
     try {
+      // The phases the progress bar reports: model connect → repo narrative →
+      // one per present Metric Group (explanations) → the deterministic finalize
+      // (grounding + confidence). Counted up front so the bar has a stable total.
+      const presentGroups = METRIC_GROUPS.filter((group) => analysis.metrics.some((metric) => metric.group === group));
+      const total = 1 /* narrative */ + presentGroups.length + 1 /* grounding + confidence */;
+      let completed = 0;
+      const report = (label: string): void => onProgress?.({ completed, total, label });
+      report(`Connecting to ${config.provider ?? "the model"}…`);
+
       const model = resolve(config);
       // The repo-level narrative (Story 3.1: Summary + Explanation + Coaching,
       // the holistic "coaching call") and the per-metric explanations (Story 3.2,
@@ -54,8 +65,17 @@ export function createNarrate(deps: NarrateDeps = {}): NarratePort {
       // from the map, the rest are carried). An incomplete map (a model omitting
       // metrics) lowers the confidence coverage signal (3.5), not fabricated here.
       const [parts, explanations] = await Promise.all([
-        generate(model, analysis),
-        generateExpl(model, analysis),
+        generate(model, analysis).then((value) => {
+          completed += 1;
+          report("Wrote the summary, explanation & coaching");
+          return value;
+        }),
+        generateExpl(model, analysis, {
+          onGroup: (group) => {
+            completed += 1;
+            report(`Explained Group ${group} metrics`);
+          },
+        }),
       ]);
       // Deterministic grounding pass (Story 3.4): remove every numeric claim that
       // does not trace to a metric value (no second LLM call), inserting honest
@@ -75,6 +95,8 @@ export function createNarrate(deps: NarrateDeps = {}): NarratePort {
         provider: config.provider,
         llmModel: config.llmModel,
       });
+      completed = total;
+      report("Grounded the numbers & assessed confidence");
       return { kind: "narrated", narrative: { ...grounded.narrative, confidence } };
     } catch (err) {
       const reason = narrationReason(err, config.aiKey?.reveal());

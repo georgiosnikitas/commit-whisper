@@ -150,6 +150,20 @@ const SPINNER_INTERVAL_MS = 80;
 /** Carriage-return + ANSI "erase whole line" — rewrite the spinner line in place. */
 const CLEAR_LINE = "\r\u001b[2K";
 
+/**
+ * A compact unicode progress bar (`▰▰▰▱▱▱`) for `completed/total`, clamped to
+ * `[0, 1]`. Pure + deterministic — used to enrich a stage's status label (e.g.
+ * the multi-step AI-narrative generation) on both a TTY and in plain logs.
+ */
+export function progressBar(completed: number, total: number, width = 12): string {
+  if (total <= 0 || width <= 0) {
+    return "";
+  }
+  const ratio = Math.min(1, Math.max(0, completed / total));
+  const filled = Math.min(width, Math.round(ratio * width));
+  return "▰".repeat(filled) + "▱".repeat(width - filled);
+}
+
 /** A no-op `Progress` — the default the pipeline uses unless a real one is injected (and the off-TTY/quiet fallback). */
 export const noopProgress: Progress = {
   start() {},

@@ -31,7 +31,7 @@ import { projectSelection, selectCommitsWithNotice } from "../analyze/select.js"
 import { reportFromOutcome } from "../assemble/report.js";
 import type { RunConfig } from "../config/run-config.js";
 import { createNarrate } from "../narrate/narrate.js";
-import type { NarrateConfig, NarrateOutcome, NarratePort } from "../narrate/narrate.port.js";
+import type { NarrateConfig, NarrateOutcome, NarratePort, NarrateProgressFn } from "../narrate/narrate.port.js";
 import { preflightProvider } from "../narrate/preflight.js";
 import { renderFormat } from "../render/render.js";
 import { planOutputs, type OutputTarget } from "../render/output-plan.js";
@@ -39,7 +39,7 @@ import { createRetrieve } from "../retrieve/retrieve.js";
 import type { RetrievePort, RawCommit } from "../retrieve/retrieve.port.js";
 import { NarrationError, RenderError } from "../shared/errors.js";
 import type { Secret } from "../shared/secret.js";
-import { noopProgress, ui as defaultUi, type Progress, type Ui } from "../shared/ui.js";
+import { noopProgress, progressBar, ui as defaultUi, type Progress, type Ui } from "../shared/ui.js";
 import { ExitCode } from "./exit-codes.js";
 import { buildProvenance } from "./provenance.js";
 import { VERSION } from "./version.js";
@@ -124,7 +124,7 @@ export async function runPipeline(config: RunConfig, deps: RunDeps = {}): Promis
   const outcome = await narrateStage(
     progress,
     config,
-    () => narrateOutcome(config, narrateConfig, analysis, narrate, preflightReason),
+    (onProgress) => narrateOutcome(config, narrateConfig, analysis, narrate, preflightReason, onProgress),
   );
   // Build the FR-17 run-metadata subtree from facts the pipeline already holds.
   // It is sourced once here and emitted verbatim in the JSON; the assembler keeps
@@ -192,14 +192,19 @@ async function stage<T>(progress: Progress, label: string, fn: () => T | Promise
 async function narrateStage(
   progress: Progress,
   config: RunConfig,
-  run: () => Promise<NarrateOutcome>,
+  run: (onProgress: NarrateProgressFn) => Promise<NarrateOutcome>,
 ): Promise<NarrateOutcome> {
   if (config.aiMode === "off") {
-    return run(); // metrics-only — no narrative stage chrome
+    return run(() => {}); // metrics-only — no narrative stage chrome
   }
   progress.start("Generating AI narrative…");
   try {
-    const outcome = await run();
+    // Enrich the single spinner line into a live, multi-step bar: each phase the
+    // narration reaches (model connect → narrative → per-group explanations →
+    // grounding) rewrites the label with a progress bar + what it just did.
+    const outcome = await run(({ completed, total, label }) => {
+      progress.update(`${progressBar(completed, total)} ${completed}/${total} · ${label}`);
+    });
     progress.done(outcome.kind === "narrated" ? "AI narrative ready" : "Narrative unavailable — metrics-only");
     return outcome;
   } catch (err) {
@@ -316,6 +321,7 @@ async function narrateOutcome(
   analysis: ReturnType<typeof analyze>,
   narrate: NarratePort,
   preflightReason: string | undefined,
+  onProgress: NarrateProgressFn,
 ): Promise<NarrateOutcome> {
   if (config.aiMode === "off") {
     return { kind: "skipped" };
@@ -323,7 +329,7 @@ async function narrateOutcome(
   if (preflightReason !== undefined) {
     return { kind: "degraded", reason: preflightReason };
   }
-  return narrate(analysis, narrateConfig); // required-mode failure throws NarrationError (exit 6)
+  return narrate(analysis, narrateConfig, onProgress); // required-mode failure throws NarrationError (exit 6)
 }
 
 /**
