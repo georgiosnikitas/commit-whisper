@@ -45,7 +45,7 @@
   },
   "homepage": "https://github.com/georgiosnikitas/commit-whisper#readme",
   "dependencies": {
-    "@ai-sdk/anthropic": "3.0.85",
+    "@ai-sdk/anthropic": "4.0.0",
     "@ai-sdk/google": "3.0.83",
     "@ai-sdk/openai": "3.0.72",
     "@ai-sdk/openai-compatible": "2.0.51",
