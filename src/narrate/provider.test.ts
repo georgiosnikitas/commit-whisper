@@ -1,6 +1,8 @@
-import { describe, it, expect } from "vitest";
+import { describe, it, expect, afterEach } from "vitest";
 
 import { resolveModel } from "./provider.js";
+import { generateNarrative } from "./generate.js";
+import type { Analysis } from "../analyze/engine.js";
 import type { NarrateConfig } from "./narrate.port.js";
 import { NarrationError } from "../shared/errors.js";
 import { Secret } from "../shared/secret.js";
@@ -127,3 +129,62 @@ describe("resolveModel — no provider configured", () => {
     }
   });
 });
+
+describe("resolveModel — openai-compatible drives structured outputs (the bound schema reaches the model)", () => {
+  const realFetch = globalThis.fetch;
+  afterEach(() => {
+    globalThis.fetch = realFetch;
+  });
+
+  /** A minimal analysis — just enough to build the narrative prompt. */
+  const ANALYSIS: Analysis = {
+    metrics: [{ id: "a-commit-volume", group: "A", title: "Commit volume", status: "computed", value: 3 }],
+  };
+
+  /** The slice of the captured outgoing request body this test asserts on. */
+  type CapturedBody = {
+    response_format?: { type?: string; json_schema?: { strict?: boolean; schema?: unknown } };
+  };
+
+  /** Stub global fetch with a schema-shaped OpenAI chat-completion, capturing the request body. */
+  function stubFetch(capture: { body?: CapturedBody }): void {
+    globalThis.fetch = async (_url: RequestInfo | URL, init?: RequestInit): Promise<Response> => {
+      capture.body = JSON.parse(init?.body as string) as CapturedBody;
+      const content = JSON.stringify({
+        summary: { headline: "h", overview: "o", keyFindings: ["a"] },
+        explanation: { paragraphs: ["p"] },
+        coaching: { introduction: "i", chapters: [{ theme: "t", steps: ["s"] }], closingSummary: "c" },
+      });
+      return new Response(
+        JSON.stringify({
+          id: "x",
+          object: "chat.completion",
+          created: 0,
+          model: "openai.gpt-5.4",
+          choices: [{ index: 0, message: { role: "assistant", content }, finish_reason: "stop" }],
+          usage: { prompt_tokens: 1, completion_tokens: 1, total_tokens: 2 },
+        }),
+        { status: 200, headers: { "content-type": "application/json" } },
+      );
+    };
+  }
+
+  it("sends the bound schema as a NON-strict json_schema response format (not the schema-less json_object)", async () => {
+    const capture: { body?: CapturedBody } = {};
+    stubFetch(capture);
+
+    const model = resolveModel(
+      cfg({ provider: "openai-compatible", llmModel: "openai.gpt-5.4", llmBaseUrl: "https://api.example.test/v1", aiKey: undefined }),
+    );
+    await generateNarrative(model, ANALYSIS);
+
+    // Structured outputs ON ⇒ the schema is actually sent. The prior bug dropped
+    // it to `{ type: "json_object" }`, leaving the model unguided → the
+    // "Narrative unavailable — metrics-only" degrade.
+    expect(capture.body?.response_format?.type).toBe("json_schema");
+    expect(capture.body?.response_format?.json_schema?.schema).toBeDefined();
+    // …but NON-strict: strict mode 400s on our `min(1)` (minLength/minItems) schemas.
+    expect(capture.body?.response_format?.json_schema?.strict).toBe(false);
+  });
+});
+
